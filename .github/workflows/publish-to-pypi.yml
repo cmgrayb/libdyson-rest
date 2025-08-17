@@ -1,6 +1,7 @@
 # Smart PyPI Publishing Workflow
 #
-# This workflow automatically detects version patterns and routes packages appropriately:
+# This workflow automatically detects version patterns and routes packages appropriately
+# for BOTH manual runs and GitHub releases:
 # 
 # PEP 440 Version Examples:
 #   ALPHA/DEV → TestPyPI (internal testing):
@@ -57,12 +58,7 @@ jobs:
         echo "Detected version: $VERSION"
 
         # Determine target environment
-        if [[ "${{ github.event_name }}" == "release" ]]; then
-          # For GitHub releases, use pypi (production)
-          TARGET_ENV="pypi"
-          IS_PRERELEASE="false"
-          echo "GitHub release detected - targeting PyPI"
-        elif [[ "${{ github.event.inputs.environment }}" == "pypi" ]]; then
+        if [[ "${{ github.event.inputs.environment }}" == "pypi" ]]; then
           # Force PyPI
           TARGET_ENV="pypi"
           IS_PRERELEASE="false"
@@ -73,7 +69,7 @@ jobs:
           IS_PRERELEASE="true"
           echo "Forced TestPyPI target"
         else
-          # Auto-detect based on version (PEP 440 compliant)
+          # Auto-detect based on version (PEP 440 compliant) - works for both releases and manual runs
           if [[ "$VERSION" =~ (a[0-9]+|alpha[0-9]+|\.dev[0-9]*) ]]; then
             TARGET_ENV="testpypi"
             IS_PRERELEASE="true"
