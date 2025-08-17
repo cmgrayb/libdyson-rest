@@ -22,6 +22,12 @@ on:
           - warn
           - error
 
+# Grant necessary permissions for Renovate operations
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
 jobs:
   renovate:
     name: Self-hosted Renovate

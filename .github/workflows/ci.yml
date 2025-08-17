@@ -6,6 +6,12 @@ on:
   push:
     branches: [ main, develop ]
 
+# Grant necessary permissions for commenting on PRs
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   # Job to check if we should run CI (skip for draft PRs, etc.)
   check-ci-requirements:

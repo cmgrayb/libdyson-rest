@@ -244,6 +244,22 @@ python -m twine check dist/*
 python -c "import glob; import subprocess; import sys; wheel_files = glob.glob('dist/*.whl'); subprocess.run([sys.executable, '-m', 'pip', 'install', wheel_files[0]] if wheel_files else ['echo', 'No wheel found'])"
 ```
 
+#### GitHub Token Permissions Issues
+If workflows fail with `Resource not accessible by integration` (403 errors):
+
+```yaml
+# Add permissions section to workflow files that comment on PRs/issues:
+permissions:
+  contents: read     # Basic repository access
+  issues: write      # Create/update issue comments
+  pull-requests: write  # Create/update PR comments
+```
+
+Common symptoms:
+- `HttpError: Resource not accessible by integration`
+- Status 403 when trying to create comments
+- Missing permissions for `issues=write; pull_requests=write`
+
 ### Emergency Procedures
 
 #### Skip CI for Draft PRs
