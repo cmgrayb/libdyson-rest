@@ -1,0 +1,129 @@
+name: Dependency Update Check
+
+on:
+  schedule:
+    # Check for dependency updates every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  dependency-update:
+    name: Check for Dependency Updates
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+        pip install pip-audit
+
+    - name: Check for outdated packages
+      run: |
+        echo "=== Checking for outdated packages ==="
+        pip list --outdated --format=json > outdated-packages.json
+        pip list --outdated
+
+    - name: Run pip-audit for vulnerability scanning
+      run: |
+        echo "=== Running pip-audit for vulnerability scanning ==="
+        pip-audit --format=json --output=pip-audit-report.json || true
+        pip-audit --format=text
+
+    - name: Check pre-commit hook updates
+      run: |
+        echo "=== Checking for pre-commit hook updates ==="
+        pre-commit autoupdate --bleeding-edge
+
+        # Show what would change
+        git diff .pre-commit-config.yaml || echo "No pre-commit updates available"
+
+    - name: Test version sync with latest versions
+      run: |
+        echo "=== Testing version synchronization ==="
+        python scripts/sync_versions.py --dry-run --verbose
+
+    - name: Upload dependency reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dependency-reports
+        path: |
+          outdated-packages.json
+          pip-audit-report.json
+        retention-days: 30
+
+    - name: Create issue for dependency updates
+      uses: actions/github-script@v7
+      if: always()
+      with:
+        script: |
+          const fs = require('fs');
+
+          // Read the outdated packages report
+          let outdatedCount = 0;
+          try {
+            const outdated = JSON.parse(fs.readFileSync('outdated-packages.json', 'utf8'));
+            outdatedCount = outdated.length;
+          } catch (e) {
+            console.log('No outdated packages file found');
+          }
+
+          // Only create issue if there are updates available
+          if (outdatedCount > 0) {
+            const title = `🔄 Dependency Updates Available (${outdatedCount} packages)`;
+            const body = `
+          ## Dependency Update Report
+
+          This automated check found **${outdatedCount}** packages that can be updated.
+
+          ### Next Steps
+          1. Review the dependency reports in the workflow artifacts
+          2. Test updates in a feature branch
+          3. Run \`python scripts/sync_versions.py\` to synchronize versions
+          4. Ensure all tests pass before merging
+
+          ### Workflow Run
+          - **Workflow**: ${{ github.workflow }}
+          - **Run ID**: ${{ github.run_id }}
+          - **Triggered**: ${new Date().toISOString()}
+
+          ---
+          _This issue was created automatically by the Dependency Update Check workflow._
+            `;
+
+            // Check if similar issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['dependencies', 'automation'],
+              state: 'open'
+            });
+
+            const existingIssue = issues.data.find(issue =>
+              issue.title.includes('Dependency Updates Available')
+            );
+
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['dependencies', 'automation', 'enhancement']
+              });
+              console.log('Created new dependency update issue');
+            } else {
+              console.log('Dependency update issue already exists');
+            }
+          } else {
+            console.log('No dependency updates needed');
+          }
