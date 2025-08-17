@@ -227,5 +227,5 @@
   "onboarding": false,
   "requireConfig": "optional",
 
-  "repositories": ["cmgrayb/libdyson-lec"]
+  "repositories": ["cmgrayb/libdyson-rest"]
 }

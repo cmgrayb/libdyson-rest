@@ -194,6 +194,14 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# Device-specific and sensitive data files
+mqtt_info_*.json
+device_*.json
+token_*.json
+*_credentials.json
+*.dyson_device
+*.dyson_auth
+
 # Cursor
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data

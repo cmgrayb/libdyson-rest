@@ -82,7 +82,7 @@ jobs:
         echo "=== Next Steps ==="
         echo "1. Check for newly created Renovate PRs"
         echo "2. Review dependency dashboard issue"
-        echo "3. For quality tool updates: run 'python scripts/sync_versions.py' after merge"
+        echo "3. Renovate automatically maintains version consistency across files"
 
     - name: Create summary comment
       if: github.event_name == 'workflow_dispatch'
@@ -111,7 +111,7 @@ jobs:
           3. Workflow logs for any errors
 
           **Important Reminders:**
-          - For quality tool updates (black, flake8, isort, mypy, pytest): run \`python scripts/sync_versions.py\` after merging
+          - Renovate automatically maintains version consistency across requirements-dev.txt and pyproject.toml
           - Review security-labeled PRs with higher priority
           - Major version updates have 14-day minimum release age
 
@@ -159,29 +159,21 @@ jobs:
             // Add comments to each quality tool PR with specific instructions
             for (const pr of qualityToolPRs) {
               const comment = `
-              ## 🔧 Quality Tool Update - Action Required
+              ## ✅ Quality Tool Update - Automated
 
-              This PR updates development/quality tools that require version synchronization after merging.
+              This PR updates development/quality tools. Renovate has automatically updated both requirements-dev.txt and pyproject.toml to maintain consistency.
 
-              ### **IMPORTANT** Required Post-Merge Steps:
-              1. **Synchronize versions**:
+              ### Post-Merge Verification:
+              1. **Verify quality checks pass**:
                  \`\`\`bash
-                 python scripts/sync_versions.py --verbose
-                 \`\`\`
-
-              2. **Commit any changes**:
-                 \`\`\`bash
-                 git add requirements-dev.txt pyproject.toml .pre-commit-config.yaml
-                 git commit -m "🔧 Sync tool versions after dependency update"
-                 \`\`\`
-
-              3. **Verify everything works**:
-                 \`\`\`bash
-                 pre-commit run --all-files
                  python -m pytest
+                 python -m black --check .
+                 python -m flake8 .
+                 python -m isort --check-only .
+                 python -m mypy src/
                  \`\`\`
 
-              4. **Update documentation** if version numbers are mentioned in:
+              2. **Update documentation** if version numbers are mentioned in:
                  - \`.github/copilot-instructions.md\`
                  - \`README.md\`
                  - \`scripts/README.md\`

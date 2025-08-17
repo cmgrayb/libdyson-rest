@@ -1,12 +1,345 @@
 # libdyson-rest
 
-## Python library for interacting with the Dyson REST API
+[![PyPI version](https://badge.fury.io/py/libdyson-rest.svg)](https://badge.fury.io/py/libdyson-rest)
+[![Python](https://img.shields.io/pypi/pyversions/libdyson-rest.svg)](https://pypi.org/project/libdyson-rest/)
+[![License](https://img.shields.io/pypi/l/libdyson-rest.svg)](https://github.com/cmgrayb/libdyson-rest/blob/main/LICENSE)
 
-A Python 3 library providing a clean interface for communicating with Dyson devices through their REST API endpoints.
+A Python library for interacting with Dyson devices through their official REST API.
+
+## Features
+
+- **Official API Compliance**: Implements the complete Dyson App API as documented in their OpenAPI specification
+- **Two-Step Authentication**: Secure login process with OTP codes
+- **Complete Device Management**: List devices, get device details, and retrieve IoT credentials
+- **MQTT Connection Support**: Extract both cloud (AWS IoT) and local MQTT connection parameters
+- **Password Decryption**: Decrypt local MQTT broker credentials for direct device communication
+- **Token-Based Authentication**: Store and reuse authentication tokens for repeated API calls
+- **Type-Safe Models**: Comprehensive data models with proper type hints
+- **Error Handling**: Detailed exception hierarchy for robust error handling
+- **Context Manager Support**: Automatic resource cleanup
+
+## Installation
+
+Install from PyPI:
+
+```bash
+pip install libdyson-rest
+```
+
+Or install from source:
+
+```bash
+git clone https://github.com/cmgrayb/libdyson-rest.git
+cd libdyson-rest
+pip install -e .
+```
+
+## Quick Start
+
+```python
+from libdyson_rest import DysonClient
+
+# Initialize the client
+client = DysonClient(
+    email="your@email.com",
+    password="your_password",
+    country="US",        # ISO 3166-1 alpha-2 country code
+    culture="en-US"      # IETF language code
+)
+
+# Two-step authentication process
+try:
+    # Step 1: Begin login process
+    challenge = client.begin_login()
+    print(f"Challenge ID: {challenge.challenge_id}")
+    print("Check your email for an OTP code")
+
+    # Step 2: Complete login with OTP code
+    otp_code = input("Enter OTP code: ")
+    login_info = client.complete_login(str(challenge.challenge_id), otp_code)
+    print(f"Logged in! Account: {login_info.account}")
+
+    # Get devices
+    devices = client.get_devices()
+    for device in devices:
+        print(f"Device: {device.name} ({device.serial_number})")
+        print(f"  Type: {device.type}")
+        print(f"  Category: {device.category.value}")
+
+        # Get IoT credentials for connected devices
+        if device.connection_category.value != "nonConnected":
+            iot_data = client.get_iot_credentials(device.serial_number)
+            print(f"  IoT Endpoint: {iot_data.endpoint}")
+
+finally:
+    client.close()
+```
+
+## Authentication Flow
+
+The Dyson API uses a secure two-step authentication process:
+
+### 1. API Provisioning (Automatic)
+```python
+version = client.provision()  # Called automatically
+```
+
+### 2. User Status Check (Optional)
+```python
+user_status = client.get_user_status()
+print(f"Account status: {user_status.account_status.value}")
+```
+
+### 3. Begin Login Process
+```python
+challenge = client.begin_login()
+# This triggers an OTP code to be sent to your email
+```
+
+### 4. Complete Login with OTP
+```python
+login_info = client.complete_login(
+    challenge_id=str(challenge.challenge_id),
+    otp_code="123456"  # From your email
+)
+```
+
+### 5. Authenticated API Calls
+```python
+devices = client.get_devices()
+iot_data = client.get_iot_credentials("device_serial")
+```
+
+## API Reference
+
+### DysonClient
+
+#### Constructor
+```python
+DysonClient(
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+    country: str = "US",
+    culture: str = "en-US",
+    timeout: int = 30,
+    user_agent: str = "android client"
+)
+```
+
+#### Core Methods
+
+##### Authentication
+- `provision() -> str`: Required initial API call
+- `get_user_status(email=None) -> UserStatus`: Check account status
+- `begin_login(email=None) -> LoginChallenge`: Start login process
+- `complete_login(challenge_id, otp_code, email=None, password=None) -> LoginInformation`: Complete authentication
+- `authenticate(otp_code=None) -> bool`: Convenience method for full auth flow
+
+##### Device Management
+- `get_devices() -> List[Device]`: List all account devices
+- `get_iot_credentials(serial_number) -> IoTData`: Get AWS IoT connection info
+
+##### Session Management
+- `close() -> None`: Close session and clear state
+- `__enter__()` and `__exit__()`: Context manager support
+
+### Data Models
+
+#### Device
+```python
+@dataclass
+class Device:
+    category: DeviceCategory          # ec, flrc, hc, light, robot, wearable
+    connection_category: ConnectionCategory  # lecAndWifi, lecOnly, nonConnected, wifiOnly
+    model: str
+    name: str
+    serial_number: str
+    type: str
+    variant: Optional[str] = None
+    connected_configuration: Optional[ConnectedConfiguration] = None
+```
+
+#### DeviceCategory (Enum)
+- `ENVIRONMENT_CLEANER = "ec"` - Air filters, purifiers
+- `FLOOR_CLEANER = "flrc"` - Vacuum cleaners
+- `HAIR_CARE = "hc"` - Hair dryers, stylers
+- `LIGHT = "light"` - Lighting products
+- `ROBOT = "robot"` - Robot vacuums
+- `WEARABLE = "wearable"` - Wearable devices
+
+#### ConnectionCategory (Enum)
+- `LEC_AND_WIFI = "lecAndWifi"` - Bluetooth and Wi-Fi
+- `LEC_ONLY = "lecOnly"` - Bluetooth only
+- `NON_CONNECTED = "nonConnected"` - No connectivity
+- `WIFI_ONLY = "wifiOnly"` - Wi-Fi only
+
+#### LoginInformation
+```python
+@dataclass
+class LoginInformation:
+    account: UUID      # Account ID
+    token: str         # Bearer token for API calls
+    token_type: TokenType  # Always "Bearer"
+```
+
+#### IoTData
+```python
+@dataclass
+class IoTData:
+    endpoint: str              # AWS IoT endpoint
+    iot_credentials: IoTCredentials  # Connection credentials
+```
+
+### Exception Hierarchy
+
+```
+DysonAPIError (base)
+├── DysonConnectionError    # Network/connection issues
+├── DysonAuthError         # Authentication failures
+├── DysonDeviceError       # Device operation failures
+└── DysonValidationError   # Input validation errors
+```
+
+## Advanced Usage
+
+### Using Context Manager
+```python
+with DysonClient(email="your@email.com", password="password") as client:
+    # Authentication
+    challenge = client.begin_login()
+    otp = input("Enter OTP: ")
+    client.complete_login(str(challenge.challenge_id), otp)
+
+    # API calls
+    devices = client.get_devices()
+    # Client automatically closed on exit
+```
+
+### Error Handling
+```python
+from libdyson_rest import DysonAuthError, DysonConnectionError, DysonAPIError
+
+try:
+    client = DysonClient(email="user@example.com", password="pass")
+    challenge = client.begin_login()
+
+except DysonAuthError as e:
+    print(f"Authentication failed: {e}")
+except DysonConnectionError as e:
+    print(f"Network error: {e}")
+except DysonAPIError as e:
+    print(f"API error: {e}")
+```
+
+### Manual Authentication Steps
+```python
+client = DysonClient(email="user@example.com", password="password")
+
+# Step 1: Provision (required)
+version = client.provision()
+print(f"API version: {version}")
+
+# Step 2: Check user status
+user_status = client.get_user_status()
+print(f"Account active: {user_status.account_status.value == 'ACTIVE'}")
+
+# Step 3: Begin login
+challenge = client.begin_login()
+print("Check email for OTP")
+
+# Step 4: Complete login
+otp = input("OTP: ")
+login_info = client.complete_login(str(challenge.challenge_id), otp)
+print(f"Bearer token: {login_info.token[:10]}...")
+
+# Step 5: Use authenticated endpoints
+devices = client.get_devices()
+```
+
+## Configuration
+
+### Environment Variables
+- `DYSON_EMAIL`: Default email address
+- `DYSON_PASSWORD`: Default password
+- `DYSON_COUNTRY`: Default country code (default: "US")
+- `DYSON_CULTURE`: Default culture/locale (default: "en-US")
+- `DYSON_TIMEOUT`: Request timeout in seconds (default: "30")
+
+### Country and Culture Codes
+- **Country**: 2-letter uppercase ISO 3166-1 alpha-2 codes (e.g., "US", "GB", "DE")
+- **Culture**: 5-character IETF language codes (e.g., "en-US", "en-GB", "de-DE")
+
+## API Compliance
+
+This library implements the complete Dyson App API as documented in their OpenAPI specification:
+- Authentication endpoints (`/v3/userregistration/email/*`)
+- Device management (`/v3/manifest`)
+- IoT credentials (`/v2/authorize/iot-credentials`)
+- Provisioning (`/v1/provisioningservice/application/Android/version`)
+
+## Requirements
+
+- Python 3.8+
+- `requests` - HTTP client library
+- `dataclasses` - Data model support (Python 3.8+)
+
+## Contributing
+
+Contributions are welcome! Please ensure all changes maintain compatibility with the official Dyson OpenAPI specification.
+
+## Versioning & Releases
+
+This project follows **PEP 440** versioning (not semantic versioning). Here's how versions are distributed:
+
+### Version Patterns
+
+| Pattern | Example | Distribution | Purpose |
+|---------|---------|--------------|---------|
+| **Alpha** | `0.3.0a1`, `0.3.0alpha1` | TestPyPI | Internal testing only |
+| **Dev** | `0.3.0.dev1` | TestPyPI | Development builds |
+| **Beta** | `0.3.0b1`, `0.3.0beta1` | **PyPI** | Public beta testing |
+| **RC** | `0.3.0rc1` | **PyPI** | Release candidates |
+| **Stable** | `0.3.0` | **PyPI** | Production releases |
+| **Patch** | `0.3.0.post1` | **PyPI** | Post-release patches |
+
+### Installation
+
+```bash
+# Install stable release
+pip install libdyson-rest
+
+# Install latest beta (includes rc, beta versions)
+pip install --pre libdyson-rest
+
+# Install specific version
+pip install libdyson-rest==0.3.0b1
+
+# Install from TestPyPI (alpha/dev versions)
+pip install -i https://test.pypi.org/simple/ libdyson-rest==0.3.0a1
+```
+
+### For Beta Testers
+
+Want to help test new features? Install pre-release versions:
+
+```bash
+pip install --pre libdyson-rest
+```
+
+This will install the latest beta or release candidate, giving you access to new features before stable release.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Disclaimer
 
-I am in no way associated with, paid by, or otherwise related to Dyson or any of its affiliates.
+This is an unofficial library. Dyson is a trademark of Dyson Ltd. This library is not affiliated with, endorsed by, or sponsored by Dyson Ltd.
+
+## OpenAPI Specification
+
+This library is based on the community-documented Dyson App API OpenAPI specification. The specification can be found at:
+https://raw.githubusercontent.com/libdyson-wg/appapi/refs/heads/main/openapi.yaml
 
 This project is created to further the efforts of others in the community in interacting with the
 Dyson devices they have purchased to better integrate them into their smart homes.
@@ -185,6 +518,18 @@ libdyson-rest/
 - **.pre-commit-config.yaml**: Git pre-commit hooks
 - **requirements.txt**: Production dependencies
 - **requirements-dev.txt**: Development dependencies
+
+## Publishing to PyPI
+
+This package is automatically published to PyPI using GitHub Actions. For detailed publishing instructions, see [PUBLISHING.md](PUBLISHING.md).
+
+### Quick Publishing
+
+- **Test Release**: GitHub Actions → Run workflow → TestPyPI
+- **Production Release**: Create a GitHub release with version tag (e.g., `v0.2.0`)
+- **Local Build**: `python .github/scripts/publish_to_pypi.py --check`
+
+The package is available on PyPI as `libdyson-rest`.
 
 ## Contributing
 
