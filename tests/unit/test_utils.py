@@ -1,6 +1,12 @@
 """Tests for libdyson-rest utility functions."""
 
-from libdyson_rest.utils import decode_base64, encode_base64, hash_password, safe_json_loads, validate_email
+from libdyson_rest.utils import (
+    decode_base64,
+    encode_base64,
+    hash_password,
+    safe_json_loads,
+    validate_email,
+)
 
 
 def test_validate_email() -> None:

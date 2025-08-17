@@ -4,7 +4,13 @@ Data models for libdyson-rest.
 This module contains all data model classes for the Dyson REST API.
 """
 
-from .auth import AuthenticationMethod, LoginChallenge, LoginInformation, TokenType, UserStatus
+from .auth import (
+    AuthenticationMethod,
+    LoginChallenge,
+    LoginInformation,
+    TokenType,
+    UserStatus,
+)
 from .device import (
     MQTT,
     CapabilityString,

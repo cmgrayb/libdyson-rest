@@ -33,7 +33,13 @@ __author__ = "libdyson-rest contributors"
 __email__ = "contributors@libdyson-rest.dev"
 
 from .client import DysonClient
-from .exceptions import DysonAPIError, DysonAuthError, DysonConnectionError, DysonDeviceError, DysonValidationError
+from .exceptions import (
+    DysonAPIError,
+    DysonAuthError,
+    DysonConnectionError,
+    DysonDeviceError,
+    DysonValidationError,
+)
 from .models import (
     ConnectionCategory,
     Device,

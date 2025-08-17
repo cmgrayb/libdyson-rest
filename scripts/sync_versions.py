@@ -304,9 +304,9 @@ class VersionSynchronizer:
         for command, description in checks:
             result = self.run_command(command)
             if result.returncode == 0:
-                self.log(f"✓ {description} passed")
+                self.log(f"OK {description} passed")
             else:
-                self.log(f"✗ {description} failed", force=True)
+                self.log(f"ERROR {description} failed", force=True)
                 all_passed = False
 
         return all_passed
@@ -318,10 +318,10 @@ class VersionSynchronizer:
         result = self.run_command([self.get_executable_path("pre-commit"), "run", "--all-files"])
 
         if result.returncode == 0:
-            self.log("✓ Pre-commit hooks passed")
+            self.log("OK Pre-commit hooks passed")
             return True
         else:
-            self.log("✗ Pre-commit hooks failed", force=True)
+            self.log("ERROR Pre-commit hooks failed", force=True)
             return False
 
     def synchronize(self) -> bool:
@@ -348,14 +348,14 @@ class VersionSynchronizer:
             precommit_ok = self.run_precommit_verification()
 
             if tools_ok and precommit_ok:
-                self.log("✓ Version synchronization completed successfully!", force=True)
+                self.log("OK Version synchronization completed successfully!", force=True)
                 return True
             else:
-                self.log("✗ Version synchronization completed with errors", force=True)
+                self.log("ERROR Version synchronization completed with errors", force=True)
                 return False
 
         except Exception as e:
-            self.log(f"✗ Version synchronization failed: {e}", force=True)
+            self.log(f"ERROR Version synchronization failed: {e}", force=True)
             return False
 
 

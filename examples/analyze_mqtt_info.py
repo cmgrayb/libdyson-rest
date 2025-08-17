@@ -11,7 +11,12 @@ import logging
 from getpass import getpass
 from typing import Any, Dict
 
-from libdyson_rest import DysonAPIError, DysonAuthError, DysonClient, DysonConnectionError
+from libdyson_rest import (
+    DysonAPIError,
+    DysonAuthError,
+    DysonClient,
+    DysonConnectionError,
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

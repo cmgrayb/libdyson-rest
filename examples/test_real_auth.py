@@ -11,7 +11,12 @@ import sys
 from getpass import getpass
 from typing import Optional, Tuple
 
-from libdyson_rest import DysonAPIError, DysonAuthError, DysonClient, DysonConnectionError
+from libdyson_rest import (
+    DysonAPIError,
+    DysonAuthError,
+    DysonClient,
+    DysonConnectionError,
+)
 
 # Configure logging to see what's happening
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
