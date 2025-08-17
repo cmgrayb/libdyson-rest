@@ -1,0 +1,147 @@
+name: "Auto-Release: Stable"
+
+on:
+  push:
+    branches:
+      - "main"
+    paths:
+      - "pyproject.toml"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Stable version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+  pull-requests: read
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  auto-release-stable:
+    name: "🚀 Auto-Release Stable"
+    runs-on: ubuntu-latest
+    environment: pypi
+    
+    # Only run for stable versions (no pre-release suffixes)
+    if: |
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'push' && 
+       !contains(github.event.head_commit.message, 'a') && 
+       !contains(github.event.head_commit.message, 'b') && 
+       !contains(github.event.head_commit.message, 'rc'))
+    
+    steps:
+      - name: "📥 Checkout repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "🐍 Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: "📦 Install dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -e .
+
+      - name: "🔍 Run Quality Checks"
+        run: |
+          python -m black --check .
+          python -m flake8 .
+          python -m isort --check-only .
+          python -m mypy src/
+
+      - name: "🧪 Run Full Test Suite"
+        run: |
+          python -m pytest tests/ -v --cov=src/ --cov-report=term-missing --cov-fail-under=80
+
+      - name: "📝 Set Stable Version"
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            NEW_VERSION="${{ github.event.inputs.version }}"
+            echo "Using manual version: $NEW_VERSION"
+            python scripts/update_version.py "$NEW_VERSION"
+            
+            # Commit the version change
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add pyproject.toml
+            git commit -m "🚀 Release: Bump to v$NEW_VERSION" || exit 0
+            git push origin main
+          else
+            # Get current version from pyproject.toml
+            NEW_VERSION=$(python scripts/update_version.py --show | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
+            echo "Using current version: $NEW_VERSION"
+          fi
+          
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "📌 Stable version: $NEW_VERSION"
+
+      - name: "🏷️ Create Git Tag"
+        run: |
+          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Stable release v${{ steps.version.outputs.new_version }}"
+          git push origin "v${{ steps.version.outputs.new_version }}"
+
+      - name: "📦 Build Package"
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+
+      - name: "🚀 Publish to PyPI"
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          print-hash: true
+
+      - name: "📋 Create GitHub Release"
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "v${{ steps.version.outputs.new_version }}"
+          release_name: "libdyson-rest v${{ steps.version.outputs.new_version }}"
+          body: |
+            🎉 **Stable Release** - Production ready
+            
+            **Version:** `${{ steps.version.outputs.new_version }}`
+            **Published to:** PyPI
+            **Branch:** `main`
+            
+            ## Installation
+            ```bash
+            pip install libdyson-rest==${{ steps.version.outputs.new_version }}
+            ```
+            
+            ## ✨ Stable Release
+            This is a stable, production-ready release. All features have been thoroughly tested.
+            
+            ## 🔄 Auto-Generated Release
+            This release was automatically created by the stable release pipeline.
+          draft: false
+          prerelease: false
+
+      - name: "📊 Release Summary"
+        run: |
+          echo "## 🎉 Stable Release Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ steps.version.outputs.new_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Target:** PyPI" >> $GITHUB_STEP_SUMMARY  
+          echo "**Branch:** \`main\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Installation" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "pip install libdyson-rest==${{ steps.version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [PyPI Package](https://pypi.org/project/libdyson-rest/${{ steps.version.outputs.new_version }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY
