@@ -56,11 +56,11 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/libdyson-wg/libdyson-rest"
-Repository = "https://github.com/libdyson-wg/libdyson-rest"
-Issues = "https://github.com/libdyson-wg/libdyson-rest/issues"
-Documentation = "https://github.com/libdyson-wg/libdyson-rest#readme"
-Changelog = "https://github.com/libdyson-wg/libdyson-rest/releases"
+Homepage = "https://github.com/cmgrayb/libdyson-rest"
+Repository = "https://github.com/cmgrayb/libdyson-rest"
+Issues = "https://github.com/cmgrayb/libdyson-rest/issues"
+Documentation = "https://github.com/cmgrayb/libdyson-rest#readme"
+Changelog = "https://github.com/cmgrayb/libdyson-rest/releases"
 
 [tool.setuptools.packages.find]
 where = ["src"]

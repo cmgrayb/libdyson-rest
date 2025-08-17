@@ -18,6 +18,9 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'release' && 'pypi' || github.event.inputs.environment || 'testpypi' }}
+    permissions:
+      id-token: write  # Required for trusted publishing
+      contents: read   # Required for actions/checkout
 
     steps:
     - name: Check out code
@@ -52,14 +55,10 @@ jobs:
 
     - name: Publish to TestPyPI
       if: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'testpypi') }}
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.TESTPYPI_API_TOKEN }}
-      run: python -m twine upload --repository testpypi dist/*
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
 
-    - name: Publish to PyPI
+    - name: Publish to PyPI  
       if: ${{ github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'pypi') }}
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: python -m twine upload dist/*
+      uses: pypa/gh-action-pypi-publish@release/v1
