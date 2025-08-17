@@ -419,6 +419,81 @@
             "detail": "Check for known security vulnerabilities in dependencies using Docker"
         },
         {
+            "label": "Version: Show Current",
+            "type": "shell",
+            "command": ".venv/Scripts/python.exe",
+            "args": ["scripts/update_version.py", "--show"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Show current version from pyproject.toml"
+        },
+        {
+            "label": "Version: Set Alpha",
+            "type": "shell",
+            "command": ".venv/Scripts/python.exe",
+            "args": ["scripts/update_version.py", "--increment", "alpha"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Increment to next alpha version (routes to TestPyPI)"
+        },
+        {
+            "label": "Version: Set Beta",
+            "type": "shell",
+            "command": ".venv/Scripts/python.exe",
+            "args": ["scripts/update_version.py", "--increment", "beta"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Increment to next beta version (routes to PyPI)"
+        },
+        {
+            "label": "Version: Set Release Candidate",
+            "type": "shell",
+            "command": ".venv/Scripts/python.exe",
+            "args": ["scripts/update_version.py", "--increment", "rc"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Increment to next release candidate (routes to PyPI)"
+        },
+        {
+            "label": "Version: Set Custom",
+            "type": "shell",
+            "command": ".venv/Scripts/python.exe",
+            "args": ["scripts/update_version.py", "${input:customVersion}"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Set custom version (will prompt for input)"
+        },
+        {
             "label": "Security Scan (All)",
             "dependsOrder": "sequence",
             "dependsOn": [
@@ -434,6 +509,14 @@
             },
             "problemMatcher": [],
             "detail": "Run all security scans using Docker containers"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "customVersion",
+            "description": "Enter version (e.g., 0.3.0a1, 0.3.0b1, 0.3.0rc1, 0.3.0)",
+            "default": "0.3.0a1",
+            "type": "promptString"
         }
     ]
 }
