@@ -1,15 +1,14 @@
 name: "Auto-Release: Stable"
 
 on:
-  push:
-    branches:
-      - "main"
-    paths:
-      - "pyproject.toml"
   workflow_dispatch:
     inputs:
       version:
         description: 'Stable version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+      confirm_production:
+        description: 'Type "CONFIRM" to proceed with production release'
         required: true
         type: string
 
@@ -27,13 +26,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     
-    # Only run for stable versions (no pre-release suffixes)
-    if: |
-      (github.event_name == 'workflow_dispatch') ||
-      (github.event_name == 'push' && 
-       !contains(github.event.head_commit.message, 'a') && 
-       !contains(github.event.head_commit.message, 'b') && 
-       !contains(github.event.head_commit.message, 'rc'))
+    # Only run for manual triggers with explicit confirmation
+    if: github.event.inputs.confirm_production == 'CONFIRM'
     
     steps:
       - name: "📥 Checkout repository"
@@ -64,33 +58,51 @@ jobs:
         run: |
           python -m pytest tests/ -v --cov=src/ --cov-report=term-missing --cov-fail-under=80
 
-      - name: "📝 Set Stable Version"
+      - name: "� Production Release Safety Check"
+        run: |
+          echo "## 🔒 Production Release Safety Check"
+          echo "Version to release: ${{ github.event.inputs.version }}"
+          echo "Confirmation received: ${{ github.event.inputs.confirm_production }}"
+          echo ""
+          echo "⚠️  This will publish to production PyPI"
+          echo "⚠️  This action cannot be undone"
+          echo "⚠️  Ensure all testing is complete"
+          echo ""
+          if [ "${{ github.event.inputs.confirm_production }}" != "CONFIRM" ]; then
+            echo "❌ Production release not confirmed. Stopping workflow."
+            exit 1
+          fi
+          echo "✅ Production release confirmed. Proceeding..."
+
+      - name: "�📝 Set Stable Version"
         id: version
         run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            NEW_VERSION="${{ github.event.inputs.version }}"
-            echo "Using manual version: $NEW_VERSION"
-            python scripts/update_version.py "$NEW_VERSION"
-            
-            # Commit the version change
-            git config --local user.email "action@github.com"
-            git config --local user.name "GitHub Action"
-            git add pyproject.toml
-            git commit -m "🚀 Release: Bump to v$NEW_VERSION" || exit 0
-            git push origin main
-          else
-            # Get current version from pyproject.toml
-            NEW_VERSION=$(python scripts/update_version.py --show | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
-            echo "Using current version: $NEW_VERSION"
+          STABLE_VERSION="${{ github.event.inputs.version }}"
+          echo "Setting stable version: $STABLE_VERSION"
+          
+          # Validate version format (basic PEP 440 without pre-release)
+          if ! echo "$STABLE_VERSION" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "❌ Invalid version format. Use semantic versioning (e.g., 1.0.0)"
+            exit 1
           fi
           
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "📌 Stable version: $NEW_VERSION"
+          # Update version in pyproject.toml
+          python scripts/update_version.py "$STABLE_VERSION"
+          
+          # Commit the version change
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add pyproject.toml
+          git commit -m "🚀 Release: v$STABLE_VERSION" || exit 0
+          git push origin main
+          
+          echo "stable_version=$STABLE_VERSION" >> $GITHUB_OUTPUT
+          echo "📌 Stable version: $STABLE_VERSION"
 
       - name: "🏷️ Create Git Tag"
         run: |
-          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Stable release v${{ steps.version.outputs.new_version }}"
-          git push origin "v${{ steps.version.outputs.new_version }}"
+          git tag -a "v${{ steps.version.outputs.stable_version }}" -m "Stable release v${{ steps.version.outputs.stable_version }}"
+          git push origin "v${{ steps.version.outputs.stable_version }}"
 
       - name: "📦 Build Package"
         run: |
@@ -107,18 +119,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: "v${{ steps.version.outputs.new_version }}"
-          release_name: "libdyson-rest v${{ steps.version.outputs.new_version }}"
+          tag_name: "v${{ steps.version.outputs.stable_version }}"
+          release_name: "libdyson-rest v${{ steps.version.outputs.stable_version }}"
           body: |
             🎉 **Stable Release** - Production ready
             
-            **Version:** `${{ steps.version.outputs.new_version }}`
+            **Version:** `${{ steps.version.outputs.stable_version }}`
             **Published to:** PyPI
             **Branch:** `main`
             
             ## Installation
             ```bash
-            pip install libdyson-rest==${{ steps.version.outputs.new_version }}
+            pip install libdyson-rest==${{ steps.version.outputs.stable_version }}
             ```
             
             ## ✨ Stable Release
@@ -133,15 +145,15 @@ jobs:
         run: |
           echo "## 🎉 Stable Release Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** \`${{ steps.version.outputs.new_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ steps.version.outputs.stable_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Target:** PyPI" >> $GITHUB_STEP_SUMMARY  
           echo "**Branch:** \`main\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Installation" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "pip install libdyson-rest==${{ steps.version.outputs.new_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "pip install libdyson-rest==${{ steps.version.outputs.stable_version }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
-          echo "- [PyPI Package](https://pypi.org/project/libdyson-rest/${{ steps.version.outputs.new_version }}/)" >> $GITHUB_STEP_SUMMARY
-          echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [PyPI Package](https://pypi.org/project/libdyson-rest/${{ steps.version.outputs.stable_version }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.stable_version }})" >> $GITHUB_STEP_SUMMARY
