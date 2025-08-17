@@ -1,0 +1,120 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    "group:monorepos",
+    "group:recommended",
+    "replacements:all",
+    "workarounds:all"
+  ],
+
+  "timezone": "UTC",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2,
+
+  "commitMessagePrefix": "⬆️",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to v{{newVersion}}",
+
+  "labels": ["dependencies", "renovate"],
+  "reviewers": ["cmgrayb"],
+  "assignees": ["cmgrayb"],
+
+  "platformAutomerge": false,
+  "automerge": false,
+
+  "packageRules": [
+    {
+      "matchManagers": ["pip_requirements"],
+      "matchFileNames": ["requirements-dev.txt"],
+      "groupName": "development dependencies",
+      "labels": ["dependencies", "dev-dependencies"],
+      "reviewers": ["cmgrayb"],
+      "schedule": ["before 6am on monday"],
+      "minimumReleaseAge": "3 days",
+      "prBodyTemplate": "This PR updates development dependencies.\n\n⚠️ **Important**: After merging, please run `python scripts/sync_versions.py` to synchronize tool versions across all configuration files.\n\n### Updated packages:\n{{{body}}}\n\n### Post-merge checklist:\n- [ ] Run `python scripts/sync_versions.py --verbose`\n- [ ] Verify all quality checks pass\n- [ ] Update tool version documentation if needed"
+    },
+    {
+      "matchManagers": ["pip_requirements"],
+      "matchFileNames": ["requirements.txt"],
+      "groupName": "production dependencies",
+      "labels": ["dependencies", "prod-dependencies"],
+      "reviewers": ["cmgrayb"],
+      "schedule": ["before 6am on monday"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "labels": ["dependencies", "github-actions"],
+      "schedule": ["before 6am on monday"],
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "matchManagers": ["pre-commit"],
+      "groupName": "pre-commit hooks",
+      "labels": ["dependencies", "pre-commit"],
+      "schedule": ["before 6am on monday"],
+      "minimumReleaseAge": "3 days",
+      "prBodyTemplate": "This PR updates pre-commit hooks.\n\n⚠️ **Important**: After merging, please run `python scripts/sync_versions.py` to synchronize tool versions across all configuration files.\n\n### Updated hooks:\n{{{body}}}\n\n### Post-merge checklist:\n- [ ] Run `python scripts/sync_versions.py --verbose`\n- [ ] Run `pre-commit run --all-files` to verify\n- [ ] Update `.pre-commit-config.yaml` documentation"
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "major-update"],
+      "reviewers": ["cmgrayb"],
+      "automerge": false,
+      "minimumReleaseAge": "14 days",
+      "prBodyTemplate": "⚠️ **Major version update** - Please review breaking changes carefully.\n\n{{{body}}}\n\n### Post-merge tasks:\n- [ ] Run full test suite locally\n- [ ] Check for breaking changes in changelog\n- [ ] Update documentation if needed\n- [ ] Run `python scripts/sync_versions.py` if dev dependencies changed\n- [ ] Verify all GitHub Actions still pass"
+    },
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "labels": ["dependencies", "minor-patch-update"],
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "matchPackageNames": [
+        "black",
+        "flake8",
+        "isort",
+        "mypy",
+        "pytest",
+        "pre-commit"
+      ],
+      "groupName": "code quality tools",
+      "labels": ["dependencies", "quality-tools"],
+      "reviewers": ["cmgrayb"],
+      "prBodyTemplate": "This PR updates code quality tools.\n\n⚠️ **Critical**: After merging, you **must** run `python scripts/sync_versions.py` to synchronize tool versions across all configuration files.\n\n### Tools updated:\n{{{body}}}\n\n### Required post-merge steps:\n1. [ ] Run `python scripts/sync_versions.py --verbose`\n2. [ ] Commit any changes to requirements-dev.txt and pyproject.toml\n3. [ ] Verify all quality checks pass with new versions\n4. [ ] Update Copilot instructions with new version numbers"
+    },
+    {
+      "matchPackageNames": ["safety", "bandit"],
+      "groupName": "security tools",
+      "labels": ["dependencies", "security-tools"],
+      "reviewers": ["cmgrayb"],
+      "minimumReleaseAge": "1 day"
+    }
+  ],
+
+  "vulnerabilityAlerts": {
+    "labels": ["security", "vulnerability", "high-priority"],
+    "reviewers": ["cmgrayb"],
+    "assignees": ["cmgrayb"],
+    "prCreation": "immediate",
+    "minimumReleaseAge": null,
+    "prPriority": 10
+  },
+
+  "lockFileMaintenance": {
+    "enabled": false
+  },
+
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "🔄 Dependency Dashboard - libdyson-rest",
+  "dependencyDashboardHeader": "This dashboard shows the status of all dependencies in the libdyson-rest project.\n\n⚠️ **Important Reminder**: For any updates to code quality tools (black, flake8, isort, mypy, pytest, pre-commit), always run `python scripts/sync_versions.py` after merging to maintain version synchronization.",
+  "dependencyDashboardFooter": "## Status Legend\n- 🟢 **Ready**: Updates available and ready to merge\n- 🟡 **Pending**: Updates waiting for minimum release age\n- 🔴 **Blocked**: Updates failed or blocked by configuration\n- ⚪ **Up to date**: No updates needed\n\n## Self-hosted Setup Notes\n- All dependency scanning happens locally\n- No external reporting or data sharing\n- Security alerts handled within this repository\n- Version synchronization managed by local scripts",
+
+  "prFooter": "---\n🤖 This PR was generated by Renovate Bot (self-hosted)\n🔧 Configuration: `renovate.json`\n📊 Dashboard: Check the Dependency Dashboard issue for overview",
+
+  "onboarding": false,
+  "requireConfig": "required"
+}

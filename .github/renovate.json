@@ -1,0 +1,231 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate configuration for libdyson-rest - Automated dependency updates with quality gates",
+
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":automergeDigest",
+    ":automergePatch"
+  ],
+
+  "timezone": "UTC",
+  "schedule": [
+    "before 6am on Monday"
+  ],
+
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
+
+  "assignees": ["@cmgrayb"],
+  "reviewers": ["@cmgrayb"],
+
+  "prCreation": "immediate",
+  "prHourlyLimit": 3,
+  "prConcurrentLimit": 5,
+
+  "commitMessagePrefix": "deps:",
+  "semanticCommits": "enabled",
+
+  "lockFileMaintenance": {
+    "enabled": false,
+    "description": "We don't use lock files in this Python project"
+  },
+
+  "packageRules": [
+    {
+      "description": "Development tools - group together for easier review",
+      "groupName": "development tools",
+      "matchPackageNames": [
+        "black",
+        "flake8",
+        "isort",
+        "mypy",
+        "pytest",
+        "pytest-cov",
+        "pre-commit",
+        "safety",
+        "bandit"
+      ],
+      "matchManagers": ["pip_requirements"],
+      "reviewers": ["@cmgrayb"],
+      "labels": ["dev-tools", "dependencies"],
+      "automerge": false,
+      "schedule": ["before 6am on Monday"]
+    },
+
+    {
+      "description": "Type stubs - usually safe to auto-update",
+      "groupName": "type stubs",
+      "matchPackagePatterns": ["^types-"],
+      "matchManagers": ["pip_requirements"],
+      "automerge": true,
+      "labels": ["type-stubs", "dependencies"],
+      "minimumReleaseAge": "1 day"
+    },
+
+    {
+      "description": "Production dependencies - handle carefully",
+      "groupName": "production dependencies",
+      "matchFiles": ["requirements.txt"],
+      "matchManagers": ["pip_requirements"],
+      "automerge": false,
+      "reviewers": ["@cmgrayb"],
+      "labels": ["prod-deps", "dependencies"],
+      "schedule": ["before 6am on Monday"],
+      "minimumReleaseAge": "3 days"
+    },
+
+    {
+      "description": "Major updates require manual review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "schedule": ["before 6am on Monday"],
+      "labels": ["major-update", "dependencies"],
+      "reviewers": ["@cmgrayb"],
+      "prPriority": 10
+    },
+
+    {
+      "description": "Minor updates - more frequent, can auto-merge after CI",
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "schedule": ["before 6am on Monday", "before 6am on Thursday"],
+      "labels": ["minor-update", "dependencies"],
+      "minimumReleaseAge": "2 days"
+    },
+
+    {
+      "description": "Patch updates - safest, can auto-merge quickly",
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+      "automerge": true,
+      "schedule": ["at any time"],
+      "labels": ["patch-update", "dependencies"],
+      "minimumReleaseAge": "1 day"
+    },
+
+    {
+      "description": "Security updates - highest priority, immediate",
+      "matchPackagePatterns": ["*"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "vulnerabilityAlerts": {
+        "enabled": true
+      },
+      "prPriority": 20,
+      "schedule": ["at any time"],
+      "labels": ["security", "dependencies"],
+      "automerge": false,
+      "reviewers": ["@cmgrayb"]
+    },
+
+    {
+      "description": "Pre-commit hooks updates",
+      "matchFiles": [".pre-commit-config.yaml"],
+      "matchManagers": ["pre-commit"],
+      "groupName": "pre-commit hooks",
+      "automerge": false,
+      "schedule": ["before 6am on Monday"],
+      "labels": ["pre-commit", "dependencies"],
+      "reviewers": ["@cmgrayb"],
+      "postUpgradeTasks": {
+        "commands": [
+          "python scripts/sync_versions.py --verbose",
+          "pre-commit run --all-files"
+        ],
+        "fileFilters": [
+          "requirements-dev.txt",
+          "pyproject.toml",
+          ".pre-commit-config.yaml"
+        ]
+      }
+    }
+  ],
+
+  "pip_requirements": {
+    "fileMatch": ["(^|/)requirements.*\\.txt$"]
+  },
+
+  "regexManagers": [
+    {
+      "description": "Update Python versions in pyproject.toml",
+      "fileMatch": ["pyproject.toml"],
+      "matchStrings": [
+        "python_version\\s*=\\s*\"(?<currentValue>.*?)\""
+      ],
+      "depNameTemplate": "python",
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "python/cpython"
+    },
+    {
+      "description": "Update GitHub Actions versions",
+      "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
+      "matchStrings": [
+        "uses:\\s+(?<depName>[^@\\s]+)@(?<currentValue>v?\\d+(?:\\.\\d+)*)"
+      ],
+      "datasourceTemplate": "github-releases"
+    }
+  ],
+
+  "customManagers": [
+    {
+      "description": "Update tool versions in sync_versions.py",
+      "customType": "regex",
+      "fileMatch": ["scripts/sync_versions.py"],
+      "matchStrings": [
+        "\"(?<depName>black|flake8|isort|pytest|mypy|pre-commit)\":\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "pypi"
+    }
+  ],
+
+  "platformAutomerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+
+  "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}",
+  "prBodyColumns": [
+    "Package",
+    "Type",
+    "Update",
+    "Change"
+  ],
+
+  "prBodyNotes": [
+    "This PR was automatically created by Renovate Bot.",
+    "",
+    "### Quality Gates",
+    "- ✅ All CI checks must pass before merge",
+    "- ✅ Version synchronization will be handled automatically",
+    "- ✅ Security scanning included in CI pipeline",
+    "",
+    "### Auto-merge Criteria",
+    "- Patch updates: Auto-merge after CI passes",
+    "- Minor updates: Auto-merge after CI passes + 2 day age",
+    "- Major updates: Manual review required",
+    "- Security updates: Manual review required",
+    "",
+    "See `.github/renovate.json5` for complete configuration."
+  ],
+
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "prCreation": "immediate",
+    "labels": ["security", "vulnerability", "dependencies"],
+    "assignees": ["@cmgrayb"],
+    "reviewers": ["@cmgrayb"],
+    "automerge": false
+  },
+
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "🤖 Renovate Dependency Dashboard",
+
+  "gitAuthor": "renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
+
+  "onboarding": false,
+  "requireConfig": "optional",
+
+  "repositories": ["cmgrayb/libdyson-lec"]
+}
