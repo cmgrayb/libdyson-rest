@@ -1,3 +1,23 @@
+# Smart PyPI Publishing Workflow
+#
+# This workflow automatically detects version patterns and routes packages appropriately:
+# 
+# PEP 440 Version Examples:
+#   ALPHA/DEV → TestPyPI (internal testing):
+#     - 1.2.3a1, 1.2.3a2, 1.2.3alpha1  
+#     - 1.2.3.dev1, 1.2.3.dev0
+#   
+#   BETA/RC → PyPI (public beta testing):
+#     - 1.2.3b1, 1.2.3b2, 1.2.3beta1
+#     - 1.2.3rc1, 1.2.3rc2
+#   
+#   STABLE → PyPI (production):
+#     - 1.2.3
+#     - 1.2.3.post1 (patches)
+#
+# Note: PyPI uses PEP 440, NOT semantic versioning (semver).
+# Semver formats like "1.2.3-alpha.1" or "1.2.3+build" are NOT supported.
+
 name: Publish to PyPI
 
 on:
@@ -53,15 +73,15 @@ jobs:
           IS_PRERELEASE="true"
           echo "Forced TestPyPI target"
         else
-          # Auto-detect based on version
-          if [[ "$VERSION" =~ (a|alpha|dev) ]]; then
+          # Auto-detect based on version (PEP 440 compliant)
+          if [[ "$VERSION" =~ (a[0-9]+|alpha[0-9]+|\.dev[0-9]*) ]]; then
             TARGET_ENV="testpypi"
             IS_PRERELEASE="true"
-            echo "Alpha/dev version detected - targeting TestPyPI"
-          elif [[ "$VERSION" =~ (b|beta|rc) ]]; then
+            echo "Alpha/dev version detected - targeting TestPyPI (pattern: a1, alpha1, .dev1)"
+          elif [[ "$VERSION" =~ (b[0-9]+|beta[0-9]+|rc[0-9]+) ]]; then
             TARGET_ENV="pypi"
             IS_PRERELEASE="true"
-            echo "Beta/RC version detected - targeting PyPI as pre-release"
+            echo "Beta/RC version detected - targeting PyPI as pre-release (pattern: b1, beta1, rc1)"
           else
             TARGET_ENV="pypi"
             IS_PRERELEASE="false"

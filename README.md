@@ -287,6 +287,47 @@ This library implements the complete Dyson App API as documented in their OpenAP
 
 Contributions are welcome! Please ensure all changes maintain compatibility with the official Dyson OpenAPI specification.
 
+## Versioning & Releases
+
+This project follows **PEP 440** versioning (not semantic versioning). Here's how versions are distributed:
+
+### Version Patterns
+
+| Pattern | Example | Distribution | Purpose |
+|---------|---------|--------------|---------|
+| **Alpha** | `0.3.0a1`, `0.3.0alpha1` | TestPyPI | Internal testing only |
+| **Dev** | `0.3.0.dev1` | TestPyPI | Development builds |
+| **Beta** | `0.3.0b1`, `0.3.0beta1` | **PyPI** | Public beta testing |
+| **RC** | `0.3.0rc1` | **PyPI** | Release candidates |
+| **Stable** | `0.3.0` | **PyPI** | Production releases |
+| **Patch** | `0.3.0.post1` | **PyPI** | Post-release patches |
+
+### Installation
+
+```bash
+# Install stable release
+pip install libdyson-rest
+
+# Install latest beta (includes rc, beta versions)
+pip install --pre libdyson-rest
+
+# Install specific version
+pip install libdyson-rest==0.3.0b1
+
+# Install from TestPyPI (alpha/dev versions)
+pip install -i https://test.pypi.org/simple/ libdyson-rest==0.3.0a1
+```
+
+### For Beta Testers
+
+Want to help test new features? Install pre-release versions:
+
+```bash
+pip install --pre libdyson-rest
+```
+
+This will install the latest beta or release candidate, giving you access to new features before stable release.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
