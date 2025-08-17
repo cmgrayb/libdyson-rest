@@ -1,0 +1,34 @@
+# Include the README and license files
+include README.md
+include LICENSE
+
+# Include requirements files
+include requirements.txt
+include requirements-dev.txt
+
+# Include configuration files
+include pyproject.toml
+include .flake8
+
+# Include the source code
+recursive-include src *.py
+
+# Include type stubs if any
+recursive-include src *.pyi
+
+# Exclude development and build files
+exclude .gitignore
+exclude .pre-commit-config.yaml
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * *.so
+recursive-exclude * *.dylib
+recursive-exclude .venv *
+recursive-exclude venv *
+recursive-exclude build *
+recursive-exclude dist *
+recursive-exclude *.egg-info *
+recursive-exclude tests *
+recursive-exclude examples *
+recursive-exclude .git *
+recursive-exclude .github *

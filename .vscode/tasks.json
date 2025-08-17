@@ -349,6 +349,91 @@
             },
             "problemMatcher": [],
             "detail": "Preview version synchronization changes without making modifications"
+        },
+        {
+            "label": "Security Scan (Bandit)",
+            "type": "shell",
+            "command": "docker",
+            "args": [
+                "run",
+                "--rm",
+                "-v",
+                "${workspaceFolder}:/workspace",
+                "-w",
+                "/workspace",
+                "python:3.11-slim",
+                "sh",
+                "-c",
+                "pip install --quiet bandit[toml]==1.8.0 && python -m bandit -c pyproject.toml -r src/"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [
+                {
+                    "owner": "bandit",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^>> Issue: \\[(.*)\\] (.*)\\s*Location: (.*):(\\d+):(\\d+)$",
+                        "file": 3,
+                        "line": 4,
+                        "column": 5,
+                        "severity": 1,
+                        "message": 2
+                    }
+                }
+            ],
+            "detail": "Run Bandit security scanner using Docker container (cross-platform)"
+        },
+        {
+            "label": "Security Scan (Safety)",
+            "type": "shell",
+            "command": "docker",
+            "args": [
+                "run",
+                "--rm",
+                "-v",
+                "${workspaceFolder}:/workspace",
+                "-w",
+                "/workspace",
+                "python:3.11-slim",
+                "sh",
+                "-c",
+                "pip install --quiet safety && python -m safety check --json"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Check for known security vulnerabilities in dependencies using Docker"
+        },
+        {
+            "label": "Security Scan (All)",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Security Scan (Bandit)",
+                "Security Scan (Safety)"
+            ],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [],
+            "detail": "Run all security scans using Docker containers"
         }
     ]
 }

@@ -255,6 +255,11 @@ The project includes comprehensive VSCode tasks accessible via Ctrl+Shift+P → 
 - **Run Unit Tests**: Execute unit tests only
 - **Run Integration Tests**: Execute integration tests only
 
+### Security Scanning Tasks (Docker-based)
+- **Security Scan (Bandit)**: Run Bandit security scanner using Docker container (cross-platform)
+- **Security Scan (Safety)**: Check for known security vulnerabilities in dependencies using Docker
+- **Security Scan (All)**: Run all security scans using Docker containers
+
 ### Version Management Tasks
 - **Sync Tool Versions (Python)**: Automated version synchronization using Python script
 - **Sync Tool Versions (Dry Run)**: Preview version changes without modifications

@@ -4,23 +4,37 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "libdyson-rest"
-version = "0.1.0"
-description = "Python library for interacting with the Dyson REST API"
+version = "0.2.0"
+description = "Python library for interacting with Dyson devices through their official REST API"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "MIT"
 authors = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "Chris Gray", email = "cmgrayb@outlook.com"},
+]
+maintainers = [
+    {name = "Chris Gray", email = "cmgrayb@outlook.com"},
+]
+keywords = [
+    "dyson",
+    "air-purifier",
+    "fan",
+    "iot",
+    "rest-api",
+    "mqtt",
+    "home-automation",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Home Automation",
+    "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 requires-python = ">=3.8"
 dependencies = [
@@ -39,12 +53,15 @@ dev = [
     "mypy==1.17.1",
     "types-requests==2.32.4.20250809",
     "types-cryptography==3.3.23.2",
+    "bandit[toml]==1.8.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/cmgrayb/libdyson-rest"
-Repository = "https://github.com/cmgrayb/libdyson-rest"
-Issues = "https://github.com/cmgrayb/libdyson-rest/issues"
+Homepage = "https://github.com/libdyson-wg/libdyson-rest"
+Repository = "https://github.com/libdyson-wg/libdyson-rest"
+Issues = "https://github.com/libdyson-wg/libdyson-rest/issues"
+Documentation = "https://github.com/libdyson-wg/libdyson-rest#readme"
+Changelog = "https://github.com/libdyson-wg/libdyson-rest/releases"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -106,3 +123,8 @@ ignore_missing_imports = true
 module = "tests.*"
 disallow_untyped_defs = false
 disallow_untyped_decorators = false
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "venv", "build", "dist", "src/libdyson_rest.egg-info"]
+skips = []
+format = "txt"

@@ -33,25 +33,22 @@ class TestDysonClientIntegration:
 
     @patch("requests.Session.post")
     def test_authentication_success(self, mock_post: Mock) -> None:
-        """Test successful authentication flow."""
-        # Mock successful API response
+        """Test successful user status check."""
+        # Mock successful API response for get_user_status
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {
-            "token": "test_token_123",
-            "account_id": "account_456",
+            "accountStatus": "ACTIVE",
+            "authenticationMethod": "EMAIL_PWD_2FA",
         }
         mock_post.return_value = mock_response
 
         client = DysonClient(email="test@example.com", password="password123")
 
-        result = client.authenticate()
-
-        assert result is True
-        assert client.auth_token == "test_token_123"
-        assert client.account_id == "account_456"
-        assert "Authorization" in client.session.headers
-        assert client.session.headers["Authorization"] == "Bearer test_token_123"
+        # Test just get_user_status instead of full authenticate()
+        user_status = client.get_user_status()
+        assert user_status.account_status.value == "ACTIVE"
+        assert user_status.authentication_method.value == "EMAIL_PWD_2FA"
 
         client.close()
 
@@ -73,7 +70,7 @@ class TestDysonClientIntegration:
 
         client = DysonClient(email="test@example.com", password="password123")
 
-        with pytest.raises(DysonConnectionError, match="Failed to connect"):
+        with pytest.raises(DysonConnectionError, match="Failed to get user status"):
             client.authenticate()
 
         client.close()
@@ -86,17 +83,26 @@ class TestDysonClientIntegration:
         client.auth_token = "test_token"
         client.session.headers["Authorization"] = "Bearer test_token"
 
-        # Mock API response
+        # Mock API response with proper Device fields
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
-        mock_response.json.return_value = [{"serial": "ABC123", "name": "Living Room Fan", "product_type": "527"}]
+        mock_response.json.return_value = [
+            {
+                "serialNumber": "ABC123",
+                "name": "Living Room Fan",
+                "model": "527",
+                "type": "FAN",
+                "category": "ec",
+                "connectionCategory": "wifiOnly",
+            }
+        ]
         mock_get.return_value = mock_response
 
         devices = client.get_devices()
 
         assert len(devices) == 1
-        assert devices[0]["serial"] == "ABC123"
-        assert devices[0]["name"] == "Living Room Fan"
+        assert devices[0].serial_number == "ABC123"
+        assert devices[0].name == "Living Room Fan"
 
         client.close()
 

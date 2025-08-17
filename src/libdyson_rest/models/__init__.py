@@ -1,4 +1,42 @@
-"""Models for Dyson API data structures."""
+"""
+Data models for libdyson-rest.
+
+This module contains all data model classes for the Dyson REST API.
+"""
+
+from .auth import AuthenticationMethod, LoginChallenge, LoginInformation, TokenType, UserStatus
+from .device import (
+    MQTT,
+    CapabilityString,
+    ConnectedConfiguration,
+    ConnectionCategory,
+    Device,
+    DeviceCategory,
+    Firmware,
+    RemoteBrokerType,
+)
+from .iot import IoTCredentials, IoTData
+
+__all__ = [
+    # Auth models
+    "AuthenticationMethod",
+    "LoginChallenge",
+    "LoginInformation",
+    "TokenType",
+    "UserStatus",
+    # Device models
+    "CapabilityString",
+    "ConnectedConfiguration",
+    "ConnectionCategory",
+    "Device",
+    "DeviceCategory",
+    "Firmware",
+    "MQTT",
+    "RemoteBrokerType",
+    # IoT models
+    "IoTCredentials",
+    "IoTData",
+]
 
 from dataclasses import dataclass
 from typing import Any, Dict, Optional

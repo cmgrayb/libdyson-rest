@@ -168,6 +168,7 @@ class VersionSynchronizer:
             "pre-commit": pip_versions.get("pre-commit", "4.3.0"),
             "types-requests": pip_versions.get("types-requests", "2.32.4.20250809"),
             "types-cryptography": pip_versions.get("types-cryptography", "3.3.23.2"),
+            "bandit": pip_versions.get("bandit", "1.8.0"),
         }
 
         # Update lines to use exact versions
@@ -178,11 +179,16 @@ class VersionSynchronizer:
                 updated_lines.append(line)
                 continue
 
-            # Extract package name
-            package_name = re.split(r"[>=<~!]", line)[0].strip()
+            # Extract package name (handle extras syntax like bandit[toml])
+            package_with_extras = re.split(r"[>=<~!]", line)[0].strip()
+            package_name = package_with_extras.split("[")[0]  # Remove extras
 
             if package_name in version_mapping:
-                new_line = f"{package_name}=={version_mapping[package_name]}"
+                # Preserve extras syntax if present
+                if "[" in package_with_extras:
+                    new_line = f"{package_with_extras}=={version_mapping[package_name]}"
+                else:
+                    new_line = f"{package_name}=={version_mapping[package_name]}"
                 updated_lines.append(new_line)
                 self.log(f"Updated {package_name}: {line} -> {new_line}")
             else:
@@ -222,6 +228,7 @@ class VersionSynchronizer:
             "pre-commit": pip_versions.get("pre-commit", "4.3.0"),
             "types-requests": pip_versions.get("types-requests", "2.32.4.20250809"),
             "types-cryptography": pip_versions.get("types-cryptography", "3.3.23.2"),
+            "bandit": pip_versions.get("bandit", "1.8.0"),
         }
 
         new_dev_deps = [
@@ -234,6 +241,7 @@ class VersionSynchronizer:
             f'    "mypy=={version_mapping["mypy"]}",',
             f'    "types-requests=={version_mapping["types-requests"]}",',
             f'    "types-cryptography=={version_mapping["types-cryptography"]}",',
+            f'    "bandit[toml]=={version_mapping["bandit"]}",',
         ]
 
         # Pattern to match the dev dependencies section
