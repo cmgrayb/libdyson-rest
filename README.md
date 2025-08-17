@@ -205,7 +205,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Security
 
 - No hardcoded credentials or sensitive data
-- API hostnames and decryption keys are the only allowed static values
 - Use environment variables for configuration
 - All user inputs are validated
 - API responses are sanitized
@@ -216,5 +215,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Asynchronous client support
 - [ ] WebSocket real-time updates
 - [ ] Command-line interface
-- [ ] Home Assistant integration
 - [ ] Docker container support
