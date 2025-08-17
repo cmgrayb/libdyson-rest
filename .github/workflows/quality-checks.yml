@@ -8,28 +8,26 @@ on:
   workflow_call:  # Allow this workflow to be called by other workflows
 
 jobs:
-  quality-checks:
-    name: Quality Checks
+  # Code quality tools - run once on latest Python/Ubuntu
+  code-quality:
+    name: "🔍 Code Quality"
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.11"
 
     - name: Cache pip dependencies
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+        key: ${{ runner.os }}-pip-quality-${{ hashFiles('**/requirements*.txt') }}
         restore-keys: |
+          ${{ runner.os }}-pip-quality-
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
@@ -45,23 +43,51 @@ jobs:
         python -m flake8 --version
         python -m isort --version
         python -m mypy --version
-        python -m pytest --version
 
     - name: Check code formatting with Black
-      run: |
-        python -m black --check --diff .
-
-    - name: Check import sorting with isort
-      run: |
-        python -m isort --check-only --diff .
+      run: python -m black --check --diff .
 
     - name: Lint with Flake8
-      run: |
-        python -m flake8 . --statistics
+      run: python -m flake8 . --statistics
 
-    - name: Type check with mypy
+    - name: Check import sorting with isort
+      run: python -m isort --check-only --diff .
+
+    - name: Type checking with mypy
+      run: python -m mypy src/
+
+  # Test suite - run on all Python versions but only Ubuntu
+  test-suite:
+    name: "🧪 Tests (Python ${{ matrix.python-version }})"
+    runs-on: ubuntu-latest
+    needs: code-quality  # Only run if quality passes
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-test-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-test-${{ matrix.python-version }}-
+          ${{ runner.os }}-pip-test-
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
       run: |
-        python -m mypy src/
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+        pip install -e .
 
     - name: Run tests with pytest
       run: |
