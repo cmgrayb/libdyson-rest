@@ -35,15 +35,17 @@ jobs:
     needs: quality-gate  # Must pass quality checks first
     environment: pypi
     
-    # Only run for manual triggers with explicit confirmation
-    if: github.event.inputs.confirm_production == 'CONFIRM'
+    # Only run for manual triggers with explicit confirmation AND only for repository owner
+    if: |
+      github.event.inputs.confirm_production == 'CONFIRM' &&
+      github.actor == 'cmgrayb'
     
     steps:
       - name: "📥 Checkout repository"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: "🐍 Set up Python"
         uses: actions/setup-python@v5
