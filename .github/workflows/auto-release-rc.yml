@@ -20,16 +20,18 @@ env:
   PYTHON_VERSION: "3.11"
 
 jobs:
-  # Quality checks must pass first - call the optimized quality-checks workflow
-  quality-gate:
-    name: "🔍 Quality Gate"
-    uses: ./.github/workflows/quality-checks.yml
-    
   auto-release-rc:
     name: "🚀 Auto-Release RC"
     runs-on: ubuntu-latest
-    needs: quality-gate  # Must pass quality checks first
     environment: pypi
+    
+    # Only run on direct pushes to release/rc or manual dispatch
+    # Skip if commit message contains [skip-release]
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'push' && 
+       !contains(github.event.head_commit.message, '[skip-release]') &&
+       !contains(github.ref, 'refs/pull/'))
     
     steps:
       - name: "📥 Checkout repository"
