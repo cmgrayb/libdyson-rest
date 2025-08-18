@@ -78,15 +78,30 @@ jobs:
           fi
           echo "✅ Production release confirmed. Proceeding..."
 
-      - name: "�📝 Set Stable Version"
+      - name: "📝 Set Stable Version"
         id: version
         run: |
           STABLE_VERSION="${{ github.event.inputs.version }}"
+          
+          # Remove leading 'v' if user accidentally included it
+          STABLE_VERSION=$(echo "$STABLE_VERSION" | sed 's/^v//')
+          
           echo "Setting stable version: $STABLE_VERSION"
           
-          # Validate version format (basic PEP 440 without pre-release)
-          if ! echo "$STABLE_VERSION" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "❌ Invalid version format. Use semantic versioning (e.g., 1.0.0)"
+          # Validate version format (PEP 440 compliant for stable releases)
+          # Accepts: 1.0, 1.0.0, 2024.1, 1.0.0.post1, etc.
+          # Rejects: pre-release versions (alpha, beta, rc) for stable workflow
+          if ! echo "$STABLE_VERSION" | grep -E '^[0-9]+(\.[0-9]+)*(\.(post|dev)[0-9]+)?$'; then
+            echo "❌ Invalid version format for stable release."
+            echo "   Use PEP 440 format: 1.0, 1.0.0, 2024.1, 1.0.0.post1"
+            echo "   Pre-release versions (a, b, rc) not allowed in stable workflow"
+            exit 1
+          fi
+          
+          # Additional check: ensure it's not a pre-release version
+          if echo "$STABLE_VERSION" | grep -E '(a|b|rc|alpha|beta|dev)[0-9]*$'; then
+            echo "❌ Pre-release versions not allowed in stable workflow."
+            echo "   Use auto-release workflows for alpha/beta/rc versions"
             exit 1
           fi
           
@@ -108,10 +123,28 @@ jobs:
 
       - name: "🏷️ Create Git Tag"
         run: |
+          VERSION="${{ steps.version.outputs.stable_version }}"
+          echo "🏷️ Creating tag for version: $VERSION"
+          
+          if [ -z "$VERSION" ]; then
+            echo "❌ Error: Version is empty or undefined"
+            echo "Available outputs from version step:"
+            echo "${{ toJSON(steps.version.outputs) }}"
+            exit 1
+          fi
+          
+          # Check if tag already exists
+          if git tag -l | grep -q "^v$VERSION$"; then
+            echo "⚠️  Tag v$VERSION already exists, deleting it first"
+            git tag -d "v$VERSION" || true
+            git push origin ":refs/tags/v$VERSION" || true
+          fi
+          
           # Ensure we have the latest changes before tagging
           git pull origin main --rebase
-          git tag -a "v${{ steps.version.outputs.stable_version }}" -m "Stable release v${{ steps.version.outputs.stable_version }}"
-          git push origin "v${{ steps.version.outputs.stable_version }}"
+          git tag -a "v$VERSION" -m "Stable release v$VERSION"
+          git push origin "v$VERSION"
+          echo "✅ Successfully created and pushed tag v$VERSION"
 
       - name: "📦 Build Package"
         run: |
