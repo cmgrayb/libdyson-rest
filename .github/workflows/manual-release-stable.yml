@@ -105,6 +105,10 @@ jobs:
             exit 1
           fi
           
+          # Set output immediately after validation (before any operations that might fail)
+          echo "stable_version=$STABLE_VERSION" >> $GITHUB_OUTPUT
+          echo "📌 Stable version: $STABLE_VERSION"
+          
           # Update version in pyproject.toml
           python scripts/update_version.py "$STABLE_VERSION"
           
@@ -117,9 +121,6 @@ jobs:
           # Pull latest changes and push (handle concurrent updates)
           git pull origin main --rebase
           git push origin main
-          
-          echo "stable_version=$STABLE_VERSION" >> $GITHUB_OUTPUT
-          echo "📌 Stable version: $STABLE_VERSION"
 
       - name: "🏷️ Create Git Tag"
         run: |
