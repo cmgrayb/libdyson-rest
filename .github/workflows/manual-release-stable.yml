@@ -1,5 +1,8 @@
-name: "Auto-Release: Stable"
+name: "Manual Release: Stable"
 
+# Manual stable releases from main branch
+# Main branch represents production-ready, stable code
+# CI workflows run on PRs to main, but releases are created manually
 on:
   workflow_dispatch:
     inputs:
@@ -21,13 +24,24 @@ env:
   PYTHON_VERSION: "3.11"
 
 jobs:
-  auto-release-stable:
-    name: "🚀 Auto-Release Stable"
+  # Quality checks must pass first - call the optimized quality-checks workflow
+  quality-gate:
+    name: "🔍 Quality Gate"
+    uses: ./.github/workflows/quality-checks.yml
+    
+  manual-release-stable:
+    name: "🚀 Manual Release Stable"
     runs-on: ubuntu-latest
+    needs: quality-gate  # Must pass quality checks first
     environment: pypi
     
-    # Only run for manual triggers with explicit confirmation
-    if: github.event.inputs.confirm_production == 'CONFIRM'
+    # Only run for stable versions (no pre-release suffixes)
+    if: |
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'push' && 
+       !contains(github.event.head_commit.message, 'a') && 
+       !contains(github.event.head_commit.message, 'b') && 
+       !contains(github.event.head_commit.message, 'rc'))
     
     steps:
       - name: "📥 Checkout repository"
@@ -46,13 +60,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
           pip install -e .
-
-      - name: "🔍 Run Quality Checks"
-        run: |
-          python -m black --check .
-          python -m flake8 .
-          python -m isort --check-only .
-          python -m mypy src/
 
       - name: "🧪 Run Full Test Suite"
         run: |
