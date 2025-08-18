@@ -2,9 +2,9 @@ name: Code Quality Checks
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, "release/*" ]
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, "release/*" ]
   workflow_call:  # Allow this workflow to be called by other workflows
 
 jobs:

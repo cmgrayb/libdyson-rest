@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, "release/*" ]
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, "release/*" ]
 
 # Grant necessary permissions for commenting on PRs
 permissions:
