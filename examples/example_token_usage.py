@@ -50,7 +50,7 @@ def authenticate_and_get_token(email: str, password: str) -> str:
         login_info = client.complete_login(str(challenge.challenge_id), otp_code)
         print("   ✅ Authentication successful!")
 
-        return login_info.token
+        return str(login_info.token)
 
 
 def use_token_for_device_operations(token: str) -> None:
