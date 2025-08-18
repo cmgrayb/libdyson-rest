@@ -26,11 +26,14 @@ jobs:
     environment: testpypi
     
     # Skip if commit message contains [skip-release] or is an auto-release commit
+    # Also skip if the commit author is the GitHub Action (prevents loops)
     if: |
       github.event_name == 'workflow_dispatch' || 
       (github.event_name == 'push' && 
        !contains(github.event.head_commit.message, '[skip-release]') &&
        !contains(github.event.head_commit.message, '🚀 Auto-release: Bump to v') &&
+       github.event.head_commit.author.email != 'action@github.com' &&
+       github.event.head_commit.committer.email != 'action@github.com' &&
        !contains(github.ref, 'refs/pull/'))
     
     steps:
@@ -40,7 +43,28 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.RELEASE_TOKEN }}
 
-      - name: "🐍 Set up Python"
+      - name: "� Verify Not Auto-Release Loop"
+        run: |
+          echo "🔍 Checking commit details to prevent infinite loops..."
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+          echo "Author: ${{ github.event.head_commit.author.name }} (${{ github.event.head_commit.author.email }})"
+          echo "Committer: ${{ github.event.head_commit.committer.name }} (${{ github.event.head_commit.committer.email }})"
+          
+          if [[ "${{ github.event.head_commit.message }}" == *"🚀 Auto-release: Bump to v"* ]]; then
+            echo "❌ This appears to be an auto-release commit. This should not happen due to job-level conditions."
+            echo "This indicates a potential loop prevention failure."
+            exit 1
+          fi
+          
+          if [[ "${{ github.event.head_commit.author.email }}" == "action@github.com" ]]; then
+            echo "❌ This commit was made by GitHub Action. This should not happen due to job-level conditions."
+            echo "This indicates a potential loop prevention failure."
+            exit 1
+          fi
+          
+          echo "✅ Loop prevention checks passed. Proceeding with alpha release."
+
+      - name: "�🐍 Set up Python"
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -50,6 +74,34 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
           pip install -e .
+
+      - name: "⏱️ Check for Recent Alpha Releases"
+        run: |
+          echo "🔍 Checking for recent alpha releases to prevent rapid-fire releases..."
+          
+          # Get the latest alpha tag
+          LATEST_ALPHA_TAG=$(git tag -l "v*a*" --sort=-version:refname | head -n 1)
+          
+          if [ -n "$LATEST_ALPHA_TAG" ]; then
+            echo "Latest alpha tag: $LATEST_ALPHA_TAG"
+            
+            # Get the timestamp of the latest alpha tag
+            TAG_TIME=$(git log -1 --format=%ct "$LATEST_ALPHA_TAG")
+            CURRENT_TIME=$(date +%s)
+            TIME_DIFF=$((CURRENT_TIME - TAG_TIME))
+            
+            echo "Tag created $TIME_DIFF seconds ago"
+            
+            # If the latest alpha was created less than 5 minutes ago, skip
+            if [ $TIME_DIFF -lt 300 ]; then
+              echo "❌ Latest alpha release was created less than 5 minutes ago."
+              echo "This suggests rapid-fire releases or a potential loop."
+              echo "Skipping this release to prevent spam."
+              exit 1
+            fi
+          fi
+          
+          echo "✅ No recent alpha releases detected. Proceeding with release."
 
       - name: "🧪 Run Tests"
         run: |
