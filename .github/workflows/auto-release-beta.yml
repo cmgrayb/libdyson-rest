@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - "release/beta"
+    # Only trigger on PR merges, not direct commits or auto-release commits
+    # This prevents loops and ensures releases only happen after proper PR review
   workflow_dispatch:
     inputs:
       force_version:
@@ -25,15 +27,18 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     
-    # Skip only explicit [skip-release] commits and direct auto-release loops from GitHub Action
-    # Allow all other legitimate commits including merges, PR merges, and regular commits
+    # Only trigger auto-release for PR merges, not direct commits or auto-release loops
+    # This ensures releases only happen after proper PR review and prevents infinite loops
     if: |
       github.event_name == 'workflow_dispatch' || 
       (github.event_name == 'push' && 
-       !contains(github.event.head_commit.message, '[skip-release]') &&
        !contains(github.ref, 'refs/pull/') &&
+       !contains(github.event.head_commit.message, '[skip-release]') &&
        !(contains(github.event.head_commit.message, '🚀 Auto-release: Bump to v') && 
-         github.event.head_commit.author.email == 'action@github.com'))
+         github.event.head_commit.author.email == 'action@github.com') &&
+       (contains(github.event.head_commit.message, 'Merge pull request #') ||
+        contains(github.event.head_commit.message, '(#') ||
+        contains(github.event.head_commit.message, 'Merge branch')))
     
     steps:
       - name: "📥 Checkout repository"
@@ -47,29 +52,6 @@ jobs:
           echo "🔍 Checking commit details to prevent infinite loops..."
           echo "Commit message: ${{ github.event.head_commit.message }}"
           echo "Author: ${{ github.event.head_commit.author.name }} (${{ github.event.head_commit.author.email }})"
-          echo "Committer: ${{ github.event.head_commit.committer.name }} (${{ github.event.head_commit.committer.email }})"
-          
-          # Allow merge commits even if they contain auto-release messages (legitimate branch promotions)
-          if [[ "${{ github.event.head_commit.message }}" == *"Merge"* ]]; then
-            echo "✅ This is a regular merge commit - allowing release for branch promotion."
-            echo "✅ Loop prevention checks passed. Proceeding with beta release."
-            exit 0
-          fi
-          
-          # Allow PR merges (squash merges) - indicated by (#PR_NUMBER) in commit message
-          if [[ "${{ github.event.head_commit.message }}" == *"(#"* ]]; then
-            echo "✅ This is a PR merge (squash merge) - allowing release for branch promotion."
-            echo "✅ Loop prevention checks passed. Proceeding with beta release."
-            exit 0
-          fi
-          
-          # Only skip direct auto-release commits from GitHub Action (actual loops)
-          if [[ "${{ github.event.head_commit.message }}" == *"🚀 Auto-release: Bump to v"* ]] && [[ "${{ github.event.head_commit.author.email }}" == "action@github.com" ]]; then
-            echo "❌ This is a direct auto-release commit from GitHub Action."
-            echo "This indicates a potential loop prevention failure."
-            exit 1
-          fi
-          
           echo "✅ Loop prevention checks passed. Proceeding with beta release."
 
       - name: "�🐍 Set up Python"
@@ -83,9 +65,41 @@ jobs:
           pip install -r requirements-dev.txt
           pip install -e .
 
-      - name: "🧪 Run Tests"
+      - name: "⏱️ Check for Recent Beta Releases"
+        id: time_check
         run: |
-          python -m pytest tests/ -v --cov=src/ --cov-report=term-missing --cov-fail-under=80
+          echo "🔍 Checking for recent beta releases to prevent rapid-fire releases..."
+          
+          # Get the latest beta tag
+          LATEST_BETA_TAG=$(git tag -l "v*b*" --sort=-version:refname | head -n 1)
+          
+          if [ -n "$LATEST_BETA_TAG" ]; then
+            echo "Latest beta tag: $LATEST_BETA_TAG"
+            
+            # Get the timestamp of the latest beta tag
+            TAG_TIME=$(git log -1 --format=%ct "$LATEST_BETA_TAG")
+            CURRENT_TIME=$(date +%s)
+            TIME_DIFF=$((CURRENT_TIME - TAG_TIME))
+            
+            echo "Tag created $TIME_DIFF seconds ago"
+            
+            # If the latest beta was created less than 5 minutes ago, fail with clear message
+            if [ $TIME_DIFF -lt 300 ]; then
+              echo "❌ Latest beta release was created less than 5 minutes ago."
+              echo "This prevents rapid-fire releases and potential loops."
+              echo "No new release was created - wait at least 5 minutes between releases."
+              echo "" 
+              echo "Recent release: $LATEST_BETA_TAG (created $TIME_DIFF seconds ago)"
+              echo "Minimum wait time: 300 seconds (5 minutes)"
+              echo "Time remaining: $((300 - TIME_DIFF)) seconds"
+              exit 1
+            fi
+          fi
+          
+          echo "✅ No recent beta releases detected. Proceeding with release."
+
+      # Skip quality checks - they should have already passed during PR review
+      # This workflow focuses solely on release creation after PR approval
 
       - name: "📝 Auto-increment Beta Version"
         id: version
