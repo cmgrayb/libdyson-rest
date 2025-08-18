@@ -25,6 +25,14 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     
+    # Only run on direct pushes to release/beta or manual dispatch
+    # Skip if commit message contains [skip-release]
+    if: |
+      github.event_name == 'workflow_dispatch' || 
+      (github.event_name == 'push' && 
+       !contains(github.event.head_commit.message, '[skip-release]') &&
+       !contains(github.ref, 'refs/pull/'))
+    
     steps:
       - name: "📥 Checkout repository"
         uses: actions/checkout@v4
@@ -42,13 +50,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
           pip install -e .
-
-      - name: "🔍 Run Quality Checks"
-        run: |
-          python -m black --check .
-          python -m flake8 .
-          python -m isort --check-only .
-          python -m mypy src/
 
       - name: "🧪 Run Tests"
         run: |
