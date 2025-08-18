@@ -43,7 +43,6 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.RELEASE_TOKEN }}
-          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: "� Verify Not Auto-Release Loop"
         run: |
