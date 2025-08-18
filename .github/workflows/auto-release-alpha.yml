@@ -85,13 +85,16 @@ jobs:
             
             echo "Tag created $TIME_DIFF seconds ago"
             
-            # If the latest alpha was created less than 5 minutes ago, mark for skip
+            # If the latest alpha was created less than 5 minutes ago, fail with clear message
             if [ $TIME_DIFF -lt 300 ]; then
-              echo "✅ Latest alpha release was created less than 5 minutes ago."
+              echo "❌ Latest alpha release was created less than 5 minutes ago."
               echo "This prevents rapid-fire releases and potential loops."
-              echo "Marking remaining steps to be skipped - this is expected behavior."
-              echo "should_skip=true" >> $GITHUB_OUTPUT
-              exit 0
+              echo "No new release was created - wait at least 5 minutes between releases."
+              echo "" 
+              echo "Recent release: $LATEST_ALPHA_TAG (created $TIME_DIFF seconds ago)"
+              echo "Minimum wait time: 300 seconds (5 minutes)"
+              echo "Time remaining: $((300 - TIME_DIFF)) seconds"
+              exit 1
             fi
           fi
           
@@ -99,12 +102,10 @@ jobs:
           echo "✅ No recent alpha releases detected. Proceeding with release."
 
       - name: "🧪 Run Tests"
-        if: steps.time_check.outputs.should_skip == 'false'
         run: |
           python -m pytest tests/ -v --cov=src/ --cov-report=term-missing --cov-fail-under=80
 
       - name: "📝 Auto-increment Alpha Version"
-        if: steps.time_check.outputs.should_skip == 'false'
         id: version
         run: |
           if [ -n "${{ github.event.inputs.force_version }}" ]; then
@@ -122,7 +123,6 @@ jobs:
           echo "📌 New version: $NEW_VERSION"
 
       - name: "💾 Commit Version Update"
-        if: steps.time_check.outputs.should_skip == 'false'
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
@@ -130,18 +130,15 @@ jobs:
           git commit -m "🚀 Auto-release: Bump to v${{ steps.version.outputs.new_version }}" || exit 0
 
       - name: "🏷️ Create Git Tag"
-        if: steps.time_check.outputs.should_skip == 'false'
         run: |
           git tag -a "v${{ steps.version.outputs.new_version }}" -m "Alpha release v${{ steps.version.outputs.new_version }}"
 
       - name: "⬆️ Push Changes and Tags"
-        if: steps.time_check.outputs.should_skip == 'false'
         run: |
           git push origin release/alpha
           git push origin "v${{ steps.version.outputs.new_version }}"
 
       - name: "📦 Build Package"
-        if: steps.time_check.outputs.should_skip == 'false'
         run: |
           python -m pip install --upgrade build
           python -m build
@@ -150,7 +147,6 @@ jobs:
       # when the GitHub release is created. This prevents duplicate uploads.
 
       - name: "📋 Create GitHub Release"
-        if: steps.time_check.outputs.should_skip == 'false'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
@@ -193,13 +189,3 @@ jobs:
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
           echo "- [TestPyPI Package](https://test.pypi.org/project/libdyson-rest/${{ steps.version.outputs.new_version }}/)" >> $GITHUB_STEP_SUMMARY
           echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.new_version }})" >> $GITHUB_STEP_SUMMARY
-
-      - name: "ℹ️ Release Skipped"
-        if: steps.time_check.outputs.should_skip == 'true'
-        run: |
-          echo "## ⏭️ Auto-Release Skipped" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Reason:** Recent alpha release detected (within 5 minutes)" >> $GITHUB_STEP_SUMMARY  
-          echo "**Status:** ✅ This is expected behavior to prevent rapid-fire releases" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "The workflow completed successfully but skipped release steps to prevent loops." >> $GITHUB_STEP_SUMMARY
