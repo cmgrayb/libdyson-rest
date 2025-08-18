@@ -25,20 +25,18 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     
-    # Only run on direct pushes to release/rc or manual dispatch
     # Skip if commit message contains [skip-release]
     if: |
       github.event_name == 'workflow_dispatch' || 
       (github.event_name == 'push' && 
-       !contains(github.event.head_commit.message, '[skip-release]') &&
-       !contains(github.ref, 'refs/pull/'))
+       !contains(github.event.head_commit.message, '[skip-release]'))
     
     steps:
       - name: "📥 Checkout repository"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: "🐍 Set up Python"
         uses: actions/setup-python@v5
@@ -101,7 +99,7 @@ jobs:
       - name: "📋 Create GitHub Release"
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           tag_name: "v${{ steps.version.outputs.new_version }}"
           release_name: "libdyson-rest v${{ steps.version.outputs.new_version }} (Release Candidate)"
