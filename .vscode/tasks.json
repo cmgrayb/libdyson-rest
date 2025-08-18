@@ -238,55 +238,9 @@
             "detail": "Run all quality checks in sequence"
         },
         {
-            "label": "Pre-commit Install",
-            "type": "shell",
-            "command": ".venv/Scripts/python.exe",
-            "args": ["-m", "pre_commit", "install"],
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared"
-            },
-            "problemMatcher": [],
-            "detail": "Install pre-commit hooks"
-        },
-        {
-            "label": "Pre-commit Run All",
-            "type": "shell",
-            "command": ".venv/Scripts/python.exe",
-            "args": ["-m", "pre_commit", "run", "--all-files"],
-            "group": "test",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared"
-            },
-            "problemMatcher": [],
-            "detail": "Run pre-commit on all files"
-        },
-        {
-            "label": "Update Tool Versions",
-            "type": "shell",
-            "command": ".venv/Scripts/python.exe",
-            "args": ["-m", "pre_commit", "autoupdate"],
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared"
-            },
-            "problemMatcher": [],
-            "detail": "Update pre-commit tool versions (Step 1 of version sync process)"
-        },
-        {
             "label": "Sync Tool Versions",
             "dependsOrder": "sequence",
             "dependsOn": [
-                "Update Tool Versions",
                 "Install Dev Dependencies"
             ],
             "group": "build",
@@ -297,7 +251,7 @@
                 "panel": "shared"
             },
             "problemMatcher": [],
-            "detail": "Complete version synchronization workflow (auto-updates pre-commit, then reinstalls dependencies)"
+            "detail": "Complete version synchronization workflow (installs dependencies)"
         },
         {
             "label": "Verify Version Sync",
@@ -307,8 +261,7 @@
                 "Sort Imports",
                 "Lint Code",
                 "Type Check",
-                "Run Tests",
-                "Pre-commit Run All"
+                "Run Tests"
             ],
             "group": "test",
             "presentation": {
