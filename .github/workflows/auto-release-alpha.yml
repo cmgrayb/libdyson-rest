@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - "release/alpha"
+    # Only trigger on PR merges, not direct commits or auto-release commits
+    # This prevents loops and ensures releases only happen after proper PR review
   workflow_dispatch:
     inputs:
       force_version:
@@ -25,22 +27,42 @@ jobs:
     runs-on: ubuntu-latest
     environment: testpypi
     
-    # Only run on direct pushes to release/alpha or manual dispatch
-    # Skip if commit message contains [skip-release]
+    # Only trigger auto-release for PR merges, not direct commits or auto-release loops
+    # This ensures releases only happen after proper PR review and prevents infinite loops
     if: |
       github.event_name == 'workflow_dispatch' || 
       (github.event_name == 'push' && 
+       !contains(github.ref, 'refs/pull/') &&
        !contains(github.event.head_commit.message, '[skip-release]') &&
-       !contains(github.ref, 'refs/pull/'))
+       !(contains(github.event.head_commit.message, '🚀 Auto-release: Bump to v') && 
+         github.event.head_commit.author.email == 'action@github.com') &&
+       (contains(github.event.head_commit.message, 'Merge pull request #') ||
+        contains(github.event.head_commit.message, '(#') ||
+        contains(github.event.head_commit.message, 'Merge branch')))
     
     steps:
       - name: "📥 Checkout repository"
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN }}
 
-      - name: "🐍 Set up Python"
+      - name: "🔍 Verify Not Auto-Release Loop"
+        run: |
+          echo "🔍 Checking commit details to prevent infinite loops..."
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+          echo "Author: ${{ github.event.head_commit.author.name }} (${{ github.event.head_commit.author.email }})"
+          echo "Committer: ${{ github.event.head_commit.committer.name }} (${{ github.event.head_commit.committer.email }})"
+          
+          # Simple check: Only fail if this is a direct auto-release commit from GitHub Action
+          if [[ "${{ github.event.head_commit.message }}" == *"🚀 Auto-release: Bump to v"* ]] && [[ "${{ github.event.head_commit.author.email }}" == "action@github.com" ]]; then
+            echo "❌ This is a direct auto-release commit from GitHub Action - preventing loop."
+            exit 1
+          fi
+          
+          echo "✅ Loop prevention checks passed. Proceeding with alpha release."
+
+      - name: "�🐍 Set up Python"
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -51,9 +73,42 @@ jobs:
           pip install -r requirements-dev.txt
           pip install -e .
 
-      - name: "🧪 Run Tests"
+      - name: "⏱️ Check for Recent Alpha Releases"
+        id: time_check
         run: |
-          python -m pytest tests/ -v --cov=src/ --cov-report=term-missing --cov-fail-under=80
+          echo "🔍 Checking for recent alpha releases to prevent rapid-fire releases..."
+          
+          # Get the latest alpha tag
+          LATEST_ALPHA_TAG=$(git tag -l "v*a*" --sort=-version:refname | head -n 1)
+          
+          if [ -n "$LATEST_ALPHA_TAG" ]; then
+            echo "Latest alpha tag: $LATEST_ALPHA_TAG"
+            
+            # Get the timestamp of the latest alpha tag
+            TAG_TIME=$(git log -1 --format=%ct "$LATEST_ALPHA_TAG")
+            CURRENT_TIME=$(date +%s)
+            TIME_DIFF=$((CURRENT_TIME - TAG_TIME))
+            
+            echo "Tag created $TIME_DIFF seconds ago"
+            
+            # If the latest alpha was created less than 5 minutes ago, fail with clear message
+            if [ $TIME_DIFF -lt 300 ]; then
+              echo "❌ Latest alpha release was created less than 5 minutes ago."
+              echo "This prevents rapid-fire releases and potential loops."
+              echo "No new release was created - wait at least 5 minutes between releases."
+              echo "" 
+              echo "Recent release: $LATEST_ALPHA_TAG (created $TIME_DIFF seconds ago)"
+              echo "Minimum wait time: 300 seconds (5 minutes)"
+              echo "Time remaining: $((300 - TIME_DIFF)) seconds"
+              exit 1
+            fi
+          fi
+          
+          echo "should_skip=false" >> $GITHUB_OUTPUT
+          echo "✅ No recent alpha releases detected. Proceeding with release."
+
+      # Skip quality checks - they should have already passed during PR review
+      # This workflow focuses solely on release creation after PR approval
 
       - name: "📝 Auto-increment Alpha Version"
         id: version
@@ -93,16 +148,13 @@ jobs:
           python -m pip install --upgrade build
           python -m build
 
-      - name: "🚀 Publish to TestPyPI"
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          print-hash: true
+      # Note: Publishing to TestPyPI is now handled by the publish-to-pypi.yml workflow
+      # when the GitHub release is created. This prevents duplicate uploads.
 
       - name: "📋 Create GitHub Release"
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
           tag_name: "v${{ steps.version.outputs.new_version }}"
           release_name: "libdyson-rest v${{ steps.version.outputs.new_version }} (Alpha)"
