@@ -84,7 +84,11 @@ def analyze_device_mqtt_info(device: Any, iot_data: Any, client: DysonClient) ->
 
     # Inferred MQTT topics based on Dyson patterns
     print("\n📨 Expected MQTT Topics:")
-    base_topic = f"{device.type}/{device.serial_number}"
+
+    # Use the MQTT root topic from the device configuration
+    # Note: This should always be available for connected devices
+    root_topic = device.connected_configuration.mqtt.mqtt_root_topic_level
+    base_topic = f"{root_topic}/{device.serial_number}"
 
     topics = {
         "Status Topics": [
@@ -169,12 +173,20 @@ def main() -> None:  # noqa: C901
 
             # Analyze each device
             for device in devices:
+                # Skip non-connected devices - this library is for REST/WebSocket API connected devices only
+                if not device.connected_configuration:
+                    print(f"⚠️  Skipping {device.name} - no connected configuration available")
+                    continue
+
                 try:
                     # Get IoT credentials
                     iot_data = client.get_iot_credentials(device.serial_number)
 
                     # Analyze MQTT info
                     analyze_device_mqtt_info(device, iot_data, client)
+
+                    # Get MQTT root topic for connected devices
+                    root_topic = device.connected_configuration.mqtt.mqtt_root_topic_level
 
                     # Export data for external use
                     mqtt_info = {
@@ -203,12 +215,12 @@ def main() -> None:  # noqa: C901
                         },
                         "topics": {
                             "status": [
-                                f"{device.type}/{device.serial_number}/status/current",
-                                f"{device.type}/{device.serial_number}/status/faults",
-                                f"{device.type}/{device.serial_number}/status/software",
-                                f"{device.type}/{device.serial_number}/status/summary",
+                                f"{root_topic}/{device.serial_number}/status/current",
+                                f"{root_topic}/{device.serial_number}/status/faults",
+                                f"{root_topic}/{device.serial_number}/status/software",
+                                f"{root_topic}/{device.serial_number}/status/summary",
                             ],
-                            "commands": [f"{device.type}/{device.serial_number}/command"],
+                            "commands": [f"{root_topic}/{device.serial_number}/command"],
                         },
                     }
 
