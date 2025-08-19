@@ -375,7 +375,7 @@
             "label": "Version: Show Current",
             "type": "shell",
             "command": ".venv/Scripts/python.exe",
-            "args": ["scripts/update_version.py", "--show"],
+            "args": [".github/scripts/update_version.py", "--show"],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -390,7 +390,7 @@
             "label": "Version: Set Alpha",
             "type": "shell",
             "command": ".venv/Scripts/python.exe",
-            "args": ["scripts/update_version.py", "--increment", "alpha"],
+            "args": [".github/scripts/update_version.py", "--increment", "alpha"],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -405,7 +405,7 @@
             "label": "Version: Set Beta",
             "type": "shell",
             "command": ".venv/Scripts/python.exe",
-            "args": ["scripts/update_version.py", "--increment", "beta"],
+            "args": [".github/scripts/update_version.py", "--increment", "beta"],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -420,7 +420,7 @@
             "label": "Version: Set Release Candidate",
             "type": "shell",
             "command": ".venv/Scripts/python.exe",
-            "args": ["scripts/update_version.py", "--increment", "rc"],
+            "args": [".github/scripts/update_version.py", "--increment", "rc"],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -435,7 +435,7 @@
             "label": "Version: Set Custom",
             "type": "shell",
             "command": ".venv/Scripts/python.exe",
-            "args": ["scripts/update_version.py", "${input:customVersion}"],
+            "args": [".github/scripts/update_version.py", "${input:customVersion}"],
             "group": "build",
             "presentation": {
                 "echo": true,
