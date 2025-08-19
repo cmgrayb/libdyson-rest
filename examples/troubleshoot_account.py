@@ -108,7 +108,7 @@ def analyze_device_details(device: Any, client: DysonClient) -> Dict[str, Any]:
         iot_info = _analyze_iot_credentials(device, client)
         device_info["iot_credentials"] = iot_info
 
-        if iot_info and not isinstance(iot_info, str):
+        if iot_info and not isinstance(iot_info, str) and device.connected_configuration:
             _analyze_mqtt_topics(device)
             _analyze_cloud_mqtt_config(iot_info)
 
@@ -242,7 +242,11 @@ def _analyze_iot_credentials(device: Any, client: DysonClient) -> Any:
 def _analyze_mqtt_topics(device: Any) -> None:
     """Analyze MQTT topics for the device."""
     print("\n   📨 MQTT Topics:")
-    base_topic = f"{device.type}/{device.serial_number}"
+
+    # Use the MQTT root topic from the device configuration
+    # Note: This should always be available for connected devices
+    root_topic = device.connected_configuration.mqtt.mqtt_root_topic_level
+    base_topic = f"{root_topic}/{device.serial_number}"
 
     status_topics = [
         f"{base_topic}/status/current",
