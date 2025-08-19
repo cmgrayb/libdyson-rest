@@ -22,7 +22,7 @@ from pathlib import Path
 
 def get_current_version() -> str:
     """Extract current version from pyproject.toml"""
-    pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+    pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
 
     with open(pyproject_path, "r", encoding="utf-8") as f:
         content = f.read()
@@ -36,7 +36,7 @@ def get_current_version() -> str:
 
 def set_version(new_version: str) -> None:
     """Update version in pyproject.toml"""
-    pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+    pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
 
     with open(pyproject_path, "r", encoding="utf-8") as f:
         content = f.read()
