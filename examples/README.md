@@ -65,6 +65,34 @@ cd examples
 python analyze_mqtt_info.py [path_to_mqtt_info.json]
 ```
 
+### 5. `troubleshoot_account.py`
+**Purpose**: Comprehensive diagnostic tool for Dyson account and device troubleshooting.
+
+**What it demonstrates**:
+- Complete authentication flow testing
+- Device discovery and enumeration
+- MQTT password decryption and analysis
+- IoT credentials retrieval and validation
+- MQTT topic mapping for all devices
+- Both local and cloud MQTT configuration
+- Comprehensive JSON export for debugging
+- Detailed troubleshooting statistics
+
+**Usage**:
+```bash
+cd examples
+python troubleshoot_account.py
+```
+
+**Key Features**:
+- Interactive credential input with secure password entry
+- Step-by-step diagnostic output with progress indicators
+- Exports comprehensive JSON data for further analysis
+- Combines functionality from multiple other example scripts
+- Ideal for debugging connection and authentication issues
+
+**Note**: This script requires real Dyson account credentials and outputs sensitive information for diagnostic purposes. See `TROUBLESHOOTING.md` for detailed usage guide.
+
 ## Prerequisites
 
 Before running these examples:
@@ -123,6 +151,11 @@ Some examples support environment variables for convenience:
 
 Set these to avoid entering credentials repeatedly during development.
 
+## Documentation Files
+
+- **`README.md`** (this file): Overview of all example scripts and basic usage
+- **`TROUBLESHOOTING.md`**: Detailed troubleshooting guide with diagnostic procedures
+
 ## Notes
 
 - These scripts are for **development and testing** only
@@ -132,10 +165,20 @@ Set these to avoid entering credentials repeatedly during development.
 
 ## Troubleshooting
 
+For detailed troubleshooting guidance, see `TROUBLESHOOTING.md` in this directory.
+
+**Common Issues**:
+
 1. **Import errors**: Make sure you've installed the package or are running from the project root
 2. **Authentication failures**: Check your email/password and ensure OTP codes are entered quickly
 3. **No devices found**: Ensure you have registered Dyson devices in your account
 4. **MQTT connection issues**: Check that your devices are online and connected to WiFi
+
+**Diagnostic Tools**:
+
+- Use `troubleshoot_account.py` for comprehensive account and device analysis
+- Check `TROUBLESHOOTING.md` for detailed diagnostic procedures and common solutions
+- Review the exported JSON files from troubleshooting scripts for detailed API responses
 
 ## ⚠️ Security Note
 
@@ -143,5 +186,12 @@ Set these to avoid entering credentials repeatedly during development.
 
 - Device-specific files (e.g., `mqtt_info_*.json`) are automatically ignored by `.gitignore`
 - Credential files and authentication tokens are excluded from the repository
+- Troubleshooting scripts may output sensitive diagnostic information - review before sharing
+- JSON export files from `troubleshoot_account.py` contain authentication tokens and device credentials
 - Use environment variables for credentials when possible
 - These example scripts may create temporary files - review before committing changes
+
+**When sharing diagnostic output for support**:
+- Redact bearer tokens, MQTT passwords, and device serial numbers
+- Consider using truncated or anonymized versions of diagnostic JSON files
+- Be cautious when sharing full troubleshooting output as it contains sensitive account information

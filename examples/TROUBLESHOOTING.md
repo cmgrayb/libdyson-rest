@@ -63,14 +63,14 @@ Enter the OTP code from your email: 123456
 ============================================================
 📊 AUTHENTICATION INFORMATION
 ============================================================
-   Account ID: bc8f2680-1f98-4c4d-8733-efb5003919d2
+   Account ID: 12345678-abcd-1234-5678-abcdef123456
    Email: your-email@example.com
    Country: US
    Locale: en-US
    Account Status: ACTIVE
    Auth Method: EMAIL_PWD_2FA
    Token Type: Bearer
-   Bearer Token: 657EE842F50B6A90DE6D...
+   Bearer Token: ABC123DEF456GHI789JKL...
 
 ============================================================
 📊 DEVICE ANALYSIS
@@ -81,7 +81,7 @@ Found 1 device(s) on account
 ----------------------------------------
    📱 Basic Information:
       Name: Theater Fan
-      Serial Number: 9RJ-US-UAA8845A
+      Serial Number: ABC-US-DEF1234G
       Type: 438
       Model: TP11
       Category: ec
@@ -90,40 +90,40 @@ Found 1 device(s) on account
    🌐 Connected Configuration:
       MQTT Root Topic: 438M
       Remote Broker Type: wss
-      Encrypted Local Credentials: zVGln87HAMt8wVbgjk...
-      ✅ Decrypted Local Password: Q0T3OiiA0/eb6gynNPYzv+1ov...
+      Encrypted Local Credentials: zVGln87HAMt8wVbgjkjrjgS7AuV9MP9GC/2s3z...
+      ✅ Decrypted Local Password: ABCD1234efgh5678IJKL9012mnop3456QRST...
 
    ☁️  AWS IoT Credentials:
-      AWS IoT Endpoint: a1u2wvl3e2lrc4-ats.iot.eu-west-1.amazonaws.com
-      Client ID: f91a40c3-44ed-4e2d-a8aa-18dbd4d644e5
+      AWS IoT Endpoint: a1b2c3d4e5f6g7-ats.iot.us-east-1.amazonaws.com
+      Client ID: 12345678-abcd-1234-5678-987654321abc
       Custom Authorizer: cld-iot-credentials-lambda-authorizer
 
    📨 MQTT Topics:
-      Base Topic: 438/9RJ-US-UAA8845A
+      Base Topic: 438/ABC-US-DEF1234G
       Status Topics:
-         - 438/9RJ-US-UAA8845A/status/current
-         - 438/9RJ-US-UAA8845A/status/faults
-         - 438/9RJ-US-UAA8845A/status/software
-         - 438/9RJ-US-UAA8845A/status/summary
-         - 438/9RJ-US-UAA8845A/status/sensor
-         - 438/9RJ-US-UAA8845A/status/environmental
+         - 438/ABC-US-DEF1234G/status/current
+         - 438/ABC-US-DEF1234G/status/faults
+         - 438/ABC-US-DEF1234G/status/software
+         - 438/ABC-US-DEF1234G/status/summary
+         - 438/ABC-US-DEF1234G/status/sensor
+         - 438/ABC-US-DEF1234G/status/environmental
       Command Topics:
-         - 438/9RJ-US-UAA8845A/command
+         - 438/ABC-US-DEF1234G/command
 
    🏠 Local MQTT Connection Parameters:
       Host: Theater Fan.local (or device IP)
       MQTT Port: 1883
       MQTT+TLS Port: 8883
-      Username: 9RJ-US-UAA8845A
-      Password: Q0T3OiiA0/eb6gynNPYzv+1ovQMLkbx...
+      Username: ABC-US-DEF1234G
+      Password: ABCD1234efgh5678IJKL9012mnop3456QRST...
       Protocol: MQTT (plain or TLS)
       Root Topic: 438M
 
    🌐 Cloud MQTT Connection Parameters:
-      Host: a1u2wvl3e2lrc4-ats.iot.eu-west-1.amazonaws.com
+      Host: a1b2c3d4e5f6g7-ats.iot.us-east-1.amazonaws.com
       Port: 443
       Protocol: MQTT over WebSockets with TLS
-      Client ID: f91a40c3-44ed-4e2d-a8aa-18dbd4d644e5
+      Client ID: 12345678-abcd-1234-5678-987654321abc
       Auth Type: AWS IoT Custom Authorizer
 
 ============================================================
@@ -154,7 +154,7 @@ The script generates a timestamped JSON file containing all collected data:
 {
   "timestamp": "2024-08-19T10:56:51.123456",
   "authentication": {
-    "account_id": "bc8f2680-1f98-4c4d-8733-efb5003919d2",
+    "account_id": "12345678-abcd-1234-5678-abcdef123456",
     "email": "your-email@example.com",
     "country": "US",
     "culture": "en-US",
@@ -162,13 +162,13 @@ The script generates a timestamped JSON file containing all collected data:
     "authentication_method": "EMAIL_PWD_2FA",
     "token_type": "Bearer",
     "bearer_token": "full-token-here",
-    "bearer_token_preview": "657EE842F50B6A90DE6D..."
+    "bearer_token_preview": "ABC123DEF456GHI789JKL..."
   },
   "devices": [
     {
       "basic_info": {
         "name": "Theater Fan",
-        "serial_number": "9RJ-US-UAA8845A",
+        "serial_number": "ABC-US-DEF1234G",
         "type": "438",
         "model": "TP11",
         "category": "ec",
@@ -177,10 +177,10 @@ The script generates a timestamped JSON file containing all collected data:
       },
       "connected_configuration": {
         "mqtt": {
-          "local_broker_credentials_encrypted": "zVGln87HAMt8wVbgjk...",
+          "local_broker_credentials_encrypted": "zVGln87HAMt8wVbgjkjrjgS7AuV9MP9GC/2s3z...",
           "mqtt_root_topic_level": "438M",
           "remote_broker_type": "wss",
-          "local_broker_credentials_decrypted": "Q0T3OiiA0/eb6gynNPYzv..."
+          "local_broker_credentials_decrypted": "ABCD1234efgh5678IJKL9012mnop3456QRST..."
         },
         "firmware": {
           "version": "438MPF.00.01.003.0011",
@@ -190,21 +190,21 @@ The script generates a timestamped JSON file containing all collected data:
         }
       },
       "iot_credentials": {
-        "endpoint": "a1u2wvl3e2lrc4-ats.iot.eu-west-1.amazonaws.com",
+        "endpoint": "a1b2c3d4e5f6g7-ats.iot.us-east-1.amazonaws.com",
         "credentials": {
-          "client_id": "f91a40c3-44ed-4e2d-a8aa-18dbd4d644e5",
+          "client_id": "12345678-abcd-1234-5678-987654321abc",
           "custom_authorizer_name": "cld-iot-credentials-lambda-authorizer",
           "token_key": "token",
-          "token_value": "f91a40c3-44ed-4e2d-a8aa-18dbd4d644e5",
-          "token_signature": "fODnWKQOrZ/v8YIPhHhel1oemv..."
+          "token_value": "12345678-abcd-1234-5678-987654321abc",
+          "token_signature": "abcd1234EFGH5678ijkl9012MNOP3456qrst..."
         }
       },
       "mqtt_analysis": {
         "local_mqtt": {
           "host": "Theater Fan.local",
           "ports": {"mqtt": 1883, "mqtt_tls": 8883},
-          "username": "9RJ-US-UAA8845A",
-          "password": "Q0T3OiiA0/eb6gynNPYzv...",
+          "username": "ABC-US-DEF1234G",
+          "password": "ABCD1234efgh5678IJKL9012mnop3456QRST...",
           "protocol": "MQTT (plain or TLS)",
           "root_topic": "438M"
         },
@@ -288,7 +288,7 @@ The script provides complete connection parameters for both local and cloud MQTT
 - **Root Topic**: Device-specific root topic (e.g., "438M")
 
 ### Cloud MQTT Connection (via AWS IoT)
-- **Host**: AWS IoT endpoint (e.g., `a1u2wvl3e2lrc4-ats.iot.eu-west-1.amazonaws.com`)
+- **Host**: AWS IoT endpoint (e.g., `a1b2c3d4e5f6g7-ats.iot.us-east-1.amazonaws.com`)
 - **Port**: 443 (MQTT over WebSockets with TLS)
 - **Client ID**: AWS IoT client ID
 - **Authentication**: AWS IoT Custom Authorizer with token headers
