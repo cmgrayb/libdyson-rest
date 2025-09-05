@@ -19,7 +19,9 @@ def run_command(cmd: str, description: str) -> Optional[subprocess.CompletedProc
     """Run a command and handle errors."""
     print(f"🔧 {description}...")
     try:
-        result = subprocess.run(cmd, shell=True, check=True, capture_output=True, text=True)
+        result = subprocess.run(
+            cmd, shell=True, check=True, capture_output=True, text=True
+        )
         print(f"✅ {description} completed successfully")
         return result
     except subprocess.CalledProcessError as e:
@@ -127,7 +129,9 @@ def upload_to_pypi() -> None:
     print("   Create one at: https://pypi.org/manage/account/")
 
     # Final confirmation
-    response = input("\n⚠️  This will upload to PRODUCTION PyPI. Are you sure? (yes/no): ")
+    response = input(
+        "\n⚠️  This will upload to PRODUCTION PyPI. Are you sure? (yes/no): "
+    )
     if response.lower() != "yes":
         print("❌ Upload cancelled")
         return
@@ -141,11 +145,17 @@ def upload_to_pypi() -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build and publish libdyson-rest to PyPI")
+    parser = argparse.ArgumentParser(
+        description="Build and publish libdyson-rest to PyPI"
+    )
     parser.add_argument("--test", action="store_true", help="Upload to TestPyPI")
     parser.add_argument("--prod", action="store_true", help="Upload to production PyPI")
-    parser.add_argument("--check", action="store_true", help="Just build and check package")
-    parser.add_argument("--skip-checks", action="store_true", help="Skip quality checks")
+    parser.add_argument(
+        "--check", action="store_true", help="Just build and check package"
+    )
+    parser.add_argument(
+        "--skip-checks", action="store_true", help="Skip quality checks"
+    )
 
     args = parser.parse_args()
 
@@ -180,7 +190,9 @@ def main() -> None:
     if args.check:
         print("\n✅ Package check complete! Package is ready for upload.")
         print("📋 Next steps:")
-        print("   python .github/scripts/publish_to_pypi.py --test   # Upload to TestPyPI")
+        print(
+            "   python .github/scripts/publish_to_pypi.py --test   # Upload to TestPyPI"
+        )
         print("   python .github/scripts/publish_to_pypi.py --prod   # Upload to PyPI")
     elif args.test:
         upload_to_testpypi()

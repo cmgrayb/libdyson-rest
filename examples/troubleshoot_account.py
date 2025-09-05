@@ -20,7 +20,9 @@ from libdyson_rest import (
 )
 
 # Configure detailed logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -61,7 +63,9 @@ def print_subsection(title: str) -> None:
     print("-" * 40)
 
 
-def output_authentication_info(client: DysonClient, login_info: Any, user_status: Any) -> Dict[str, Any]:
+def output_authentication_info(
+    client: DysonClient, login_info: Any, user_status: Any
+) -> Dict[str, Any]:
     """Output comprehensive authentication information."""
     print_section("AUTHENTICATION INFORMATION")
 
@@ -108,7 +112,11 @@ def analyze_device_details(device: Any, client: DysonClient) -> Dict[str, Any]:
         iot_info = _analyze_iot_credentials(device, client)
         device_info["iot_credentials"] = iot_info
 
-        if iot_info and not isinstance(iot_info, str) and device.connected_configuration:
+        if (
+            iot_info
+            and not isinstance(iot_info, str)
+            and device.connected_configuration
+        ):
             _analyze_mqtt_topics(device)
             _analyze_cloud_mqtt_config(iot_info)
 
@@ -192,13 +200,17 @@ def _analyze_device_configuration(device: Any, client: DysonClient) -> Dict[str,
         print(f"      ✅ Decrypted Local Password: {decrypted_password}")
     except Exception as e:
         error_msg = f"Failed to decrypt: {e}"
-        config_info["mqtt"]["local_broker_credentials_decrypted"] = f"ERROR: {error_msg}"
+        config_info["mqtt"][
+            "local_broker_credentials_decrypted"
+        ] = f"ERROR: {error_msg}"
         print(f"      ❌ Local Password Decryption: {error_msg}")
 
     print("\n      💾 Firmware Information:")
     print(f"         Version: {config_info['firmware']['version']}")
     print(f"         Auto Update: {config_info['firmware']['auto_update_enabled']}")
-    print(f"         New Version Available: {config_info['firmware']['new_version_available']}")
+    print(
+        f"         New Version Available: {config_info['firmware']['new_version_available']}"
+    )
     if config_info["firmware"]["capabilities"]:
         capabilities_str = ", ".join(config_info["firmware"]["capabilities"])
         print(f"         Capabilities: {capabilities_str}")
@@ -225,7 +237,9 @@ def _analyze_iot_credentials(device: Any, client: DysonClient) -> Any:
 
         print(f"      AWS IoT Endpoint: {iot_info['endpoint']}")
         print(f"      Client ID: {iot_info['credentials']['client_id']}")
-        print(f"      Custom Authorizer: {iot_info['credentials']['custom_authorizer_name']}")
+        print(
+            f"      Custom Authorizer: {iot_info['credentials']['custom_authorizer_name']}"
+        )
         print(f"      Token Key: {iot_info['credentials']['token_key']}")
         print(f"      Token Value: {iot_info['credentials']['token_value']}")
         signature_preview = iot_info["credentials"]["token_signature"][:50]
@@ -284,7 +298,9 @@ def _analyze_local_mqtt_config(device: Any, device_info: Dict[str, Any]) -> None
     print("      MQTT+TLS Port: 8883")
     print(f"      Username: {device.serial_number}")
 
-    password = device_info["connected_configuration"]["mqtt"]["local_broker_credentials_decrypted"]
+    password = device_info["connected_configuration"]["mqtt"][
+        "local_broker_credentials_decrypted"
+    ]
     if isinstance(password, str) and not password.startswith("ERROR:"):
         print(f"      Password: {password}")
     else:
@@ -297,7 +313,10 @@ def _analyze_local_mqtt_config(device: Any, device_info: Dict[str, Any]) -> None
     # Add to device_info
     local_mqtt_info = {
         "host": f"{device.name}.local",
-        "host_alternatives": [f"{device.name}.local", "Device IP address on local network"],
+        "host_alternatives": [
+            f"{device.name}.local",
+            "Device IP address on local network",
+        ],
         "ports": {"mqtt": 1883, "mqtt_tls": 8883},
         "username": device.serial_number,
         "password": password,
@@ -320,7 +339,9 @@ def run_troubleshooting() -> None:
 
     try:
         # Initialize client and authenticate
-        with DysonClient(email=email, password=password, country=country, culture=culture) as client:
+        with DysonClient(
+            email=email, password=password, country=country, culture=culture
+        ) as client:
 
             # Authentication steps
             print("📡 Step 1: Provisioning API access...")
@@ -408,7 +429,9 @@ def _complete_authentication(client: DysonClient, email: str) -> Any:
     return login_info
 
 
-def _analyze_all_devices(client: DysonClient, troubleshooting_data: Dict[str, Any]) -> None:
+def _analyze_all_devices(
+    client: DysonClient, troubleshooting_data: Dict[str, Any]
+) -> None:
     """Analyze all devices on the account."""
     print_section("DEVICE ANALYSIS")
     devices = client.get_devices()
@@ -428,13 +451,17 @@ def _analyze_all_devices(client: DysonClient, troubleshooting_data: Dict[str, An
         _update_device_summary(device, device_info, troubleshooting_data["summary"])
 
 
-def _update_device_summary(device: Any, device_info: Dict[str, Any], summary: Dict[str, Any]) -> None:
+def _update_device_summary(
+    device: Any, device_info: Dict[str, Any], summary: Dict[str, Any]
+) -> None:
     """Update device summary counters."""
     if device.connection_category.value != "nonConnected":
         summary["connected_devices"] += 1
     if device.connected_configuration:
         summary["devices_with_local_config"] += 1
-    if device_info["iot_credentials"] and not isinstance(device_info["iot_credentials"], str):
+    if device_info["iot_credentials"] and not isinstance(
+        device_info["iot_credentials"], str
+    ):
         summary["devices_with_iot_credentials"] += 1
 
 
@@ -442,7 +469,9 @@ def _output_final_summary(troubleshooting_data: Dict[str, Any]) -> None:
     """Output the final troubleshooting summary and export data."""
     print_section("TROUBLESHOOTING SUMMARY")
     summary = troubleshooting_data["summary"]
-    print(f"   Authentication: {'✅ SUCCESS' if summary['authentication_successful'] else '❌ FAILED'}")
+    print(
+        f"   Authentication: {'✅ SUCCESS' if summary['authentication_successful'] else '❌ FAILED'}"
+    )
     print(f"   Total Devices: {summary['total_devices']}")
     print(f"   Connected Devices: {summary['connected_devices']}")
     print(f"   Devices with Local Config: {summary['devices_with_local_config']}")
