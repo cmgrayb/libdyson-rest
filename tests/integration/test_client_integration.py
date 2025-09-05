@@ -88,10 +88,9 @@ class TestDysonClientIntegration:
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = [
             {
-                "serialNumber": "ABC123",
+                "serial": "ABC123",
                 "name": "Living Room Fan",
-                "model": "527",
-                "type": "FAN",
+                "productType": "527",
                 "category": "ec",
                 "connectionCategory": "wifiOnly",
             }

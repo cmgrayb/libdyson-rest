@@ -9,6 +9,9 @@ from enum import Enum
 from typing import Dict
 from uuid import UUID
 
+from ..types import LoginChallengeResponseDict, LoginInformationResponseDict, UserStatusResponseDict
+from ..validation import safe_get_str, safe_parse_uuid, validate_json_response
+
 
 class AccountStatus(Enum):
     """User account status enumeration."""
@@ -37,11 +40,12 @@ class UserStatus:
     authentication_method: AuthenticationMethod
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "UserStatus":
+    def from_dict(cls, data: UserStatusResponseDict) -> "UserStatus":
         """Create UserStatus instance from dictionary."""
+        validated_data = validate_json_response(data, "UserStatus")
         return cls(
-            account_status=AccountStatus(data["accountStatus"]),
-            authentication_method=AuthenticationMethod(data["authenticationMethod"]),
+            account_status=AccountStatus(safe_get_str(validated_data, "accountStatus")),
+            authentication_method=AuthenticationMethod(safe_get_str(validated_data, "authenticationMethod")),
         )
 
     def to_dict(self) -> Dict[str, str]:
@@ -59,9 +63,11 @@ class LoginChallenge:
     challenge_id: UUID
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "LoginChallenge":
+    def from_dict(cls, data: LoginChallengeResponseDict) -> "LoginChallenge":
         """Create LoginChallenge instance from dictionary."""
-        return cls(challenge_id=UUID(data["challengeId"]))
+        validated_data = validate_json_response(data, "LoginChallenge")
+        challenge_id_str = safe_get_str(validated_data, "challengeId")
+        return cls(challenge_id=safe_parse_uuid(challenge_id_str, "challengeId"))
 
     def to_dict(self) -> Dict[str, str]:
         """Convert LoginChallenge instance to dictionary."""
@@ -77,12 +83,14 @@ class LoginInformation:
     token_type: TokenType
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "LoginInformation":
+    def from_dict(cls, data: LoginInformationResponseDict) -> "LoginInformation":
         """Create LoginInformation instance from dictionary."""
+        validated_data = validate_json_response(data, "LoginInformation")
+        account_str = safe_get_str(validated_data, "account")
         return cls(
-            account=UUID(data["account"]),
-            token=data["token"],
-            token_type=TokenType(data["tokenType"]),
+            account=safe_parse_uuid(account_str, "account"),
+            token=safe_get_str(validated_data, "token"),
+            token_type=TokenType(safe_get_str(validated_data, "tokenType")),
         )
 
     def to_dict(self) -> Dict[str, str]:

@@ -8,7 +8,7 @@ Authentication uses a two-step process with OTP codes.
 import base64
 import json
 import logging
-from typing import Any, List, Optional
+from typing import Any, cast
 from urllib.parse import urljoin
 
 import requests
@@ -17,6 +17,13 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .exceptions import DysonAPIError, DysonAuthError, DysonConnectionError
 from .models import Device, IoTData, LoginChallenge, LoginInformation, UserStatus
+from .types import (
+    DeviceResponseDict,
+    IoTDataResponseDict,
+    LoginChallengeResponseDict,
+    LoginInformationResponseDict,
+    UserStatusResponseDict,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +51,9 @@ class DysonClient:
 
     def __init__(
         self,
-        email: Optional[str] = None,
-        password: Optional[str] = None,
-        auth_token: Optional[str] = None,
+        email: str | None = None,
+        password: str | None = None,
+        auth_token: str | None = None,
         country: str = "US",
         culture: str = "en-US",
         timeout: int = 30,
@@ -88,8 +95,8 @@ class DysonClient:
         self.session.headers.update({"User-Agent": user_agent})
 
         # Authentication state
-        self.auth_token: Optional[str] = auth_token
-        self.account_id: Optional[str] = None
+        self._auth_token: str | None = auth_token
+        self.account_id: str | None = None
         self._provisioned = False
 
         # If auth_token provided, set up session headers immediately
@@ -127,7 +134,7 @@ class DysonClient:
         except json.JSONDecodeError as e:
             raise DysonAPIError(f"Invalid JSON response from provision: {e}") from e
 
-    def get_user_status(self, email: Optional[str] = None) -> UserStatus:
+    def get_user_status(self, email: str | None = None) -> UserStatus:
         """
         Get the status of a user account.
 
@@ -160,11 +167,13 @@ class DysonClient:
 
         try:
             data = response.json()
-            return UserStatus.from_dict(data)
+            # Type safety: cast to UserStatusResponseDict
+            typed_data = cast(UserStatusResponseDict, data)
+            return UserStatus.from_dict(typed_data)
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid user status response: {e}") from e
 
-    def begin_login(self, email: Optional[str] = None) -> LoginChallenge:
+    def begin_login(self, email: str | None = None) -> LoginChallenge:
         """
         Begin the login process by requesting a challenge ID.
 
@@ -197,12 +206,14 @@ class DysonClient:
 
         try:
             data = response.json()
-            return LoginChallenge.from_dict(data)
+            # Type safety: cast to LoginChallengeResponseDict
+            typed_data = cast(LoginChallengeResponseDict, data)
+            return LoginChallenge.from_dict(typed_data)
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid login challenge response: {e}") from e
 
     def complete_login(
-        self, challenge_id: str, otp_code: str, email: Optional[str] = None, password: Optional[str] = None
+        self, challenge_id: str, otp_code: str, email: str | None = None, password: str | None = None
     ) -> LoginInformation:
         """
         Complete the login process with the challenge response.
@@ -214,7 +225,7 @@ class DysonClient:
             password: Password for login. If None, uses client's password.
 
         Returns:
-            LoginInformation object with account ID and bearer token
+            LoginInformation: Contains account and token information
 
         Raises:
             DysonAuthError: If authentication fails
@@ -249,14 +260,16 @@ class DysonClient:
 
         try:
             data = response.json()
-            login_info = LoginInformation.from_dict(data)
+            # Type safety: cast to LoginInformationResponseDict
+            typed_data = cast(LoginInformationResponseDict, data)
+            login_info = LoginInformation.from_dict(typed_data)
 
             # Store authentication details
-            self.auth_token = login_info.token
+            self._auth_token = login_info.token
             self.account_id = str(login_info.account)
 
             # Set authorization header for future requests
-            self.session.headers.update({"Authorization": f"Bearer {self.auth_token}"})
+            self.session.headers.update({"Authorization": f"Bearer {self._auth_token}"})
 
             logger.info(f"Authentication successful for account: {self.account_id}")
             return login_info
@@ -264,7 +277,7 @@ class DysonClient:
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid login response: {e}") from e
 
-    def authenticate(self, otp_code: Optional[str] = None) -> bool:
+    def authenticate(self, otp_code: str | None = None) -> bool:
         """
         Convenience method for complete authentication flow.
 
@@ -308,7 +321,7 @@ class DysonClient:
         logger.info("OTP code required to complete authentication")
         return True
 
-    def get_devices(self) -> List[Device]:
+    def get_devices(self) -> list[Device]:
         """
         Get list of devices associated with the authenticated account.
 
@@ -320,7 +333,7 @@ class DysonClient:
             DysonConnectionError: If connection fails
             DysonAPIError: If API request fails
         """
-        if not self.auth_token:
+        if not self._auth_token:
             raise DysonAuthError("Must authenticate before getting devices")
 
         url = urljoin(DYSON_API_HOST, "/v3/manifest")
@@ -338,7 +351,9 @@ class DysonClient:
             if not isinstance(devices_data, list):
                 raise DysonAPIError("Expected list of devices in response")
 
-            return [Device.from_dict(device_data) for device_data in devices_data]
+            # Type safety: cast each device data dict to DeviceResponseDict
+            typed_devices = [cast(DeviceResponseDict, device) for device in devices_data]
+            return [Device.from_dict(device_data) for device_data in typed_devices]
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid devices response: {e}") from e
 
@@ -357,7 +372,7 @@ class DysonClient:
             DysonConnectionError: If connection fails
             DysonAPIError: If API request fails
         """
-        if not self.auth_token:
+        if not self._auth_token:
             raise DysonAuthError("Must authenticate before getting IoT credentials")
 
         url = urljoin(DYSON_API_HOST, "/v2/authorize/iot-credentials")
@@ -373,7 +388,9 @@ class DysonClient:
 
         try:
             data = response.json()
-            return IoTData.from_dict(data)
+            # Type safety: cast to IoTDataResponseDict
+            typed_data = cast(IoTDataResponseDict, data)
+            return IoTData.from_dict(typed_data)
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid IoT credentials response: {e}") from e
 
@@ -457,14 +474,14 @@ class DysonClient:
         except Exception as e:
             raise DysonAPIError(f"Failed to decrypt local credentials: {e}") from e
 
-    def get_auth_token(self) -> Optional[str]:
+    def get_auth_token(self) -> str | None:
         """
         Get the current authentication token.
 
         Returns:
             The current bearer token if authenticated, None otherwise
         """
-        return self.auth_token
+        return self._auth_token
 
     def set_auth_token(self, token: str) -> None:
         """
@@ -477,14 +494,38 @@ class DysonClient:
         Args:
             token: Bearer token from previous authentication
         """
-        self.auth_token = token
+        self._auth_token = token
         self.session.headers.update({"Authorization": f"Bearer {token}"})
         logger.info("Authentication token set directly")
+
+    @property
+    def auth_token(self) -> str | None:
+        """
+        Get the current authentication token.
+
+        Returns:
+            The current bearer token if authenticated, None otherwise
+        """
+        return self._auth_token
+
+    @auth_token.setter
+    def auth_token(self, value: str | None) -> None:
+        """
+        Set the authentication token.
+
+        Args:
+            value: The bearer token to set, or None to clear authentication
+        """
+        self._auth_token = value
+        if value:
+            self.session.headers.update({"Authorization": f"Bearer {value}"})
+        else:
+            self.session.headers.pop("Authorization", None)
 
     def close(self) -> None:
         """Close the session and clear authentication state."""
         self.session.close()
-        self.auth_token = None
+        self._auth_token = None
         self.account_id = None
         self._provisioned = False
 
