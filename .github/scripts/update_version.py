@@ -42,7 +42,9 @@ def set_version(new_version: str) -> None:
         content = f.read()
 
     # Replace version line
-    new_content = re.sub(r'^version = "[^"]+"', f'version = "{new_version}"', content, flags=re.MULTILINE)
+    new_content = re.sub(
+        r'^version = "[^"]+"', f'version = "{new_version}"', content, flags=re.MULTILINE
+    )
 
     with open(pyproject_path, "w", encoding="utf-8") as f:
         f.write(new_content)
@@ -134,7 +136,11 @@ def main() -> None:
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("version", nargs="?", help="Explicit version to set")
-    group.add_argument("--increment", choices=["alpha", "beta", "rc"], help="Auto-increment version type")
+    group.add_argument(
+        "--increment",
+        choices=["alpha", "beta", "rc"],
+        help="Auto-increment version type",
+    )
     group.add_argument("--show", action="store_true", help="Show current version")
 
     args = parser.parse_args()

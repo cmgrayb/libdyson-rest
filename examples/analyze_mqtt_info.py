@@ -52,7 +52,9 @@ def analyze_device_mqtt_info(device: Any, iot_data: Any, client: DysonClient) ->
 
         # Decrypt the local broker password
         try:
-            decrypted_password = client.decrypt_local_credentials(encrypted_password, device.serial_number)
+            decrypted_password = client.decrypt_local_credentials(
+                encrypted_password, device.serial_number
+            )
             print(f"      Local Broker Password (decrypted): {decrypted_password}")
         except Exception as e:
             print(f"      ⚠️  Failed to decrypt password: {e}")
@@ -90,6 +92,11 @@ def analyze_device_mqtt_info(device: Any, iot_data: Any, client: DysonClient) ->
     root_topic = device.connected_configuration.mqtt.mqtt_root_topic_level
     base_topic = f"{root_topic}/{device.serial_number}"
 
+    # Use the MQTT root topic from the device configuration
+    # Note: This should always be available for connected devices
+    root_topic = device.connected_configuration.mqtt.mqtt_root_topic_level
+    base_topic = f"{root_topic}/{device.serial_number}"
+
     topics = {
         "Status Topics": [
             f"{base_topic}/status/current",
@@ -98,7 +105,10 @@ def analyze_device_mqtt_info(device: Any, iot_data: Any, client: DysonClient) ->
             f"{base_topic}/status/summary",
         ],
         "Command Topics": [f"{base_topic}/command"],
-        "Sensor Topics": [f"{base_topic}/status/sensor", f"{base_topic}/status/environmental"],
+        "Sensor Topics": [
+            f"{base_topic}/status/sensor",
+            f"{base_topic}/status/environmental",
+        ],
     }
 
     for category, topic_list in topics.items():
@@ -116,7 +126,9 @@ def analyze_device_mqtt_info(device: Any, iot_data: Any, client: DysonClient) ->
     print("      Protocol: MQTT over WebSockets")
     print("      TLS: Required (AWS IoT)")
     print("      Authentication: Custom Authorizer")
-    print(f"         Authorizer Name: {iot_data.iot_credentials.custom_authorizer_name}")
+    print(
+        f"         Authorizer Name: {iot_data.iot_credentials.custom_authorizer_name}"
+    )
     print(f"         Token Key Header: {iot_data.iot_credentials.token_key}")
     print(f"         Token Value: {iot_data.iot_credentials.token_value}")
     print(f"         Token Signature: {iot_data.iot_credentials.token_signature}")
@@ -175,7 +187,9 @@ def main() -> None:  # noqa: C901
             for device in devices:
                 # Skip non-connected devices - this library is for REST/WebSocket API connected devices only
                 if not device.connected_configuration:
-                    print(f"⚠️  Skipping {device.name} - no connected configuration available")
+                    print(
+                        f"⚠️  Skipping {device.name} - no connected configuration available"
+                    )
                     continue
 
                 try:
@@ -186,7 +200,9 @@ def main() -> None:  # noqa: C901
                     analyze_device_mqtt_info(device, iot_data, client)
 
                     # Get MQTT root topic for connected devices
-                    root_topic = device.connected_configuration.mqtt.mqtt_root_topic_level
+                    root_topic = (
+                        device.connected_configuration.mqtt.mqtt_root_topic_level
+                    )
 
                     # Export data for external use
                     mqtt_info = {
@@ -209,7 +225,9 @@ def main() -> None:  # noqa: C901
                                 "type": "custom_authorizer",
                                 "authorizer_name": iot_data.iot_credentials.custom_authorizer_name,
                                 "token_key": iot_data.iot_credentials.token_key,
-                                "token_value": str(iot_data.iot_credentials.token_value),
+                                "token_value": str(
+                                    iot_data.iot_credentials.token_value
+                                ),
                                 "token_signature": iot_data.iot_credentials.token_signature,
                             },
                         },
@@ -219,8 +237,14 @@ def main() -> None:  # noqa: C901
                                 f"{root_topic}/{device.serial_number}/status/faults",
                                 f"{root_topic}/{device.serial_number}/status/software",
                                 f"{root_topic}/{device.serial_number}/status/summary",
+                                f"{root_topic}/{device.serial_number}/status/current",
+                                f"{root_topic}/{device.serial_number}/status/faults",
+                                f"{root_topic}/{device.serial_number}/status/software",
+                                f"{root_topic}/{device.serial_number}/status/summary",
                             ],
-                            "commands": [f"{root_topic}/{device.serial_number}/command"],
+                            "commands": [
+                                f"{root_topic}/{device.serial_number}/command"
+                            ],
                         },
                     }
 
@@ -237,7 +261,8 @@ def main() -> None:  # noqa: C901
                         # Try to decrypt local credentials
                         try:
                             decrypted_password = client.decrypt_local_credentials(
-                                device.connected_configuration.mqtt.local_broker_credentials, device.serial_number
+                                device.connected_configuration.mqtt.local_broker_credentials,
+                                device.serial_number,
                             )
                             mqtt_config["local_mqtt_connection"] = {
                                 "host": f"{device.name}.local",
@@ -250,7 +275,9 @@ def main() -> None:  # noqa: C901
                                 "root_topic": device.connected_configuration.mqtt.mqtt_root_topic_level,
                             }
                         except Exception as e:
-                            mqtt_config["local_mqtt_error"] = f"Failed to decrypt password: {e}"
+                            mqtt_config["local_mqtt_error"] = (
+                                f"Failed to decrypt password: {e}"
+                            )
 
                         mqtt_info["device_mqtt_config"] = mqtt_config
 
@@ -264,7 +291,9 @@ def main() -> None:  # noqa: C901
                 except Exception as e:
                     print(f"❌ Error analyzing device {device.name}: {e}")
 
-            print(f"\n✅ Analysis complete! Found MQTT information for {len(devices)} device(s)")
+            print(
+                f"\n✅ Analysis complete! Found MQTT information for {len(devices)} device(s)"
+            )
             print("\nThe JSON files contain all the connection parameters needed")
             print("for an external MQTT client to connect to your Dyson devices.")
 
