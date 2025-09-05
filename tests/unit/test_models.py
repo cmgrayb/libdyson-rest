@@ -32,7 +32,9 @@ def test_dyson_device_creation() -> None:
 
 def test_dyson_device_state_creation() -> None:
     """Test DysonDeviceState dataclass creation."""
-    state = DysonDeviceState(power=True, speed=5, mode="auto", temperature=22.5, humidity=45, air_quality=3)
+    state = DysonDeviceState(
+        power=True, speed=5, mode="auto", temperature=22.5, humidity=45, air_quality=3
+    )
 
     assert state.power is True
     assert state.speed == 5
@@ -56,7 +58,9 @@ def test_dyson_device_state_optional_fields() -> None:
 
 def test_dyson_credentials_creation() -> None:
     """Test DysonCredentials dataclass creation."""
-    creds = DysonCredentials(username="user123", password="pass456", hostname="device.local", port=1883)
+    creds = DysonCredentials(
+        username="user123", password="pass456", hostname="device.local", port=1883
+    )
 
     assert creds.username == "user123"
     assert creds.password == "pass456"
@@ -66,7 +70,9 @@ def test_dyson_credentials_creation() -> None:
 
 def test_dyson_credentials_default_port() -> None:
     """Test DysonCredentials with default port."""
-    creds = DysonCredentials(username="user123", password="pass456", hostname="device.local")
+    creds = DysonCredentials(
+        username="user123", password="pass456", hostname="device.local"
+    )
 
     assert creds.port == 1883
 

@@ -19,7 +19,9 @@ from libdyson_rest import (
 )
 
 # Configure logging to see what's happening
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 
 def get_user_credentials() -> Tuple[Optional[str], Optional[str], str, str]:
@@ -93,7 +95,9 @@ def run_auth_test() -> None:  # noqa: C901
 
     try:
         # Initialize client
-        client = DysonClient(email=email, password=password, country=country, culture=culture)
+        client = DysonClient(
+            email=email, password=password, country=country, culture=culture
+        )
         print(f"✅ Client initialized for {email} in {country} ({culture})")
 
         # Step 1: Provision

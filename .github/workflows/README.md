@@ -9,7 +9,7 @@ This directory contains CI/CD workflows for the libdyson-rest project, ensuring 
 #### `quality-checks.yml`
 **Primary code quality validation**
 - **Triggers**: PRs and pushes to main/develop
-- **Matrix**: Python 3.9-3.13 on Ubuntu
+- **Matrix**: Python 3.10-3.13 on Ubuntu
 - **Checks**: Black formatting, isort imports, Flake8 linting, mypy types, pytest tests
 - **Coverage**: Uploads coverage reports to Codecov
 - **Status**: ❗ Required for merge
@@ -26,7 +26,7 @@ This directory contains CI/CD workflows for the libdyson-rest project, ensuring 
 #### `build-test.yml`
 **Cross-platform build verification**
 - **Triggers**: PRs and pushes to main/develop
-- **Matrix**: Python 3.9-3.13 on Ubuntu/Windows/macOS
+- **Matrix**: Python 3.10-3.13 on Ubuntu/Windows/macOS
 - **Checks**: Package building, installation testing, import validation
 - **Artifacts**: Uploads build artifacts from Ubuntu/Python 3.11
 - **Status**: ❗ Required for merge

@@ -88,10 +88,13 @@ def use_token_for_device_operations(token: str) -> None:
                 if device.connected_configuration:
                     try:
                         decrypted_password = client.decrypt_local_credentials(
-                            device.connected_configuration.mqtt.local_broker_credentials, device.serial_number
+                            device.connected_configuration.mqtt.local_broker_credentials,
+                            device.serial_number,
                         )
                         print(f"      Local MQTT Password: {decrypted_password}")
-                        print(f"      Root Topic: {device.connected_configuration.mqtt.mqtt_root_topic_level}")
+                        print(
+                            f"      Root Topic: {device.connected_configuration.mqtt.mqtt_root_topic_level}"
+                        )
                     except Exception as e:
                         print(f"      ⚠️  Could not decrypt local password: {e}")
 
@@ -130,7 +133,9 @@ def main() -> None:
         print("\n📝 Usage Summary:")
         print("   1. Authenticate once with email/password/OTP to get token")
         print("   2. Store token securely (e.g., in config file, environment variable)")
-        print("   3. Create new DysonClient(auth_token=token) for subsequent operations")
+        print(
+            "   3. Create new DysonClient(auth_token=token) for subsequent operations"
+        )
         print("   4. No need for email/password/OTP on subsequent uses")
 
     except (DysonAuthError, ValueError) as e:
