@@ -18,7 +18,9 @@ def run_command(cmd: list[str], description: str) -> bool:
     print("-" * 60)
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=Path(__file__).parent)
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=Path(__file__).parent
+        )
 
         if result.returncode == 0:
             print("✅ PASSED")
@@ -55,12 +57,27 @@ def main() -> None:
             "description": "Basic mypy type checking",
         },
         {
-            "cmd": [".venv/Scripts/python.exe", "-m", "mypy", "src/libdyson_rest", "--strict"],
+            "cmd": [
+                ".venv/Scripts/python.exe",
+                "-m",
+                "mypy",
+                "src/libdyson_rest",
+                "--strict",
+            ],
             "description": "Strict mypy type checking",
         },
-        {"cmd": [".venv/Scripts/python.exe", "-m", "pytest", "-v"], "description": "Unit and integration tests"},
-        {"cmd": [".venv/Scripts/python.exe", "-m", "flake8", "."], "description": "Code style linting"},
-        {"cmd": [".venv/Scripts/python.exe", "-m", "black", "--check", "."], "description": "Code formatting check"},
+        {
+            "cmd": [".venv/Scripts/python.exe", "-m", "pytest", "-v"],
+            "description": "Unit and integration tests",
+        },
+        {
+            "cmd": [".venv/Scripts/python.exe", "-m", "flake8", "."],
+            "description": "Code style linting",
+        },
+        {
+            "cmd": [".venv/Scripts/python.exe", "-m", "black", "--check", "."],
+            "description": "Code formatting check",
+        },
     ]
 
     results = []

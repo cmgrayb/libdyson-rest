@@ -42,12 +42,16 @@ def safe_get_str(data: Dict[str, Any], key: str, field_path: str = "") -> str:
 
     value = data[key]
     if not isinstance(value, str):
-        raise JSONValidationError(f"Expected str for {full_path}, got {type(value).__name__}")
+        raise JSONValidationError(
+            f"Expected str for {full_path}, got {type(value).__name__}"
+        )
 
     return value
 
 
-def safe_get_optional_str(data: Dict[str, Any], key: str, field_path: str = "") -> str | None:
+def safe_get_optional_str(
+    data: Dict[str, Any], key: str, field_path: str = ""
+) -> str | None:
     """
     Safely extract optional string from dict.
 
@@ -72,7 +76,9 @@ def safe_get_optional_str(data: Dict[str, Any], key: str, field_path: str = "") 
         return None
 
     if not isinstance(value, str):
-        raise JSONValidationError(f"Expected str or None for {full_path}, got {type(value).__name__}")
+        raise JSONValidationError(
+            f"Expected str or None for {full_path}, got {type(value).__name__}"
+        )
 
     return value
 
@@ -99,7 +105,9 @@ def safe_get_bool(data: Dict[str, Any], key: str, field_path: str = "") -> bool:
 
     value = data[key]
     if not isinstance(value, bool):
-        raise JSONValidationError(f"Expected bool for {full_path}, got {type(value).__name__}")
+        raise JSONValidationError(
+            f"Expected bool for {full_path}, got {type(value).__name__}"
+        )
 
     return value
 
@@ -126,12 +134,16 @@ def safe_get_list(data: Dict[str, Any], key: str, field_path: str = "") -> list[
 
     value = data[key]
     if not isinstance(value, list):
-        raise JSONValidationError(f"Expected list for {full_path}, got {type(value).__name__}")
+        raise JSONValidationError(
+            f"Expected list for {full_path}, got {type(value).__name__}"
+        )
 
     return value
 
 
-def safe_get_optional_list(data: Dict[str, Any], key: str, field_path: str = "") -> list[Any] | None:
+def safe_get_optional_list(
+    data: Dict[str, Any], key: str, field_path: str = ""
+) -> list[Any] | None:
     """
     Safely extract optional list from dict.
 
@@ -156,12 +168,16 @@ def safe_get_optional_list(data: Dict[str, Any], key: str, field_path: str = "")
         return None
 
     if not isinstance(value, list):
-        raise JSONValidationError(f"Expected list or None for {full_path}, got {type(value).__name__}")
+        raise JSONValidationError(
+            f"Expected list or None for {full_path}, got {type(value).__name__}"
+        )
 
     return value
 
 
-def safe_get_dict(data: Dict[str, Any], key: str, field_path: str = "") -> Dict[str, Any]:
+def safe_get_dict(
+    data: Dict[str, Any], key: str, field_path: str = ""
+) -> Dict[str, Any]:
     """
     Safely extract nested dict from dict with runtime validation.
 
@@ -183,12 +199,16 @@ def safe_get_dict(data: Dict[str, Any], key: str, field_path: str = "") -> Dict[
 
     value = data[key]
     if not isinstance(value, dict):
-        raise JSONValidationError(f"Expected dict for {full_path}, got {type(value).__name__}")
+        raise JSONValidationError(
+            f"Expected dict for {full_path}, got {type(value).__name__}"
+        )
 
     return value
 
 
-def safe_get_optional_dict(data: Dict[str, Any], key: str, field_path: str = "") -> Dict[str, Any] | None:
+def safe_get_optional_dict(
+    data: Dict[str, Any], key: str, field_path: str = ""
+) -> Dict[str, Any] | None:
     """
     Safely extract optional nested dict from dict.
 
@@ -213,7 +233,9 @@ def safe_get_optional_dict(data: Dict[str, Any], key: str, field_path: str = "")
         return None
 
     if not isinstance(value, dict):
-        raise JSONValidationError(f"Expected dict or None for {full_path}, got {type(value).__name__}")
+        raise JSONValidationError(
+            f"Expected dict or None for {full_path}, got {type(value).__name__}"
+        )
 
     return value
 
@@ -235,10 +257,14 @@ def safe_parse_uuid(value: str, field_path: str = "") -> UUID:
     try:
         return UUID(value)
     except ValueError as e:
-        raise JSONValidationError(f"Invalid UUID format for {field_path}: {value}") from e
+        raise JSONValidationError(
+            f"Invalid UUID format for {field_path}: {value}"
+        ) from e
 
 
-def validate_json_response(response_data: Any, field_path: str = "response") -> Dict[str, Any]:
+def validate_json_response(
+    response_data: Any, field_path: str = "response"
+) -> Dict[str, Any]:
     """
     Validate that response data is a dictionary.
 
@@ -253,6 +279,8 @@ def validate_json_response(response_data: Any, field_path: str = "response") -> 
         JSONValidationError: If response is not a dictionary
     """
     if not isinstance(response_data, dict):
-        raise JSONValidationError(f"Expected dict for {field_path}, got {type(response_data).__name__}")
+        raise JSONValidationError(
+            f"Expected dict for {field_path}, got {type(response_data).__name__}"
+        )
 
     return response_data

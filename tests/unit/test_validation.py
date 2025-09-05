@@ -58,7 +58,9 @@ class TestSafeGetStr:
     def test_safe_get_str_missing_key_with_path(self) -> None:
         """Test string extraction with missing key and field path."""
         data: Dict[str, Any] = {}
-        with pytest.raises(JSONValidationError, match="Missing required field: user.name"):
+        with pytest.raises(
+            JSONValidationError, match="Missing required field: user.name"
+        ):
             safe_get_str(data, "name", "user")
 
     def test_safe_get_str_wrong_type(self) -> None:
@@ -70,7 +72,9 @@ class TestSafeGetStr:
     def test_safe_get_str_none_value(self) -> None:
         """Test string extraction with None value."""
         data = {"name": None}
-        with pytest.raises(JSONValidationError, match="Expected str for name, got NoneType"):
+        with pytest.raises(
+            JSONValidationError, match="Expected str for name, got NoneType"
+        ):
             safe_get_str(data, "name")
 
 
@@ -98,7 +102,9 @@ class TestSafeGetOptionalStr:
     def test_safe_get_optional_str_wrong_type(self) -> None:
         """Test optional string extraction with wrong type."""
         data = {"name": 123}
-        with pytest.raises(JSONValidationError, match="Expected str or None for name, got int"):
+        with pytest.raises(
+            JSONValidationError, match="Expected str or None for name, got int"
+        ):
             safe_get_optional_str(data, "name")
 
 
@@ -126,7 +132,9 @@ class TestSafeGetBool:
     def test_safe_get_bool_wrong_type(self) -> None:
         """Test bool extraction with wrong type."""
         data = {"active": "true"}
-        with pytest.raises(JSONValidationError, match="Expected bool for active, got str"):
+        with pytest.raises(
+            JSONValidationError, match="Expected bool for active, got str"
+        ):
             safe_get_bool(data, "active")
 
 
@@ -154,7 +162,9 @@ class TestSafeGetList:
     def test_safe_get_list_wrong_type(self) -> None:
         """Test list extraction with wrong type."""
         data = {"items": "not_a_list"}
-        with pytest.raises(JSONValidationError, match="Expected list for items, got str"):
+        with pytest.raises(
+            JSONValidationError, match="Expected list for items, got str"
+        ):
             safe_get_list(data, "items")
 
 
@@ -182,7 +192,9 @@ class TestSafeGetOptionalList:
     def test_safe_get_optional_list_wrong_type(self) -> None:
         """Test optional list extraction with wrong type."""
         data = {"items": "not_a_list"}
-        with pytest.raises(JSONValidationError, match="Expected list or None for items, got str"):
+        with pytest.raises(
+            JSONValidationError, match="Expected list or None for items, got str"
+        ):
             safe_get_optional_list(data, "items")
 
 
@@ -210,7 +222,9 @@ class TestSafeGetDict:
     def test_safe_get_dict_wrong_type(self) -> None:
         """Test dict extraction with wrong type."""
         data = {"config": "not_a_dict"}
-        with pytest.raises(JSONValidationError, match="Expected dict for config, got str"):
+        with pytest.raises(
+            JSONValidationError, match="Expected dict for config, got str"
+        ):
             safe_get_dict(data, "config")
 
 
@@ -238,7 +252,9 @@ class TestSafeGetOptionalDict:
     def test_safe_get_optional_dict_wrong_type(self) -> None:
         """Test optional dict extraction with wrong type."""
         data = {"config": "not_a_dict"}
-        with pytest.raises(JSONValidationError, match="Expected dict or None for config, got str"):
+        with pytest.raises(
+            JSONValidationError, match="Expected dict or None for config, got str"
+        ):
             safe_get_optional_dict(data, "config")
 
 
@@ -264,7 +280,9 @@ class TestSafeParseUUID:
 
     def test_safe_parse_uuid_invalid_format_with_path(self) -> None:
         """Test UUID parsing with invalid UUID format and field path."""
-        with pytest.raises(JSONValidationError, match="Invalid UUID format for user.id"):
+        with pytest.raises(
+            JSONValidationError, match="Invalid UUID format for user.id"
+        ):
             safe_parse_uuid("not-a-uuid", "user.id")
 
 
@@ -279,15 +297,21 @@ class TestValidateJsonResponse:
 
     def test_validate_json_response_not_dict(self) -> None:
         """Test JSON response validation with non-dict input."""
-        with pytest.raises(JSONValidationError, match="Expected dict for TestModel, got str"):
+        with pytest.raises(
+            JSONValidationError, match="Expected dict for TestModel, got str"
+        ):
             validate_json_response("not_a_dict", "TestModel")
 
     def test_validate_json_response_none(self) -> None:
         """Test JSON response validation with None input."""
-        with pytest.raises(JSONValidationError, match="Expected dict for TestModel, got NoneType"):
+        with pytest.raises(
+            JSONValidationError, match="Expected dict for TestModel, got NoneType"
+        ):
             validate_json_response(None, "TestModel")
 
     def test_validate_json_response_list(self) -> None:
         """Test JSON response validation with list input."""
-        with pytest.raises(JSONValidationError, match="Expected dict for TestModel, got list"):
+        with pytest.raises(
+            JSONValidationError, match="Expected dict for TestModel, got list"
+        ):
             validate_json_response([1, 2, 3], "TestModel")

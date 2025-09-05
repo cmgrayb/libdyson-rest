@@ -76,11 +76,17 @@ class DysonClient:
         """
         # Validate country format
         if not (country and len(country) == 2 and country.isupper()):
-            raise ValueError("Country must be a 2-character uppercase ISO 3166-1 alpha-2 code")
+            raise ValueError(
+                "Country must be a 2-character uppercase ISO 3166-1 alpha-2 code"
+            )
 
         # Validate culture format
         if not (
-            culture and len(culture) == 5 and culture[2] == "-" and culture[:2].islower() and culture[3:].isupper()
+            culture
+            and len(culture) == 5
+            and culture[2] == "-"
+            and culture[:2].islower()
+            and culture[3:].isupper()
         ):
             raise ValueError("Culture must be in format 'xx-YY' (e.g., 'en-US')")
 
@@ -117,7 +123,9 @@ class DysonClient:
             DysonConnectionError: If connection fails
             DysonAPIError: If API request fails
         """
-        url = urljoin(DYSON_API_HOST, "/v1/provisioningservice/application/Android/version")
+        url = urljoin(
+            DYSON_API_HOST, "/v1/provisioningservice/application/Android/version"
+        )
 
         try:
             response = self.session.get(url, timeout=self.timeout)
@@ -160,7 +168,9 @@ class DysonClient:
         payload = {"email": target_email}
 
         try:
-            response = self.session.post(url, params=params, json=payload, timeout=self.timeout)
+            response = self.session.post(
+                url, params=params, json=payload, timeout=self.timeout
+            )
             response.raise_for_status()
         except requests.RequestException as e:
             raise DysonConnectionError(f"Failed to get user status: {e}") from e
@@ -199,7 +209,9 @@ class DysonClient:
         payload = {"email": target_email}
 
         try:
-            response = self.session.post(url, params=params, json=payload, timeout=self.timeout)
+            response = self.session.post(
+                url, params=params, json=payload, timeout=self.timeout
+            )
             response.raise_for_status()
         except requests.RequestException as e:
             raise DysonConnectionError(f"Failed to begin login: {e}") from e
@@ -213,7 +225,11 @@ class DysonClient:
             raise DysonAPIError(f"Invalid login challenge response: {e}") from e
 
     def complete_login(
-        self, challenge_id: str, otp_code: str, email: str | None = None, password: str | None = None
+        self,
+        challenge_id: str,
+        otp_code: str,
+        email: str | None = None,
+        password: str | None = None,
     ) -> LoginInformation:
         """
         Complete the login process with the challenge response.
@@ -251,10 +267,16 @@ class DysonClient:
         }
 
         try:
-            response = self.session.post(url, params=params, json=payload, timeout=self.timeout)
+            response = self.session.post(
+                url, params=params, json=payload, timeout=self.timeout
+            )
             response.raise_for_status()
         except requests.RequestException as e:
-            if hasattr(e, "response") and e.response is not None and e.response.status_code == 401:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
                 raise DysonAuthError("Invalid credentials or OTP code") from e
             raise DysonConnectionError(f"Failed to complete login: {e}") from e
 
@@ -342,7 +364,11 @@ class DysonClient:
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
         except requests.RequestException as e:
-            if hasattr(e, "response") and e.response is not None and e.response.status_code == 401:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
                 raise DysonAuthError("Authentication token expired or invalid") from e
             raise DysonConnectionError(f"Failed to get devices: {e}") from e
 
@@ -352,7 +378,9 @@ class DysonClient:
                 raise DysonAPIError("Expected list of devices in response")
 
             # Type safety: cast each device data dict to DeviceResponseDict
-            typed_devices = [cast(DeviceResponseDict, device) for device in devices_data]
+            typed_devices = [
+                cast(DeviceResponseDict, device) for device in devices_data
+            ]
             return [Device.from_dict(device_data) for device_data in typed_devices]
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid devices response: {e}") from e
@@ -382,7 +410,11 @@ class DysonClient:
             response = self.session.post(url, json=payload, timeout=self.timeout)
             response.raise_for_status()
         except requests.RequestException as e:
-            if hasattr(e, "response") and e.response is not None and e.response.status_code == 401:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
                 raise DysonAuthError("Authentication token expired or invalid") from e
             raise DysonConnectionError(f"Failed to get IoT credentials: {e}") from e
 
@@ -394,7 +426,9 @@ class DysonClient:
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid IoT credentials response: {e}") from e
 
-    def decrypt_local_credentials(self, encrypted_password: str, serial_number: str) -> str:
+    def decrypt_local_credentials(
+        self, encrypted_password: str, serial_number: str
+    ) -> str:
         """
         Decrypt the local MQTT broker credentials for direct device connection.
 
@@ -458,7 +492,9 @@ class DysonClient:
             encrypted_bytes = base64.b64decode(encrypted_password)
 
             # Create AES-CBC cipher
-            cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend())
+            cipher = Cipher(
+                algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend()
+            )
             decryptor = cipher.decryptor()
 
             # Decrypt the data

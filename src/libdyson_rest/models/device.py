@@ -8,7 +8,12 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, cast
 
-from ..types import ConnectedConfigurationResponseDict, DeviceResponseDict, FirmwareResponseDict, MQTTResponseDict
+from ..types import (
+    ConnectedConfigurationResponseDict,
+    DeviceResponseDict,
+    FirmwareResponseDict,
+    MQTTResponseDict,
+)
 from ..validation import (
     safe_get_bool,
     safe_get_dict,
@@ -96,9 +101,13 @@ class MQTT:
         """Create MQTT instance from dictionary."""
         validated_data = validate_json_response(data, "MQTT")
         return cls(
-            local_broker_credentials=safe_get_str(validated_data, "localBrokerCredentials"),
+            local_broker_credentials=safe_get_str(
+                validated_data, "localBrokerCredentials"
+            ),
             mqtt_root_topic_level=safe_get_str(validated_data, "mqttRootTopicLevel"),
-            remote_broker_type=RemoteBrokerType(safe_get_str(validated_data, "remoteBrokerType")),
+            remote_broker_type=RemoteBrokerType(
+                safe_get_str(validated_data, "remoteBrokerType")
+            ),
         )
 
 
@@ -110,7 +119,9 @@ class ConnectedConfiguration:
     mqtt: MQTT
 
     @classmethod
-    def from_dict(cls, data: ConnectedConfigurationResponseDict) -> "ConnectedConfiguration":
+    def from_dict(
+        cls, data: ConnectedConfigurationResponseDict
+    ) -> "ConnectedConfiguration":
         """Create ConnectedConfiguration instance from dictionary."""
         validated_data = validate_json_response(data, "ConnectedConfiguration")
         firmware_data = safe_get_dict(validated_data, "firmware")
@@ -140,14 +151,20 @@ class Device:
         validated_data = validate_json_response(data, "Device")
 
         connected_config = None
-        connected_config_data = safe_get_optional_dict(validated_data, "connectedConfiguration")
+        connected_config_data = safe_get_optional_dict(
+            validated_data, "connectedConfiguration"
+        )
         if connected_config_data is not None:
-            config_dict = cast(ConnectedConfigurationResponseDict, connected_config_data)
+            config_dict = cast(
+                ConnectedConfigurationResponseDict, connected_config_data
+            )
             connected_config = ConnectedConfiguration.from_dict(config_dict)
 
         return cls(
             category=DeviceCategory(safe_get_str(validated_data, "category")),
-            connection_category=ConnectionCategory(safe_get_str(validated_data, "connectionCategory")),
+            connection_category=ConnectionCategory(
+                safe_get_str(validated_data, "connectionCategory")
+            ),
             model=safe_get_str(validated_data, "productType"),
             name=safe_get_str(validated_data, "name"),
             serial_number=safe_get_str(validated_data, "serial"),
@@ -179,7 +196,8 @@ class Device:
 
             if self.connected_configuration.firmware.capabilities:
                 firmware_dict["capabilities"] = [
-                    cap.value for cap in self.connected_configuration.firmware.capabilities
+                    cap.value
+                    for cap in self.connected_configuration.firmware.capabilities
                 ]
 
             result["connectedConfiguration"] = {

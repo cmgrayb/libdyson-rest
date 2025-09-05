@@ -9,7 +9,11 @@ from enum import Enum
 from typing import Dict
 from uuid import UUID
 
-from ..types import LoginChallengeResponseDict, LoginInformationResponseDict, UserStatusResponseDict
+from ..types import (
+    LoginChallengeResponseDict,
+    LoginInformationResponseDict,
+    UserStatusResponseDict,
+)
 from ..validation import safe_get_str, safe_parse_uuid, validate_json_response
 
 
@@ -23,7 +27,9 @@ class AccountStatus(Enum):
 class AuthenticationMethod(Enum):
     """Authentication method enumeration."""
 
-    EMAIL_PWD_2FA = "EMAIL_PWD_2FA"  # nosec B105 - This is an enum identifier, not a password
+    EMAIL_PWD_2FA = (
+        "EMAIL_PWD_2FA"  # nosec B105 - This is an enum identifier, not a password
+    )
 
 
 class TokenType(Enum):
@@ -45,7 +51,9 @@ class UserStatus:
         validated_data = validate_json_response(data, "UserStatus")
         return cls(
             account_status=AccountStatus(safe_get_str(validated_data, "accountStatus")),
-            authentication_method=AuthenticationMethod(safe_get_str(validated_data, "authenticationMethod")),
+            authentication_method=AuthenticationMethod(
+                safe_get_str(validated_data, "authenticationMethod")
+            ),
         )
 
     def to_dict(self) -> Dict[str, str]:

@@ -9,7 +9,12 @@ from typing import Any, Dict, cast
 from uuid import UUID
 
 from ..types import IoTCredentialsResponseDict, IoTDataResponseDict
-from ..validation import JSONValidationError, safe_get_dict, safe_get_str, validate_json_response
+from ..validation import (
+    JSONValidationError,
+    safe_get_dict,
+    safe_get_str,
+    validate_json_response,
+)
 
 
 @dataclass
@@ -69,7 +74,9 @@ class IoTData:
         validated_data = validate_json_response(data, "IoTData")
 
         # Cast the nested dictionary to the correct type
-        iot_creds_data = cast(IoTCredentialsResponseDict, safe_get_dict(validated_data, "IoTCredentials"))
+        iot_creds_data = cast(
+            IoTCredentialsResponseDict, safe_get_dict(validated_data, "IoTCredentials")
+        )
 
         return cls(
             endpoint=safe_get_str(validated_data, "Endpoint"),

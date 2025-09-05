@@ -10,7 +10,9 @@ from libdyson_rest import DysonClient
 @pytest.fixture
 def mock_dyson_client() -> DysonClient:
     """Create a mock Dyson client for testing."""
-    client = DysonClient(email="test@example.com", password="test_password", country="US")
+    client = DysonClient(
+        email="test@example.com", password="test_password", country="US"
+    )
     return client
 
 

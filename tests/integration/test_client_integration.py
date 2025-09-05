@@ -14,7 +14,9 @@ class TestDysonClientIntegration:
 
     def test_client_initialization(self) -> None:
         """Test client can be initialized with proper parameters."""
-        client = DysonClient(email="test@example.com", password="password123", country="US", timeout=30)
+        client = DysonClient(
+            email="test@example.com", password="password123", country="US", timeout=30
+        )
 
         assert client.email == "test@example.com"
         assert client.password == "password123"

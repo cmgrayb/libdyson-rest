@@ -145,7 +145,10 @@ class TestIoTData:
 
         assert iot_data.endpoint == "https://example.amazonaws.com"
         assert iot_data.iot_credentials.custom_authorizer_name == "TestAuthorizer"
-        assert str(iot_data.iot_credentials.client_id) == "12345678-1234-5678-9abc-123456789abc"
+        assert (
+            str(iot_data.iot_credentials.client_id)
+            == "12345678-1234-5678-9abc-123456789abc"
+        )
 
     def test_iot_data_from_dict_missing_endpoint(self) -> None:
         """Test IoTData from dictionary with missing endpoint."""
@@ -159,7 +162,9 @@ class TestIoTData:
             }
         }
 
-        with pytest.raises(JSONValidationError, match="Missing required field: Endpoint"):
+        with pytest.raises(
+            JSONValidationError, match="Missing required field: Endpoint"
+        ):
             IoTData.from_dict(data)
 
     def test_iot_data_from_dict_missing_credentials(self) -> None:
@@ -168,7 +173,9 @@ class TestIoTData:
             "Endpoint": "https://example.amazonaws.com",
         }
 
-        with pytest.raises(JSONValidationError, match="Missing required field: IoTCredentials"):
+        with pytest.raises(
+            JSONValidationError, match="Missing required field: IoTCredentials"
+        ):
             IoTData.from_dict(data)
 
     def test_iot_data_to_dict(self) -> None:
