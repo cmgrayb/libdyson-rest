@@ -1,0 +1,52 @@
+[
+  {
+    "category": "light",
+    "connectionCategory": "lecAndWifi",
+    "model": "dolore quis labore nulla nostrud",
+    "name": "qui deser",
+    "serialNumber": "do sint nostrud",
+    "type": "dolor voluptate",
+    "connectedConfiguration": {
+      "firmware": {
+        "autoUpdateEnabled": true,
+        "newVersionAvailable": true,
+        "version": "ut adipisicing",
+        "capabilities": [
+          "EnvironmentalData",
+          "ChangeWifi"
+        ]
+      },
+      "mqtt": {
+        "localBrokerCredentials": "labore dolore",
+        "mqttRootTopicLevel": "aliqua cillum elit do",
+        "remoteBrokerType": "wss"
+      }
+    },
+    "variant": "pariatur"
+  },
+  {
+    "category": "light",
+    "connectionCategory": "lecOnly",
+    "model": "dolor do Ut eiusmod volup",
+    "name": "fugiat commodo tempor laborum sunt",
+    "serialNumber": "in ipsum",
+    "type": "voluptate fugiat exercitation Ut",
+    "connectedConfiguration": {
+      "firmware": {
+        "autoUpdateEnabled": false,
+        "newVersionAvailable": false,
+        "version": "exercitation dolore aute sunt esse",
+        "capabilities": [
+          "Scheduling",
+          "AdvanceOscillationDay1"
+        ]
+      },
+      "mqtt": {
+        "localBrokerCredentials": "velit ut",
+        "mqttRootTopicLevel": "qui",
+        "remoteBrokerType": "wss"
+      }
+    },
+    "variant": "veniam non dolor est minim"
+  }
+]
