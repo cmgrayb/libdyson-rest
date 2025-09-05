@@ -18,7 +18,9 @@ from libdyson_rest import (
 )
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -97,7 +99,9 @@ def get_device_capabilities(device: Any) -> List[str]:
         and device.connected_configuration.firmware
         and device.connected_configuration.firmware.capabilities
     ):
-        return [cap.value for cap in device.connected_configuration.firmware.capabilities]
+        return [
+            cap.value for cap in device.connected_configuration.firmware.capabilities
+        ]
     return []
 
 
@@ -121,7 +125,11 @@ def scan_devices(client: DysonClient) -> None:
             variant = device.variant or "N/A"
             model = device.model or "N/A"
             category = device.category.value if device.category else "N/A"
-            connection_category = device.connection_category.value if device.connection_category else "N/A"
+            connection_category = (
+                device.connection_category.value
+                if device.connection_category
+                else "N/A"
+            )
             mqtt_root_topic = get_mqtt_root_topic(device) or "N/A"
             capabilities = get_device_capabilities(device)
             device_name = device.name if hasattr(device, "name") else f"Device {i}"
@@ -162,7 +170,9 @@ def main() -> None:
         print("\n🚀 Starting device scan...\n")
 
         # Initialize client and authenticate
-        with DysonClient(email=email, password=password, country=country, culture=culture) as client:
+        with DysonClient(
+            email=email, password=password, country=country, culture=culture
+        ) as client:
             if authenticate_client(client, email):
                 scan_devices(client)
             else:

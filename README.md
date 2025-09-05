@@ -279,9 +279,9 @@ This library implements the complete Dyson App API as documented in their OpenAP
 
 ## Requirements
 
-- Python 3.8+
+- Python 3.10+
 - `requests` - HTTP client library
-- `dataclasses` - Data model support (Python 3.8+)
+- `dataclasses` - Data model support (Python 3.10+)
 
 ## Contributing
 

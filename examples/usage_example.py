@@ -137,7 +137,9 @@ def step_by_step_auth_example() -> None:
         logger.info("\\nStep 2: Checking user account status...")
         user_status = client.get_user_status()
         logger.info(f"✓ Account Status: {user_status.account_status.value}")
-        logger.info(f"✓ Authentication Method: {user_status.authentication_method.value}")
+        logger.info(
+            f"✓ Authentication Method: {user_status.authentication_method.value}"
+        )
 
         # Step 3: Begin login process
         logger.info("\\nStep 3: Beginning login process...")
@@ -151,11 +153,15 @@ def step_by_step_auth_example() -> None:
         logger.info("1. Prompt user for OTP code from their email")
         logger.info("2. Call client.complete_login(challenge_id, otp_code)")
         logger.info("3. Receive bearer token for API calls")
-        logger.info("4. Make authenticated API calls (get_devices, get_iot_credentials)")
+        logger.info(
+            "4. Make authenticated API calls (get_devices, get_iot_credentials)"
+        )
 
         # For demo purposes, show what the login completion would look like
         demo_otp = "123456"  # This would come from user input
-        logger.info(f"\\nDemo: client.complete_login('{challenge.challenge_id}', '{demo_otp}')")
+        logger.info(
+            f"\\nDemo: client.complete_login('{challenge.challenge_id}', '{demo_otp}')"
+        )
         logger.info("This would complete authentication and return login information")
 
     except DysonAuthError:
