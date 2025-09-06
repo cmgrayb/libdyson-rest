@@ -55,9 +55,6 @@ def analyze_device_mqtt_info(device: Any, iot_data: Any, client: DysonClient) ->
             decrypted_password = client.decrypt_local_credentials(
                 encrypted_password, device.serial_number
             )
-            decrypted_password = client.decrypt_local_credentials(
-                encrypted_password, device.serial_number
-            )
             print(f"      Local Broker Password (decrypted): {decrypted_password}")
         except Exception as e:
             print(f"      ⚠️  Failed to decrypt password: {e}")

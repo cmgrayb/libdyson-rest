@@ -28,7 +28,7 @@ Basic Usage:
         print(f"Device: {device.name} ({device.serial_number})")
 """
 
-__version__ = "0.5.1b1"
+__version__ = "0.5.1b2"
 __author__ = "libdyson-rest contributors"
 __email__ = "contributors@libdyson-rest.dev"
 
