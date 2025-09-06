@@ -138,7 +138,7 @@ class Device:
 
     category: DeviceCategory
     connection_category: ConnectionCategory
-    model: str
+    model: Optional[str]
     name: str
     serial_number: str
     type: str
@@ -165,7 +165,7 @@ class Device:
             connection_category=ConnectionCategory(
                 safe_get_str(validated_data, "connectionCategory")
             ),
-            model=safe_get_str(validated_data, "model"),
+            model=safe_get_optional_str(validated_data, "model"),
             name=safe_get_str(validated_data, "name"),
             serial_number=safe_get_str(validated_data, "serialNumber"),
             type=safe_get_str(validated_data, "type"),
