@@ -55,6 +55,9 @@ def analyze_device_mqtt_info(device: Any, iot_data: Any, client: DysonClient) ->
             decrypted_password = client.decrypt_local_credentials(
                 encrypted_password, device.serial_number
             )
+            decrypted_password = client.decrypt_local_credentials(
+                encrypted_password, device.serial_number
+            )
             print(f"      Local Broker Password (decrypted): {decrypted_password}")
         except Exception as e:
             print(f"      ⚠️  Failed to decrypt password: {e}")
@@ -86,11 +89,6 @@ def analyze_device_mqtt_info(device: Any, iot_data: Any, client: DysonClient) ->
 
     # Inferred MQTT topics based on Dyson patterns
     print("\n📨 Expected MQTT Topics:")
-
-    # Use the MQTT root topic from the device configuration
-    # Note: This should always be available for connected devices
-    root_topic = device.connected_configuration.mqtt.mqtt_root_topic_level
-    base_topic = f"{root_topic}/{device.serial_number}"
 
     # Use the MQTT root topic from the device configuration
     # Note: This should always be available for connected devices
@@ -233,10 +231,6 @@ def main() -> None:  # noqa: C901
                         },
                         "topics": {
                             "status": [
-                                f"{root_topic}/{device.serial_number}/status/current",
-                                f"{root_topic}/{device.serial_number}/status/faults",
-                                f"{root_topic}/{device.serial_number}/status/software",
-                                f"{root_topic}/{device.serial_number}/status/summary",
                                 f"{root_topic}/{device.serial_number}/status/current",
                                 f"{root_topic}/{device.serial_number}/status/faults",
                                 f"{root_topic}/{device.serial_number}/status/software",
