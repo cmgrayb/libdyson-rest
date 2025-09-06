@@ -165,10 +165,10 @@ class Device:
             connection_category=ConnectionCategory(
                 safe_get_str(validated_data, "connectionCategory")
             ),
-            model=safe_get_str(validated_data, "productType"),
+            model=safe_get_str(validated_data, "model"),
             name=safe_get_str(validated_data, "name"),
-            serial_number=safe_get_str(validated_data, "serial"),
-            type=safe_get_str(validated_data, "productType"),
+            serial_number=safe_get_str(validated_data, "serialNumber"),
+            type=safe_get_str(validated_data, "type"),
             variant=safe_get_optional_str(validated_data, "variant"),
             connected_configuration=connected_config,
         )

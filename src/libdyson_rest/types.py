@@ -58,9 +58,10 @@ class ConnectedConfigurationResponseDict(TypedDict):
 class DeviceResponseDict(TypedDict):
     """Type definition for device information in API response."""
 
-    serial: Required[str]
+    serialNumber: Required[str]
     name: Required[str]
-    productType: Required[str]
+    model: Required[str]
+    type: Required[str]
     category: Required[str]
     connectionCategory: Required[str]
     variant: NotRequired[str]
