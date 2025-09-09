@@ -19,6 +19,7 @@ from .device import (
     Device,
     DeviceCategory,
     Firmware,
+    PendingRelease,
     RemoteBrokerType,
 )
 from .iot import IoTCredentials, IoTData
@@ -38,6 +39,7 @@ __all__ = [
     "DeviceCategory",
     "Firmware",
     "MQTT",
+    "PendingRelease",
     "RemoteBrokerType",
     # IoT models
     "IoTCredentials",

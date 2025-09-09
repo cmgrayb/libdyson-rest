@@ -4,6 +4,7 @@ from libdyson_rest.models import (
     DysonCredentials,
     DysonDevice,
     DysonDeviceState,
+    PendingRelease,
     credentials_from_dict,
     device_from_dict,
 )
@@ -165,3 +166,26 @@ def test_credentials_from_dict_empty() -> None:
     assert creds.password == ""
     assert creds.hostname == ""
     assert creds.port == 1883
+
+
+def test_pending_release_creation() -> None:
+    """Test PendingRelease dataclass creation."""
+    release = PendingRelease(version="438MPF.00.01.007.0002", pushed=False)
+
+    assert release.version == "438MPF.00.01.007.0002"
+    assert release.pushed is False
+
+
+def test_pending_release_from_dict() -> None:
+    """Test PendingRelease creation from dictionary."""
+    from libdyson_rest.types import PendingReleaseResponseDict
+
+    data: PendingReleaseResponseDict = {
+        "version": "438MPF.00.01.007.0002",
+        "pushed": False,
+    }
+
+    release = PendingRelease.from_dict(data)
+
+    assert release.version == "438MPF.00.01.007.0002"
+    assert release.pushed is False

@@ -38,6 +38,7 @@ class FirmwareResponseDict(TypedDict):
     newVersionAvailable: Required[bool]
     version: Required[str]
     capabilities: NotRequired[List[str]]
+    minimumAppVersion: NotRequired[str]
 
 
 class MQTTResponseDict(TypedDict):
@@ -76,6 +77,13 @@ class IoTCredentialsResponseDict(TypedDict):
     TokenKey: Required[str]
     TokenSignature: Required[str]
     TokenValue: Required[str]
+
+
+class PendingReleaseResponseDict(TypedDict):
+    """Type definition for pending firmware release API response."""
+
+    version: Required[str]
+    pushed: Required[bool]
 
 
 class IoTDataResponseDict(TypedDict):

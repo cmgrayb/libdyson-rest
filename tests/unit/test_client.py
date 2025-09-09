@@ -203,3 +203,53 @@ class TestDysonClient:
 
         # After exiting context, client should be closed
         # (In real implementation, session would be closed)
+
+    @patch("libdyson_rest.client.requests.Session.get")
+    def test_get_pending_release_success(self, mock_get: Mock) -> None:
+        """Test successful pending release retrieval."""
+        # Mock response data
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "version": "438MPF.00.01.007.0002",
+            "pushed": False,
+        }
+        mock_get.return_value = mock_response
+
+        client = DysonClient(auth_token="test_token")
+
+        pending_release = client.get_pending_release("9RJ-US-UAA8845A")
+
+        assert pending_release.version == "438MPF.00.01.007.0002"
+        assert pending_release.pushed is False
+
+        # Verify correct URL was called
+        mock_get.assert_called_once()
+        args, kwargs = mock_get.call_args
+        assert "/v1/assets/devices/9RJ-US-UAA8845A/pendingrelease" in args[0]
+
+        client.close()
+
+    def test_get_pending_release_not_authenticated(self) -> None:
+        """Test pending release retrieval fails without authentication."""
+        client = DysonClient()
+
+        with pytest.raises(
+            DysonAuthError,
+            match="Must authenticate before getting pending release info",
+        ):
+            client.get_pending_release("9RJ-US-UAA8845A")
+
+        client.close()
+
+    @patch("libdyson_rest.client.requests.Session.get")
+    def test_get_pending_release_api_error(self, mock_get: Mock) -> None:
+        """Test pending release retrieval handles API errors."""
+        mock_get.side_effect = requests.RequestException("Network error")
+
+        client = DysonClient(auth_token="test_token")
+
+        with pytest.raises(DysonConnectionError, match="Failed to get pending release"):
+            client.get_pending_release("9RJ-US-UAA8845A")
+
+        client.close()
