@@ -47,6 +47,7 @@ from .models import (
     IoTData,
     LoginChallenge,
     LoginInformation,
+    PendingRelease,
     UserStatus,
 )
 
@@ -66,5 +67,6 @@ __all__ = [
     "IoTData",
     "LoginChallenge",
     "LoginInformation",
+    "PendingRelease",
     "UserStatus",
 ]

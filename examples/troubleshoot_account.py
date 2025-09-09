@@ -107,6 +107,10 @@ def analyze_device_details(device: Any, client: DysonClient) -> Dict[str, Any]:
     else:
         print("\n   ⚠️  No connected configuration available")
 
+    # Analyze pending firmware releases
+    pending_release_info = _analyze_pending_firmware(device, client)
+    device_info["pending_firmware"] = pending_release_info
+
     # Analyze IoT credentials
     if device.connection_category.value != "nonConnected":
         iot_info = _analyze_iot_credentials(device, client)
@@ -140,6 +144,7 @@ def _initialize_device_info(device: Any) -> Dict[str, Any]:
             "variant": device.variant,
         },
         "connected_configuration": None,
+        "pending_firmware": None,
         "iot_credentials": None,
         "mqtt_analysis": {
             "local_mqtt": None,
@@ -183,6 +188,7 @@ def _analyze_device_configuration(device: Any, client: DysonClient) -> Dict[str,
             "auto_update_enabled": config.firmware.auto_update_enabled,
             "new_version_available": config.firmware.new_version_available,
             "capabilities": capabilities,
+            "minimum_app_version": config.firmware.minimum_app_version,
         },
     }
 
@@ -211,11 +217,59 @@ def _analyze_device_configuration(device: Any, client: DysonClient) -> Dict[str,
     print(
         f"         New Version Available: {config_info['firmware']['new_version_available']}"
     )
+    if config_info["firmware"]["minimum_app_version"]:
+        print(
+            f"         Min App Version: {config_info['firmware']['minimum_app_version']}"
+        )
     if config_info["firmware"]["capabilities"]:
         capabilities_str = ", ".join(config_info["firmware"]["capabilities"])
         print(f"         Capabilities: {capabilities_str}")
 
     return config_info
+
+
+def _analyze_pending_firmware(device: Any, client: DysonClient) -> Dict[str, Any]:
+    """Analyze pending firmware releases for the device."""
+    print("\n   🔄 Pending Firmware Information:")
+
+    try:
+        pending_release = client.get_pending_release(device.serial_number)
+
+        pending_info = {
+            "version": pending_release.version,
+            "pushed": pending_release.pushed,
+            "available": True,
+        }
+
+        print("      ✅ Pending Release Available:")
+        print(f"         Version: {pending_info['version']}")
+        print(f"         Update Pushed: {'Yes' if pending_info['pushed'] else 'No'}")
+
+        if pending_info["pushed"]:
+            print("         🎯 Firmware update has been pushed to the device")
+        else:
+            print("         ⏳ Firmware update is available but not yet pushed")
+
+        return pending_info
+
+    except DysonAPIError as e:
+        error_msg = f"API error: {e}"
+        print(f"      ❌ Failed to get pending release info: {error_msg}")
+        return {
+            "available": False,
+            "error": error_msg,
+            "version": None,
+            "pushed": None,
+        }
+    except Exception as e:
+        error_msg = f"Unexpected error: {e}"
+        print(f"      ❌ Failed to get pending release info: {error_msg}")
+        return {
+            "available": False,
+            "error": error_msg,
+            "version": None,
+            "pushed": None,
+        }
 
 
 def _analyze_iot_credentials(device: Any, client: DysonClient) -> Any:
@@ -346,7 +400,7 @@ def run_troubleshooting() -> None:
             # Authentication steps
             print("📡 Step 1: Provisioning API access...")
             version = client.provision()
-            print(f"✅ API provisioned successfully! Version: {version}")
+            print(f"✅ API provisioned successfully. Version: {version}")
 
             user_status = _verify_account_status(client)
             if not user_status:
@@ -394,6 +448,8 @@ def _initialize_troubleshooting_data() -> Dict[str, Any]:
             "connected_devices": 0,
             "devices_with_local_config": 0,
             "devices_with_iot_credentials": 0,
+            "devices_with_pending_firmware": 0,
+            "devices_with_pushed_firmware": 0,
             "authentication_successful": False,
         },
     }
@@ -416,7 +472,7 @@ def _complete_authentication(client: DysonClient, email: str) -> Any:
     """Complete the authentication process with OTP."""
     print("\n🔐 Step 3: Beginning login process...")
     challenge = client.begin_login()
-    print("✅ Login challenge received!")
+    print("✅ Login challenge received.")
 
     print(f"\n📧 Step 4: OTP sent to {email}")
     otp_code = input("Enter the OTP code from your email: ").strip()
@@ -425,7 +481,7 @@ def _complete_authentication(client: DysonClient, email: str) -> Any:
         return None
 
     login_info = client.complete_login(str(challenge.challenge_id), otp_code)
-    print("✅ Authentication completed successfully!")
+    print("✅ Authentication completed successfully.")
     return login_info
 
 
@@ -464,6 +520,14 @@ def _update_device_summary(
     ):
         summary["devices_with_iot_credentials"] += 1
 
+    # Count firmware-related statistics
+    if device_info["pending_firmware"] and device_info["pending_firmware"].get(
+        "available"
+    ):
+        summary["devices_with_pending_firmware"] += 1
+        if device_info["pending_firmware"].get("pushed"):
+            summary["devices_with_pushed_firmware"] += 1
+
 
 def _output_final_summary(troubleshooting_data: Dict[str, Any]) -> None:
     """Output the final troubleshooting summary and export data."""
@@ -476,6 +540,10 @@ def _output_final_summary(troubleshooting_data: Dict[str, Any]) -> None:
     print(f"   Connected Devices: {summary['connected_devices']}")
     print(f"   Devices with Local Config: {summary['devices_with_local_config']}")
     print(f"   Devices with IoT Credentials: {summary['devices_with_iot_credentials']}")
+    print(
+        f"   Devices with Pending Firmware: {summary['devices_with_pending_firmware']}"
+    )
+    print(f"   Devices with Pushed Firmware: {summary['devices_with_pushed_firmware']}")
 
     # Export detailed data
     import datetime
@@ -487,7 +555,7 @@ def _output_final_summary(troubleshooting_data: Dict[str, Any]) -> None:
         json.dump(troubleshooting_data, f, indent=2, default=str)
 
     print(f"\n💾 Detailed troubleshooting data exported to: {filename}")
-    print("\n🎉 Troubleshooting analysis complete!")
+    print("\n🎉 Troubleshooting analysis complete.")
 
 
 def main() -> None:
