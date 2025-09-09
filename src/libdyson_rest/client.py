@@ -16,12 +16,20 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .exceptions import DysonAPIError, DysonAuthError, DysonConnectionError
-from .models import Device, IoTData, LoginChallenge, LoginInformation, UserStatus
+from .models import (
+    Device,
+    IoTData,
+    LoginChallenge,
+    LoginInformation,
+    PendingRelease,
+    UserStatus,
+)
 from .types import (
     DeviceResponseDict,
     IoTDataResponseDict,
     LoginChallengeResponseDict,
     LoginInformationResponseDict,
+    PendingReleaseResponseDict,
     UserStatusResponseDict,
 )
 
@@ -425,6 +433,50 @@ class DysonClient:
             return IoTData.from_dict(typed_data)
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid IoT credentials response: {e}") from e
+
+    def get_pending_release(self, serial_number: str) -> PendingRelease:
+        """
+        Get pending firmware release information for a specific device.
+
+        Args:
+            serial_number: Device serial number
+
+        Returns:
+            PendingRelease object with version and push status
+
+        Raises:
+            DysonAuthError: If not authenticated
+            DysonConnectionError: If connection fails
+            DysonAPIError: If API request fails
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before getting pending release info"
+            )
+
+        url = urljoin(
+            DYSON_API_HOST, f"/v1/assets/devices/{serial_number}/pendingrelease"
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get pending release: {e}") from e
+
+        try:
+            data = response.json()
+            # Type safety: cast to PendingReleaseResponseDict
+            typed_data = cast(PendingReleaseResponseDict, data)
+            return PendingRelease.from_dict(typed_data)
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid pending release response: {e}") from e
 
     def decrypt_local_credentials(
         self, encrypted_password: str, serial_number: str

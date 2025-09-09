@@ -28,7 +28,7 @@ Basic Usage:
         print(f"Device: {device.name} ({device.serial_number})")
 """
 
-__version__ = "0.5.1"
+__version__ = "0.6.0"
 __author__ = "libdyson-rest contributors"
 __email__ = "contributors@libdyson-rest.dev"
 
@@ -47,6 +47,7 @@ from .models import (
     IoTData,
     LoginChallenge,
     LoginInformation,
+    PendingRelease,
     UserStatus,
 )
 
@@ -66,5 +67,6 @@ __all__ = [
     "IoTData",
     "LoginChallenge",
     "LoginInformation",
+    "PendingRelease",
     "UserStatus",
 ]

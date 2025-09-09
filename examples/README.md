@@ -33,7 +33,22 @@ cd examples
 python example_token_usage.py
 ```
 
-### 3. `test_real_auth.py`
+### 3. `firmware_check.py`
+**Purpose**: Check firmware versions and pending updates for your Dyson devices.
+
+**What it demonstrates**:
+- Getting current firmware information from devices
+- Checking for pending firmware releases
+- Understanding firmware capabilities and requirements
+- Enhanced device information display
+
+**Usage**:
+```bash
+cd examples
+python firmware_check.py
+```
+
+### 4. `test_real_auth.py`
 **Purpose**: Development script for testing authentication with real Dyson accounts.
 
 **What it demonstrates**:
@@ -71,12 +86,14 @@ python analyze_mqtt_info.py [path_to_mqtt_info.json]
 **What it demonstrates**:
 - Complete authentication flow testing
 - Device discovery and enumeration
+- Current firmware information and capabilities
+- Pending firmware release checking
 - MQTT password decryption and analysis
 - IoT credentials retrieval and validation
 - MQTT topic mapping for all devices
 - Both local and cloud MQTT configuration
 - Comprehensive JSON export for debugging
-- Detailed troubleshooting statistics
+- Detailed troubleshooting statistics including firmware status
 
 **Usage**:
 ```bash
