@@ -13,6 +13,7 @@ from ..types import (
     DeviceResponseDict,
     FirmwareResponseDict,
     MQTTResponseDict,
+    PendingReleaseResponseDict,
 )
 from ..validation import (
     safe_get_bool,
@@ -69,6 +70,7 @@ class Firmware:
     new_version_available: bool
     version: str
     capabilities: Optional[List[CapabilityString]] = None
+    minimum_app_version: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: FirmwareResponseDict) -> "Firmware":
@@ -85,6 +87,26 @@ class Firmware:
             new_version_available=safe_get_bool(validated_data, "newVersionAvailable"),
             version=safe_get_str(validated_data, "version"),
             capabilities=capabilities,
+            minimum_app_version=safe_get_optional_str(
+                validated_data, "minimumAppVersion"
+            ),
+        )
+
+
+@dataclass
+class PendingRelease:
+    """Pending firmware release information."""
+
+    version: str
+    pushed: bool
+
+    @classmethod
+    def from_dict(cls, data: PendingReleaseResponseDict) -> "PendingRelease":
+        """Create PendingRelease instance from dictionary."""
+        validated_data = validate_json_response(data, "PendingRelease")
+        return cls(
+            version=safe_get_str(validated_data, "version"),
+            pushed=safe_get_bool(validated_data, "pushed"),
         )
 
 
@@ -199,6 +221,11 @@ class Device:
                     cap.value
                     for cap in self.connected_configuration.firmware.capabilities
                 ]
+
+            if self.connected_configuration.firmware.minimum_app_version:
+                firmware_dict["minimumAppVersion"] = (
+                    self.connected_configuration.firmware.minimum_app_version
+                )
 
             result["connectedConfiguration"] = {
                 "firmware": firmware_dict,

@@ -1,0 +1,3067 @@
+openapi: 3.0.0
+info:
+  title: /app/flows Mitmproxy2Swagger
+  version: 1.0.0
+servers:
+- url: https://appapi.cp.dyson.com
+  description: The default server
+paths:
+  /v1/supportedmarket/US:
+    get:
+      summary: GET us
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  purchasing:
+                    type: object
+                    properties:
+                      isAvailable:
+                        type: boolean
+                  marketing:
+                    type: object
+                    properties:
+                      notification:
+                        type: boolean
+                      email:
+                        type: boolean
+                  machineRegistration:
+                    type: object
+                    properties:
+                      warranty:
+                        type: boolean
+              example:
+                purchasing:
+                  isAvailable: true
+                marketing:
+                  notification: true
+                  email: true
+                machineRegistration:
+                  warranty: true
+  /v1/userregistration/ownership:
+    get:
+      summary: GET ownership
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deviceStatus:
+                    type: string
+              example:
+                deviceStatus: REGISTERED_TO_THIS_ACCOUNT
+      parameters:
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: serial
+        in: query
+        required: false
+        schema:
+          type: string
+  /v1/machine/9RJ-US-UAA8845A/timezone:
+    get:
+      summary: GET timezone
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timezone:
+                    type: string
+              example:
+                timezone: America/Los_Angeles
+  /v1/assets/devices/9RJ-US-UAA8845A/pendingrelease:
+    get:
+      summary: GET pendingrelease
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+                  pushed:
+                    type: boolean
+              example:
+                version: 438MPF.00.01.007.0002
+                pushed: false
+  /v1/sfmc/details:
+    get:
+      summary: GET details
+      responses:
+        '200':
+          description: OK
+          content: {}
+      parameters:
+      - name: email
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+  /v1/app-ui/content/sections/9RJ-US-UAA8845A:
+    get:
+      summary: GET 9rj-us-uaa8845a
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        content:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              type:
+                                type: string
+                              ref:
+                                type: string
+                  tabs:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        sections:
+                          type: array
+                          items:
+                            type: string
+              example:
+                sections:
+                - id: top-banners
+                  content:
+                  - type: native
+                    ref: alerts
+                - id: overview
+                  content:
+                  - type: collection
+                    layout: carousel
+                    topic: essentials
+                  - type: collection
+                    layout: carousel
+                    topic: air-quality-tips
+                  - type: collection
+                    layout: carousel
+                    topic: discover-dyson
+                  - type: collection
+                    layout: carousel
+                    topic: engineers-explain
+                  - type: native
+                    ref: support-cta
+                - id: how-to
+                  content:
+                  - type: collection
+                    layout: inline
+                    topic: essentials
+                  - type: collection
+                    layout: inline
+                    topic: air-quality-tips
+                - id: support
+                  content:
+                  - type: native
+                    ref: support-menu
+                - id: discover
+                  content:
+                  - type: collection
+                    layout: placeholder
+                    topic: air-ddee
+                  - type: collection
+                    layout: placeholder
+                    topic: floor-ddee
+                  - type: collection
+                    layout: placeholder
+                    topic: audio-ddee
+                  - type: collection
+                    layout: placeholder
+                    topic: beauty-ddee
+                - id: settings
+                  content:
+                  - type: native
+                    ref: machine-settings
+                tabs:
+                - id: overview
+                  sections:
+                  - top-banners
+                  - overview
+                - id: how-to
+                  sections:
+                  - how-to
+                - id: support
+                  sections:
+                  - support
+                - id: discover
+                  sections:
+                  - discover
+                - id: settings
+                  sections:
+                  - settings
+      parameters:
+      - name: market
+        in: query
+        required: false
+        schema:
+          type: string
+  /v1/messageprocessor/devices/9RJ-US-UAA8845A/connectionstatus:
+    get:
+      summary: GET connectionstatus
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Status:
+                    type: string
+                  LastChanged:
+                    type: string
+                  BrokerHostName:
+                    type: object
+                    nullable: true
+                  BrokerPort:
+                    type: number
+              example:
+                Status: connected
+                LastChanged: '2025-09-09T10:30:35.293Z'
+                BrokerHostName:
+                BrokerPort: 0
+  /v2/authorize/iot-credentials:
+    post:
+      summary: POST iot-credentials
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  IoTCredentials:
+                    type: object
+                    properties:
+                      ClientId:
+                        type: string
+                      TokenKey:
+                        type: string
+                      TokenValue:
+                        type: string
+                      TokenSignature:
+                        type: string
+                      CustomAuthorizerName:
+                        type: string
+                  Endpoint:
+                    type: string
+              example:
+                IoTCredentials:
+                  ClientId: 1498975d-0340-4685-82f5-7e6aab81d61e
+                  TokenKey: token
+                  TokenValue: 1498975d-0340-4685-82f5-7e6aab81d61e
+                  TokenSignature: 
+                    WOGssntQSssGHnrdJdEc/+Zpf5jy9si5cRLBHfKKTjr29Ise3ZLjk4qJhNP2n3Sy+TXDh83BeI3myoY7N1++6EY2MZCF2KGG/JHrltX9fdC7Zlse0qFH6Syn4G1Wa8XblVMdTAZnv7nlECa2qLg7GGyxE1TvmP/X9ioYvPYyFMOq3LnnLBSHNw2HJFYfOgS/8UxrQJNvgMVyhpUGGIc5zkwNO6BjjvLS3AhwrI4+hBgeT/Kf/d72IsSCStdpwzJE8kXSgT2nnX6DokIpVKzJpXigu8RYcRpelutNVisJhCbyJymbCJWgslsyOTRmS+tdoNDaX1/UWskS6rBR1NyBFQ==
+                  CustomAuthorizerName: cld-iot-credentials-lambda-authorizer
+                Endpoint: a1u2wvl3e2lrc4-ats.iot.eu-west-1.amazonaws.com
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Serial:
+                  type: string
+            example:
+              Serial: 9RJ-US-UAA8845A
+  /v3/manifest:
+    get:
+      summary: GET manifest
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    serialNumber:
+                      type: string
+                    name:
+                      type: string
+                    type:
+                      type: string
+                    connectedConfiguration:
+                      type: object
+                      properties:
+                        mqtt:
+                          type: object
+                          properties:
+                            remoteBrokerType:
+                              type: string
+                            localBrokerCredentials:
+                              type: string
+                            mqttRootTopicLevel:
+                              type: string
+                        firmware:
+                          type: object
+                          properties:
+                            version:
+                              type: string
+                            autoUpdateEnabled:
+                              type: boolean
+                            newVersionAvailable:
+                              type: boolean
+                            capabilities:
+                              type: array
+                              items:
+                                type: string
+                            minimumAppVersion:
+                              type: string
+                    variant:
+                      type: string
+                    model:
+                      type: string
+                    category:
+                      type: string
+                    connectionCategory:
+                      type: string
+                    productName:
+                      type: string
+              example:
+              - serialNumber: 9RJ-US-UAA8845A
+                name: Theater Fan
+                type: '438'
+                connectedConfiguration:
+                  mqtt:
+                    remoteBrokerType: wss
+                    localBrokerCredentials: 
+                      zVGln87HAMt8wVbgjkjrjgS7AuV9MP9GC/2s3z/LoY2bM3cQhp1eaUoHsFKylgZ6rRiVbrzJE3Fc0ii+A8GPdohNh+T/3nifUfsDp1Nk+bpixZuZGIit7oiFPDaI/xW+f1iP5ZHUlEoFRk+Q26mbd+k4ecXJC8HcuKAc5Bg+bCf0A/9BQhouNUfq+EpFF+Qr
+                    mqttRootTopicLevel: 438M
+                  firmware:
+                    version: 438MPF.00.01.003.0011
+                    autoUpdateEnabled: false
+                    newVersionAvailable: false
+                    capabilities:
+                    - AdvanceOscillationDay1
+                    - Scheduling
+                    - EnvironmentalData
+                    - ExtendedAQ
+                    - ChangeWifi
+                    minimumAppVersion: 6.4.25080
+                variant: M
+                model: TP11
+                category: ec
+                connectionCategory: lecAndWifi
+                productName: Dyson Purifier Cool PC1
+      parameters:
+      - name: market
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: locale
+        in: query
+        required: false
+        schema:
+          type: string
+  /v1/environment/devices/9RJ-US-UAA8845A/data:
+    get:
+      summary: GET data
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  DateTime:
+                    type: object
+                    nullable: true
+                  AqiState:
+                    type: number
+                  AqiValue:
+                    type: object
+                    nullable: true
+                  ColorValue:
+                    type: object
+                    nullable: true
+                  Pm25Value:
+                    type: object
+                    nullable: true
+                  Pm10Value:
+                    type: object
+                    nullable: true
+                  No2Value:
+                    type: object
+                    nullable: true
+                  WeatherState:
+                    type: number
+                  Humidity:
+                    type: object
+                    nullable: true
+                  Temperature:
+                    type: object
+                    nullable: true
+                  LocationName:
+                    type: object
+                    nullable: true
+                  ColorIndex:
+                    type: object
+                    nullable: true
+                  AqiName:
+                    type: object
+                    nullable: true
+                  AqiDescription:
+                    type: object
+                    nullable: true
+                  Icon:
+                    type: object
+                    nullable: true
+                  Measure:
+                    type: object
+                    nullable: true
+                  PollenState:
+                    type: number
+                  DominantPollen:
+                    type: object
+                    nullable: true
+                  Pollens:
+                    type: object
+                    nullable: true
+              example:
+                DateTime:
+                AqiState: 4
+                AqiValue:
+                ColorValue:
+                Pm25Value:
+                Pm10Value:
+                No2Value:
+                WeatherState: 4
+                Humidity:
+                Temperature:
+                LocationName:
+                ColorIndex:
+                AqiName:
+                AqiDescription:
+                Icon:
+                Measure:
+                PollenState: 4
+                DominantPollen:
+                Pollens:
+      parameters:
+      - name: language
+        in: query
+        required: false
+        schema:
+          type: string
+  /v1/provisioningservice/application/ios/version:
+    get:
+      summary: GET version
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: string
+              example: 5.0.21062
+  /v1/contactdetails/us:
+    get:
+      summary: GET us
+      responses:
+        '200':
+          description: OK
+          content: {}
+  /v2/personalized-content/9RJ-US-UAA8845A:
+    get:
+      summary: GET 9rj-us-uaa8845a
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        type:
+                          type: string
+                        title:
+                          type: string
+                        topic:
+                          type: string
+                        poster:
+                          type: object
+                          properties:
+                            type:
+                              type: string
+                            url:
+                              type: string
+                        items:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              type:
+                                type: string
+                              title:
+                                type: string
+                              thumbnail:
+                                type: object
+                                properties:
+                                  type:
+                                    type: string
+                                  url:
+                                    type: string
+                              poster:
+                                type: object
+                                properties:
+                                  type:
+                                    type: string
+                                  url:
+                                    type: string
+                              video:
+                                type: object
+                                properties:
+                                  source:
+                                    type: object
+                                    properties:
+                                      type:
+                                        type: string
+                                      id:
+                                        type: string
+                                  duration:
+                                    type: number
+                                  description:
+                                    type: string
+                                  longDescription:
+                                    type: string
+                              tags:
+                                type: array
+                                items: {}
+                              videoOrder:
+                                type: number
+                              ctaTitle:
+                                type: string
+                              ctaLink:
+                                type: object
+                                nullable: true
+                        collectionOrder:
+                          type: number
+              example:
+                content:
+                - id: 438M-essentials
+                  type: collection
+                  title: Using your machine
+                  topic: essentials
+                  poster:
+                    type: url
+                    url: 
+                      https://contenthub.dyson.com/api/public/content/0a8553ea43924076aee8b97de99f015c?v=8a78c2d1
+                  items:
+                  - id: 438M-Essentials-Using
+                    type: brightcove
+                    title: Getting started with your Dyson Purifier Cool PC1™
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/be78c03fd2a34233a47c4874736a5533?v=d0f23f0e&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/be78c03fd2a34233a47c4874736a5533?v=d0f23f0e
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6367831505112'
+                      duration: 67904
+                      description: Getting started
+                      longDescription: "A complete step-by-step guide to setting up
+                        and using your Dyson Purifier Cool PC1.\n\nThis guide covers:\n
+                        • Assembling your purifier.\n• Attaching the HEPA+Carbon filters.\n
+                        • Choosing the best placement for your purifier."
+                    tags: []
+                    videoOrder: 1
+                    ctaTitle: ''
+                    ctaLink:
+                  - id: 438M-Essentials-Filter-Maintenance
+                    type: brightcove
+                    title: Replacing your purifier's filters
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/28885ef7b0fa4f579a1e6960391fbe68?v=126f5379&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/28885ef7b0fa4f579a1e6960391fbe68?v=126f5379
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6367831506112'
+                      duration: 66880
+                      description: Replacing filters
+                      longDescription: "Keep your purifier working at its best by
+                        learning when and how to replace the filters.\n\nThis guide
+                        covers:\n• Monitoring the filter life using your remote control.\n
+                        • Replacing the filters.\n• Resetting the filter life after
+                        replacement."
+                    tags: []
+                    videoOrder: 2
+                    ctaTitle: ''
+                    ctaLink:
+                  - id: 438M-Essentials-Oscilation-Airflow
+                    type: brightcove
+                    title: Adjusting the oscillation and airflow speed
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/ef564b65d2ea428980f83401c333149e?v=435994a6&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/ef564b65d2ea428980f83401c333149e?v=435994a6
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6367831209112'
+                      duration: 37952
+                      description: Airflow and oscillation settings
+                      longDescription: "Learn how you can set your purifier to direct
+                        air at any angle or speed using the remote or the app.\n\n
+                        This guide covers:\n• Changing airflow speed.\n• Changing
+                        the angle of oscillation."
+                    tags: []
+                    videoOrder: 3
+                    ctaTitle: ''
+                    ctaLink:
+                  - id: 438M-Essentials-Night-Mode
+                    type: brightcove
+                    title: Using the Sleep timer and Night mode on your purifier
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/8f76dc8673cc46a39d0b5007772aa8ee?v=66e254a6&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/8f76dc8673cc46a39d0b5007772aa8ee?v=66e254a6
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6367830819112'
+                      duration: 29589
+                      description: Sleep timer and Night mode
+                      longDescription: Learn how the Sleep timer and Night-time mode
+                        can help you enjoy purified air with minimum disruption.
+                    tags: []
+                    videoOrder: 4
+                    ctaTitle: ''
+                    ctaLink:
+                  - id: ec-discover-automode
+                    type: brightcove
+                    title: Pure air, automatically​
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/5eba448476cb4c178ea469b5c158aea2?v=d7382a93&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/5eba448476cb4c178ea469b5c158aea2?v=d7382a93
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6344455748112'
+                      duration: 65226
+                      description: Pure air, automatically​
+                      longDescription: "Auto mode purifies the air in your room¹ whenever
+                        it detects pollution, whether that’s from cooking, candles
+                        or pollen – or even outdoor pollution events, like haze.\n
+                        \nIt helps save energy by automatically switching on the purifier
+                        only when the air needs cleaning. And it shows real-time reports
+                        on the LCD screen and MyDyson™ app, so you can see the pollutants
+                        it’s captured.\n\nJust set your purifier to Auto mode  and
+                        you’ll always be breathing purified air in your home. \n\n
+                        ¹In maximum setting. Tested for air projection (DTM801) and
+                        purification coverage in a 81m3 room (TM-003771).​"
+                    tags: []
+                    videoOrder: 5
+                    ctaTitle: ''
+                    ctaLink:
+                  - id: ec-discover-purifier-placement
+                    type: brightcove
+                    title: Top tips for purifier placement – getting the most from
+                      your machine
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/56fde20708354ff3bf68277b446b2324?v=87958d91&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/56fde20708354ff3bf68277b446b2324?v=87958d91
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6354428208112'
+                      duration: 48832
+                      description: Top tips for purifier placement
+                      longDescription: "Your machine is engineered to purify the air
+                        in your home wherever it’s located – but you can help to achieve
+                        maximum efficiency by placing it in an ideal position.\n\n
+                        This short video gives you essential tips about placement,
+                        covering:\n\n• How to maximize air circulation.\n• The places
+                        to avoid putting your machine.\n• Where to place your purifier
+                        for the most benefit.\n\nEnjoy purified indoor air."
+                    tags: []
+                    videoOrder: 6
+                    ctaTitle: ''
+                    ctaLink:
+                  - id: ec-setting-up-aq101
+                    type: brightcove
+                    title: Understand on-screen air quality – as your purifier monitors
+                      air quality
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/042de5d6db79461d8d35c9d96a5ccbc7?v=13618979&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/042de5d6db79461d8d35c9d96a5ccbc7?v=13618979
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6354791763112'
+                      duration: 73480
+                      description: Understand on-screen air quality
+                      longDescription: "The LCD screen on your purifier shows when
+                        indoor air pollutants have been detected.\n\nThis guide helps
+                        you understand:\n\n-The levels of indoor air quality.\n-How
+                        to recognize the pollutants detected.\n-Why Auto mode is the
+                        ideal default setting.\n\n\n💡Discover more\nThe user guide
+                        in your app’s ‘help and support’ has further info about the
+                        screen and pollutants."
+                    tags: []
+                    videoOrder: 7
+                    ctaTitle:
+                    ctaLink:
+                  collectionOrder: 1
+                - id: Air-quality-tips
+                  type: collection
+                  title: 'Air quality tips '
+                  topic: air-quality-tips
+                  poster:
+                    type: url
+                    url: 
+                      https://contenthub.dyson.com/api/public/content/7b52eeac74594d3f9744baf503930880?v=e0452e9d
+                  items:
+                  - id: ec-setting-up-haze
+                    type: brightcove
+                    title: Coping with haze – tips and advice
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/8be6d84cdaf745e4bb73b97355df0800?v=5d7ca16b&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/8be6d84cdaf745e4bb73b97355df0800?v=5d7ca16b
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6354792476112'
+                      duration: 72064
+                      description: Coping with haze​
+                      longDescription: "Haze is an almost annual pollution problem,
+                        which mostly impacts south-east Asia.\n\n\nWhen haze hits,
+                        it’s important to take precautions to reduce the risk of inhaling
+                        pollutants.\n\n\nFrom reducing time outdoors to turning on
+                        your purifier’s Auto mode, our video offers tips to help you
+                        breathe a little easier.​\n​"
+                    tags: []
+                    videoOrder: 1
+                    ctaTitle:
+                    ctaLink:
+                  - id: ec-fc-managing-allergens
+                    type: brightcove
+                    title: Eliminating indoor allergens* – top tips for a whole-home
+                      clean​
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/52c21e31d36d450e9031c24fcb0abdf9?v=77054bc6&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/52c21e31d36d450e9031c24fcb0abdf9?v=77054bc6
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6359287882112'
+                      duration: 75435
+                      description: Eliminating indoor allergens*
+                      longDescription: "With a regular cleaning schedule and the right
+                        Dyson technology, you can reduce the quantity of allergens*
+                        in your home.\n*Allergens refers to nonliving material.​\n
+                        \nThese may include pollen and gases in the air, or dust and
+                        pet hair that may have settled on floors and surfaces.\n\n
+                        With our top tips, you can eliminate more of these problem
+                        pollutants – for a cleaner, healthier home."
+                    tags: []
+                    videoOrder: 2
+                    ctaTitle: ''
+                    ctaLink:
+                  - id: ec-aqt-benefits-filter
+                    type: brightcove
+                    title: Discover the benefits of replacing your filter
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/fb0b82ebd392425aa80d156365776666?v=b359a11a&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/fb0b82ebd392425aa80d156365776666?v=b359a11a
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6361241381112'
+                      duration: 50795
+                      description: Benefits of replacing your filter​
+                      longDescription: "Replacing the filter when alerted maximizes
+                        your purifier's performance. ​\n\nWatch our video to see how
+                        it can help you enjoy a cleaner, healthier environment.​"
+                    tags: []
+                    videoOrder: 3
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment/air-purifier-filters
+                  - id: ec-discover-pollen
+                    type: brightcove
+                    title: Coping with pollen season – managing your seasonal allergies
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/56c29ffc6dc4413aa147d2e678759980?v=c21f7241&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/56c29ffc6dc4413aa147d2e678759980?v=c21f7241
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6353008657112'
+                      duration: 50517
+                      description: Coping with pollen season
+                      longDescription: "Dealing with seasonal allergies–marked by
+                        sneezing, congestion, and a runny nose–can be challenging.\n
+                        \nBut there are some simple things you can do to help reduce
+                        the chances of triggering allergies.\n\nFrom using your purifier
+                        in Auto mode to vacuuming regularly, our video has tips to
+                        help you get through sneezy season."
+                    tags: []
+                    videoOrder: 4
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment
+                  - id: ec-setting-up-wildfire
+                    type: brightcove
+                    title: Coping with wildfire and bushfire smoke – tips and advice
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/4ff86e0593bd4ab180f4664e56278297?v=a3bb3e48&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/4ff86e0593bd4ab180f4664e56278297?v=a3bb3e48
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6354944877112'
+                      duration: 60032
+                      description: Coping with wildfire and bushfire smoke
+                      longDescription: "Wildfires and bushfires produce harmful smoke
+                        that can linger for hours, days, and sometimes weeks.\n\n
+                        But there are some simple things you can do to help reduce
+                        your exposure.\n\nFrom protecting the air indoors to limiting
+                        what you breathe outside, our video has  tips to help you
+                        cope with smoke.​"
+                    tags: []
+                    videoOrder: 5
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment
+                  collectionOrder: 2
+                - id: EC-discover-dyson
+                  type: collection
+                  title: Discover Dyson
+                  topic: discover-dyson
+                  poster:
+                    type: url
+                    url: 
+                      https://contenthub.dyson.com/api/public/content/a9179a4b1ccb42f9bbc1610592519eb0?v=63fde656
+                  items:
+                  - id: 723-Formulations-Meet-Dyson
+                    type: brightcove
+                    title: Meet the Dyson Chitosan™ styling range
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/958cdebe80284fba9d3769bbbc3f4a21?v=b16186f2&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/958cdebe80284fba9d3769bbbc3f4a21?v=b16186f2
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6376603712112'
+                      duration: 30037
+                      description: Meet Dyson Chitosan™
+                      longDescription: "The Dyson Chitosan™ styling collection creates
+                        flexible, lightweight bonds that support your hair, strand
+                        by strand, for flexible, all-day hold1, with natural movement
+                        and shine. \n\nPre-style cream holds and conditions. Post-style
+                        serum holds and hydrates. Multi-use styling spray holds, revives
+                        and restyles.\n\nFormulated to work with all Dyson hair dryers,
+                        stylers and straighteners. For 2x longer hold, without the
+                        crunch.¹\n\n¹Vs. untreated hair."
+                    tags: []
+                    videoOrder: 1
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/styling-products/chitosan
+                  - id: 780A-discover-launch
+                    type: brightcove
+                    title: Dyson 02 Probiotic hard floor cleaning solution
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/8705643c774a42edb4c359a5fbbfbcb1?v=64dadf23&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/8705643c774a42edb4c359a5fbbfbcb1?v=64dadf23
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6371350401112'
+                      duration: 41835
+                      description: New Dyson 02 Probiotic hard floor cleaning solution
+                      longDescription: "Deep cleans at the microscopic level for fresh-smelling
+                        floors.\n\nBillions of active enzymes target and break down
+                        organic matter on hard floors – removing common household
+                        spills and stains such as oil, milk and juice.\n\nThe non-foaming
+                        solution is specially developed for Dyson machines and with
+                        no harsh chemicals, it's safe for homes with pets and children.\n
+                        \nRecommended for all Dyson wet floor cleaners."
+                    tags: []
+                    videoOrder: 7
+                    ctaTitle: dyson.com
+                    ctaLink:
+                  - id: hh15-discover-launch
+                    type: brightcove
+                    title: Dyson Car+Boat, our most powerful handheld vacuum
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/63696e70175945b1978a47b15885a02b?v=0c9567c7&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/63696e70175945b1978a47b15885a02b?v=0c9567c7
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6369714224112'
+                      duration: 37760
+                      description: Introducing Dyson Car+Boat
+                      longDescription: "Built for more than just the home, the Dyson
+                        Car+Boat is ideal for cleaning car interiors, boat cabins,
+                        and hard-to-reach spaces.\n\nTackle tight gaps under TV cabinets,
+                        car mats and cubby holes. No mess is out of reach with this
+                        lightweight, compact vacuum.\n \nEnjoy unrivalled suction
+                        power from the motor spinning at 110,000 rpm. Plus, a 50-minute
+                        run time¹ offers market leading battery performance.\n\n\n
+                        1. Tested to IEC 62885-4; 2020 Cl5.101 in low mode, with non
+                        motorised tool.  Runtime may vary depending on usage."
+                    tags: []
+                    videoOrder: 2
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/vacuum-cleaners/handhelds/car-boat/silver
+                  - id: airwrap-discover-LFW
+                    type: brightcove
+                    title: Victoria Magrath FROW style – fashion week all wrapped
+                      up
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/e6cc17e1cb484d6f821958ffc75b37e1?v=f2a0a786&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/e6cc17e1cb484d6f821958ffc75b37e1?v=f2a0a786
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6361381873112'
+                      duration: 18027
+                      description: Victoria Magrath FROW style
+                      longDescription: "Get ready for a fashion week front row – with
+                        the Dyson Airwrap™.\n\nLike Victoria Magrath, the fashionista
+                        behind the blog Inthefrow™, you too can get the catwalk look
+                        (just maybe not the front row seat). \n\nDiscover the latest
+                        Airwrap™ now."
+                    tags: []
+                    videoOrder: 19
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-stylers/airwrap
+                  - id: 708-Formulations-One-Hero
+                    type: brightcove
+                    title: Chitosan – the hero ingredient in our styling products
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/cf9ec6bbee9c46e394316cdc130bb90d?v=4ae3f807&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/cf9ec6bbee9c46e394316cdc130bb90d?v=4ae3f807
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6359094499112'
+                      duration: 47040
+                      description: Chitosan – one hero ingredient
+                      longDescription: "​Engineering has always been in our nature.
+                        Now nature is in our engineering.\n\nDyson Triodetic™ technology
+                        in our new styling products uses chitosan to lock in flexible
+                        styles, strand by strand. This powerful ingredient, derived
+                        from oyster mushrooms, creates flexible all-day hold with
+                        natural movement and shine.​"
+                    tags: []
+                    videoOrder: 14
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/styling-products/chitosan
+                  - id: 571H-discover-headphones-remastered
+                    type: brightcove
+                    title: Dyson OnTrac™ – headphones, remastered
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/3794a9e4da1d47b692ff17d7ce5606a4?v=02ab6f72&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/3794a9e4da1d47b692ff17d7ce5606a4?v=02ab6f72
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6354867023112'
+                      duration: 30022
+                      description: Dyson OnTrac™ headphones
+                      longDescription: "Have you heard?\n\nOur latest headphones,
+                        Dyson OnTrac™, give you a completely immersive listening experience.\n
+                        \n•  Up to 55 hours of non-stop listening.¹\n•  Customizable
+                        colors to create your signature combination.\n•  Advanced
+                        noise cancellation that removes up to 40db of unwanted noise.\n
+                        \nLearn more on Dyson.com.\n\n¹With ANC on. Performance may
+                        vary based on environmental conditions and usage."
+                    tags: []
+                    videoOrder: 7
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/headphones/ontrac/cnc-black-nickel
+                  - id: 605gm-discover-launch
+                    type: brightcove
+                    title: Dyson Supersonic Nural™ hair dryer – evolution of an icon
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0bcec292b2d84f0a9a2620c5af4ad6c7?v=e984c766&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0bcec292b2d84f0a9a2620c5af4ad6c7?v=e984c766
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6353783199112'
+                      duration: 24760
+                      description: New Supersonic™ – evolution of an icon
+                      longDescription: "Discover a new way to simplify your hair care
+                        routine.\n\nThe Dyson Supersonic Nural™ hair dryer:\n\n-Auto-adapts
+                        to enhance natural shine and protect scalp health.¹ \n-Attachment
+                        learning remembers your go-to styling preferences. \n-It even
+                        takes a break when you do, with Pause detect.\n\nNow available
+                        at dyson.com.\n\n¹When used in Scalp protect mode."
+                    tags: []
+                    videoOrder: 17
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 855-Digital-Film-DD
+                    type: brightcove
+                    title: Cleaning confirmed – with the Dyson CleanTrace™ AR tool
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/1b3829d0c59044c79e6296411959af9a?v=9c7b97d9&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/1b3829d0c59044c79e6296411959af9a?v=9c7b97d9
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6353014566112'
+                      duration: 27072
+                      description: Dyson CleanTrace™ – augmented reality
+                      longDescription: "Never miss a spot with our new augmented reality
+                        (AR) tool. Paired with the Gen5detect™ vacuum, Dyson CleanTrace™
+                        shows where you’ve vacuumed and any bits you’ve missed – in
+                        real time on the MyDyson™ app.\n\nHow it works\nOur phone
+                        clamp attaches your smartphone* to the wand of your vacuum,
+                        so you see your floor on-screen. As you vacuum, CleanTrace™
+                        paints the floor purple to show where you’ve cleaned.\n\n
+                        Once you’re finished, you can be sure of a job well done.\n
+                        \n*Exclusively compatible with Pro and Pro max models of the
+                        iPhone 12 and above."
+                    tags: []
+                    videoOrder: 14
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/support/journey/tools/974147-01
+                  - id: sustainability-discover-fruit-future
+                    type: brightcove
+                    title: Fruit of the future
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/9dbedd7cda284326b048c39294c9d1ab?v=42bebc53&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/9dbedd7cda284326b048c39294c9d1ab?v=42bebc53
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6341973596112'
+                      duration: 86090
+                      description: Fruit of the future
+                      longDescription: "You might not know it, but Dyson produces
+                        750 tons of strawberries every year.\n\nWith innovation at
+                        the heart of Dyson Farming, our anaerobic digester converts
+                        maize and rye into clean energy, heat, and fertilizer. These
+                        are used to grow new crops as part of our circular farming
+                        system.\n\nTo help maximize yields, we use UV and LED lighting.
+                        We’re even experimenting with robots picking produce.\n\n
+                        It’s all part of how we’re working to improve sustainability
+                        and performance."
+                    tags: []
+                    videoOrder: 21
+                    ctaTitle: ''
+                    ctaLink:
+                  - id: 664-discover-launch
+                    type: brightcove
+                    title: Get your hands on Dyson’s quietest, most powerful purifier
+                      now!
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/4924305b57b2417faeefb480ba24fa2e?v=09b077b1&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/4924305b57b2417faeefb480ba24fa2e?v=09b077b1
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6328586798112'
+                      duration: 15903
+                      description: Dyson Purifier Big+Quiet
+                      longDescription: "The Dyson Purifier Big+Quiet captures pollutants
+                        and projects purified air across large spaces. It tackles
+                        the often-invisible problem of indoor pollution, which can
+                        build up in the home through indoor activities and household
+                        products.\n\nOur quietest, most powerful purifier continually
+                        reduces your exposure to pollution, without disturbing you
+                        around the home."
+                    tags: []
+                    videoOrder: 5
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment/air-purifiers/big-quiet-formaldehyde
+                  collectionOrder: 4
+                - id: EC-engineers-explain
+                  type: collection
+                  title: Engineers explain
+                  topic: engineers-explain
+                  poster:
+                    type: url
+                    url: 
+                      https://contenthub.dyson.com/api/public/content/c21ffa0f14c94d1188d968382890b3a9?v=8d7e5f20
+                  items:
+                  - id: engineers-explained-pro-styling-r
+                    type: brightcove
+                    title: Pro styling with Dyson Supersonic r™ – say hello to salon-standard
+                      hair
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/69bfb17edef447d48ef4621d7820577f?v=3000a7dd&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/69bfb17edef447d48ef4621d7820577f?v=3000a7dd
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6353003300112'
+                      duration: 186475
+                      description: Pro styling with Dyson Supersonic r™
+                      longDescription: "Our original hair dryer was ground-breaking
+                        – but we’ve taken that to the next level with the launch of
+                        the Dyson Supersonic r™.\n\n-High performance airflow in a
+                        smaller, lighter machine. \n-Intelligent attachments that
+                        remember your own customized airflow and heat settings. \n
+                        -An ergonomic design for maximum comfort and efficiency.\n
+                        \nCelebrity stylist Irinel de León says: “People are definitely
+                        going to up their game with this machine. It’s not like anything
+                        we’ve ever seen before.”"
+                    tags: []
+                    videoOrder: 16
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-r/jasper-plum
+                  - id: HH15-EE-dustmites
+                    type: brightcove
+                    title: Dyson vs. dust mites
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/73e9fb97ce8449209d7d13875dc9fa86?v=02eff74a&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/73e9fb97ce8449209d7d13875dc9fa86?v=02eff74a
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6372560381112'
+                      duration: 119829
+                      description: Dyson vs. dust mites
+                      longDescription: "On average, we spend 6.5 hours in bed every
+                        night. But we’re not alone. Our beds are home to millions
+                        of dust mites which produce thousands of faecal pellets, a
+                        cause of allergies.\n \nOur expert explains how Dyson vacuums
+                        and tools help remove these pests and allergens for a cleaner,
+                        healthier sleep."
+                    tags: []
+                    videoOrder: 24
+                    ctaTitle: dyson.com
+                    ctaLink: 
+                      https://www.dyson.com/support/journey/spare-details.971361-02?source_description=yext%7Espares_and_accessories%7E971361-02
+                  - id: 605G-EE-wavecurl-diffuser
+                    type: brightcove
+                    title: 'Engineers answer: Wave+Curl diffuser'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/10f5ec7184f44265a8a6aacb4f249726?v=f6811007&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/10f5ec7184f44265a8a6aacb4f249726?v=f6811007
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6366096974112'
+                      duration: 19989
+                      description: Wave+Curl diffuser
+                      longDescription: Niamh Cogley-Rock, Senior Design Engineer,
+                        explains what the Wave+Curl diffuser does and how it works
+                        for naturally wavy, curly or coily hair.
+                    tags: []
+                    videoOrder: 17
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 605G-EE-scalp-health
+                    type: brightcove
+                    title: 'Engineers answer: The importance of scalp health​'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/967366822bb9410d8f471341840b3d26?v=4a44c97c&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/967366822bb9410d8f471341840b3d26?v=4a44c97c
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6366096587112'
+                      duration: 28117
+                      description: The importance of scalp health
+                      longDescription: "Understand why good scalp health is important
+                        for achieving healthy hair. ​\n\nNiamh Cogley-Rock, our Senior
+                        Design Engineer, explains."
+                    tags: []
+                    videoOrder: 5
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 605G-EE-dryoily-scalps
+                    type: brightcove
+                    title: 'Engineers answer: Nural™ for dry and oily scalps​'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/4293105f77724b599127527fb7921d39?v=1fb4131f&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/4293105f77724b599127527fb7921d39?v=1fb4131f
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6366092195112'
+                      duration: 41941
+                      description: Nural™ for dry and oily scalps​
+                      longDescription: "Learn how dry and oily scalps occur and how
+                        the Supersonic Nural™ helps prevent them. ​\n\nNiamh Cogley-Rock,
+                        our Senior Design Engineer, explains.​"
+                    tags: []
+                    videoOrder: 23
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 605G-EE-nural-lights
+                    type: brightcove
+                    title: 'Engineers answer: Understanding Nural™ lights'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/32c2d977f6324e22bc4464626c9b2da6?v=56101fe0&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/32c2d977f6324e22bc4464626c9b2da6?v=56101fe0
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6366092989112'
+                      duration: 30827
+                      description: Understanding Nural™ lights​
+                      longDescription: "Niamh Cogley-Rock, Senior Design Engineer,
+                        helps you understand the lights on the Supersonic Nural™.
+                        ​\n\nWatch how they change color as the hair dryer maintains
+                        a comfortable scalp temperature.¹​\n\n¹In-use conditions may
+                        affect experience of pre-set temperature."
+                    tags: []
+                    videoOrder: 33
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 605G-EE-dome-diffuse
+                    type: brightcove
+                    title: 'Engineers answer: Dome mode and Diffuse mode'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/ba480c5900d647aab79a3962e859516d?v=73d1c281&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/ba480c5900d647aab79a3962e859516d?v=73d1c281
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6365831479112'
+                      duration: 39040
+                      description: Dome mode and Diffuse mode​
+                      longDescription: Niamh Cogley-Rock, Senior Design Engineer,
+                        discusses the different benefits of Dome mode and Diffuse
+                        mode on the Wave+Curl diffuser.
+                    tags: []
+                    videoOrder: 2
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/support/journey/tools/973924-01
+                  - id: 605G-EE-scalp-protect
+                    type: brightcove
+                    title: 'Engineers answer: Scalp protect mode'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0d62b3b2209a493ab3fbf4f27eef70a0?v=3d7cfab8&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0d62b3b2209a493ab3fbf4f27eef70a0?v=3d7cfab8
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6365832451112'
+                      duration: 85717
+                      description: Scalp protect mode
+                      longDescription: "Niamh Cogley-Rock, Senior Design Engineer,
+                        explains Scalp protect mode on the Supersonic Nural™ hair
+                        dryer. ​\n\nWatch and learn how it helps maintain a healthier
+                        scalp and retain ideal moisture levels."
+                    tags: []
+                    videoOrder: 1
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 571H-Engineering-Film-Two
+                    type: brightcove
+                    title: Dyson OnTrac™ headphones – relentlessly engineered
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/c2d221d8e2de4df6a8057ee8def15bd1?v=0b6c4a5a&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/c2d221d8e2de4df6a8057ee8def15bd1?v=0b6c4a5a
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6361144420112'
+                      duration: 90000
+                      description: Dyson OnTrac™ headphones – relentlessly engineered
+                      longDescription: "Combining research, analysis and physical
+                        testing, our engineers have created outstanding audio performance.\n
+                        \nExperience advanced Active Noise Cancellation. Eight high
+                        sensitivity microphones isolate and remove up to 40dB of unwanted
+                        external noise.\n\nWhile high-density, microfibre ear cushions
+                        mould to form an acoustic seal.\n \nAnd with high-capacity
+                        lithium batteries, you get non-stop listening for up to 55
+                        hours.\n\nWatch the video to discover more."
+                    tags: []
+                    videoOrder: 5
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/sign-up/wearables
+                  - id: 693-launch-EE
+                    type: brightcove
+                    title: Meet Dyson’s first dedicated wet floor cleaner
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/be674151390e41709caf4887fcc69ed6?v=2ef8058d&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/be674151390e41709caf4887fcc69ed6?v=2ef8058d
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6361382738112'
+                      duration: 156032
+                      description: 'Just launched: Dyson Wash G1™'
+                      longDescription: "Footprints, paw prints, cereal and sauces
+                        are no match for Wash G1™, Dyson’s new all-in-one wet floor
+                        cleaner. Watch the video to discover how Wash G1™ is engineered
+                        to wash hard floors. Properly.⁹\n\n• Removes wet and dry dirt
+                        from hard floors in one go.\n• Divides used water and dry
+                        debris into separate trays for hygienic disposal.\n• Delivers
+                        powerful, rapid stain removal from two counter-rotating motorized
+                        rollers.\n\n⁹According to Dyson internal methods, tested on
+                        ceramic tile and wood."
+                    tags: []
+                    videoOrder: 3
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.co.uk/floor-cleaners/wet/washg1
+                  collectionOrder: 5
+                - id: HC-Beauty-DDEE
+                  type: collection
+                  title: 'Beauty '
+                  topic: beauty-ddee
+                  poster:
+                    type: url
+                    url: 
+                      https://contenthub.dyson.com/api/public/content/3372374a7acc4322aec842681e7c591c?v=d3c84e68
+                  items:
+                  - id: 605G-EE-scalp-protect
+                    type: brightcove
+                    title: 'Engineers answer: Scalp protect mode'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0d62b3b2209a493ab3fbf4f27eef70a0?v=3d7cfab8&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0d62b3b2209a493ab3fbf4f27eef70a0?v=3d7cfab8
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6365832451112'
+                      duration: 85717
+                      description: Scalp protect mode
+                      longDescription: "Niamh Cogley-Rock, Senior Design Engineer,
+                        explains Scalp protect mode on the Supersonic Nural™ hair
+                        dryer. ​\n\nWatch and learn how it helps maintain a healthier
+                        scalp and retain ideal moisture levels."
+                    tags: []
+                    videoOrder: 1
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 723-Formulations-Meet-Dyson
+                    type: brightcove
+                    title: Meet the Dyson Chitosan™ styling range
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/958cdebe80284fba9d3769bbbc3f4a21?v=b16186f2&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/958cdebe80284fba9d3769bbbc3f4a21?v=b16186f2
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6376603712112'
+                      duration: 30037
+                      description: Meet Dyson Chitosan™
+                      longDescription: "The Dyson Chitosan™ styling collection creates
+                        flexible, lightweight bonds that support your hair, strand
+                        by strand, for flexible, all-day hold1, with natural movement
+                        and shine. \n\nPre-style cream holds and conditions. Post-style
+                        serum holds and hydrates. Multi-use styling spray holds, revives
+                        and restyles.\n\nFormulated to work with all Dyson hair dryers,
+                        stylers and straighteners. For 2x longer hold, without the
+                        crunch.¹\n\n¹Vs. untreated hair."
+                    tags: []
+                    videoOrder: 2
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/styling-products/chitosan
+                  - id: 605G-EE-dome-diffuse
+                    type: brightcove
+                    title: 'Engineers answer: Dome mode and Diffuse mode'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/ba480c5900d647aab79a3962e859516d?v=73d1c281&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/ba480c5900d647aab79a3962e859516d?v=73d1c281
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6365831479112'
+                      duration: 39040
+                      description: Dome mode and Diffuse mode​
+                      longDescription: Niamh Cogley-Rock, Senior Design Engineer,
+                        discusses the different benefits of Dome mode and Diffuse
+                        mode on the Wave+Curl diffuser.
+                    tags: []
+                    videoOrder: 2
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/support/journey/tools/973924-01
+                  - id: engineers-explained-airwrap-attachments​
+                    type: brightcove
+                    title: 'Let’s talk: Dyson Airwrap™ attachments'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/bbd77354f7d8472d859eab4e8f8b023b?v=7ab17ab4&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/bbd77354f7d8472d859eab4e8f8b023b?v=7ab17ab4
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6336670853112'
+                      duration: 100895
+                      description: "Let's talk: Airwrap™ attachments"
+                      longDescription: In this episode of Engineers Explain, Dyson
+                        engineer Kavya Nair  shares how to get the most from your
+                        Airwrap™ attachments. From curling with the Airwrap™ barrels
+                        to pre-drying and smoothing with the Coanda smoothing dryer.
+                    tags: []
+                    videoOrder: 3
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-stylers/airwrap
+                  - id: 605G-EE-scalp-health
+                    type: brightcove
+                    title: 'Engineers answer: The importance of scalp health​'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/967366822bb9410d8f471341840b3d26?v=4a44c97c&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/967366822bb9410d8f471341840b3d26?v=4a44c97c
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6366096587112'
+                      duration: 28117
+                      description: The importance of scalp health
+                      longDescription: "Understand why good scalp health is important
+                        for achieving healthy hair. ​\n\nNiamh Cogley-Rock, our Senior
+                        Design Engineer, explains."
+                    tags: []
+                    videoOrder: 3
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 308F-Engineers-Film
+                    type: brightcove
+                    title: New Airwrap i.d.™ – Engineering the perfect curl
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/333d6a52803144519e0d7b12bacc9502?v=609ab732&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/333d6a52803144519e0d7b12bacc9502?v=609ab732
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6360811577112'
+                      duration: 155072
+                      description: Engineering the perfect curl
+                      longDescription: "Our engineers just made styling smarter. \n
+                        \nThe Dyson Airwrap i.d.™, our first Bluetooth® wireless technology
+                        enabled multi-styler and dryer, connects to the the MyDyson™
+                        app to offer a perfect curling sequence. \n\nIn this video,
+                        our experts explain how:\n• achieving the perfect curl has
+                        never been easier\n• the latest attachments, including the
+                        Conical barrel, unlock new styling opportunities\n• rigorous
+                        user testing and hair science helped develop our latest styler.\n
+                        \nThe Bluetooth® word mark and logos are registered trademarks
+                        owned by the Bluetooth SIG, Inc. and any use of such marks
+                        by Dyson is under license."
+                    tags: []
+                    videoOrder: 4
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-stylers/airwrap
+                  - id: engineers-explained-smooth-hair
+                    type: brightcove
+                    title: 'Dyson Airwrap™: Smooth air for smooth hair'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/69beca65a40f4c2296bdc2bc3e771faf?v=a06f95a1&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/69beca65a40f4c2296bdc2bc3e771faf?v=a06f95a1
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6337352955112'
+                      duration: 63028
+                      description: Smooth air for smooth hair
+                      longDescription: In the latest episode of Engineers Explain,
+                        Dyson engineer Rory Fisher explains how the Coanda effect,
+                        the airflow phenomenon, helps reduce frizz and flyaways to
+                        create smooth, sleek styles.
+                    tags: []
+                    videoOrder: 5
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-stylers/airwrap
+                  - id: 605gm-discover-launch
+                    type: brightcove
+                    title: Dyson Supersonic Nural™ hair dryer – evolution of an icon
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0bcec292b2d84f0a9a2620c5af4ad6c7?v=e984c766&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0bcec292b2d84f0a9a2620c5af4ad6c7?v=e984c766
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6353783199112'
+                      duration: 24760
+                      description: New Supersonic™ – evolution of an icon
+                      longDescription: "Discover a new way to simplify your hair care
+                        routine.\n\nThe Dyson Supersonic Nural™ hair dryer:\n\n-Auto-adapts
+                        to enhance natural shine and protect scalp health.¹ \n-Attachment
+                        learning remembers your go-to styling preferences. \n-It even
+                        takes a break when you do, with Pause detect.\n\nNow available
+                        at dyson.com.\n\n¹When used in Scalp protect mode."
+                    tags: []
+                    videoOrder: 6
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 553-discover-Irinel-Influencer
+                    type: brightcove
+                    title: 'Dyson Airstrait™: love at first pass'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/132ee4f4b5f647e3ab01960dd351f49d?v=867971f5&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/132ee4f4b5f647e3ab01960dd351f49d?v=867971f5
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6339312832112'
+                      duration: 40052
+                      description: Love at first pass
+                      longDescription: Wow, in one pass.  We captured our Global Styling
+                        Ambassador Irinel de León using the Dyson Airstrait™ straightener
+                        for the first time.  See how she achieves a naturally straight
+                        finish, without plates or extreme heat. We can confirm, it
+                        has the wow factor.
+                    tags: []
+                    videoOrder: 8
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-straighteners/airstrait
+                  - id: engineers-explained-science-curls-airwrap
+                    type: brightcove
+                    title: 'Dyson Airwrap™: bonds + Coanda = curls'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/274756edf4b340e7a626465774e0be8c?v=04f313bd&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/274756edf4b340e7a626465774e0be8c?v=04f313bd
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6336669696112'
+                      duration: 79668
+                      description: Bonds + Coanda = Curls
+                      longDescription: It looks a little like magic, but there’s clever
+                        science behind creating curls with Airwrap™. In the next episode
+                        of Engineers Explain, Dyson engineer Eva Comas Stokes is back
+                        – showing how resetting bonds and adding Coanda into the mix
+                        equals curls that last.
+                    tags: []
+                    videoOrder: 9
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-stylers/airwrap
+                  collectionOrder: 5
+                - id: EC-environmentalcare-DDEE
+                  type: collection
+                  title: 'Air '
+                  topic: air-ddee
+                  poster:
+                    type: url
+                    url: 
+                      https://contenthub.dyson.com/api/public/content/70c7e3f4e2d34573b6f0cb6cbdb16c6e?v=dc39f60b
+                  items:
+                  - id: engineers-explained-ec-whypurify
+                    type: brightcove
+                    title: Purifying your air and why it matters​
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/99bab99772de4b7babb313510a8b166a?v=175376d3&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/99bab99772de4b7babb313510a8b166a?v=175376d3
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6353083156112'
+                      duration: 31552
+                      description: Why purify your air​
+                      longDescription: "We frequently focus on the food and water
+                        we consume, but everything we put into our bodies matters.\n
+                        \nAfter all, we breathe a staggering 10,000 liters of air
+                        in a day.\n\nThat's why our purifiers are designed to capture
+                        pollutants that you might otherwise breathe in. ​\n​\nSo you
+                        can enjoy cleaner, purified air.​"
+                    tags: []
+                    videoOrder: 1
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment
+                  - id: engineers-explained-ec-projecting
+                    type: brightcove
+                    title: Projecting – how purifiers help improve air quality​
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/5aaaf33678a24905ae094c980b524aec?v=3a024886&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/5aaaf33678a24905ae094c980b524aec?v=3a024886
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6353869731112'
+                      duration: 47275
+                      description: Projecting purified air in your home​
+                      longDescription: "Wherever you are in your room, you can benefit
+                        from cleaner air, thanks to the long-range projection of our
+                        purifiers. ​\n​\nThe Big+Quiet purifier has the power to project
+                        purified air over nine meters (32ft). ​\n​\nWatch environmental
+                        care design engineer Kathleen explain how this important feature:\n
+                        \n-creates air circulation \n-helps remove pollutants\n-contributes
+                        to whole-room purification.​\n​"
+                    tags: []
+                    videoOrder: 2
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment
+                  - id: engineers-explained-ec-capturing
+                    type: brightcove
+                    title: Capturing – how purifiers help improve air quality​
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/d9be3ce6748c43c0bbff47bfaa21314a?v=697856b4&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/d9be3ce6748c43c0bbff47bfaa21314a?v=697856b4
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6353868561112'
+                      duration: 52309
+                      description: Capturing pollutants in your home​
+                      longDescription: "Our purifiers help to keep your air free of
+                        pollutants that you might otherwise breathe in. ​\n​\nEnvironmental
+                        care design engineer Kathleen shows you the stages of filtration
+                        that ensure pollutants are trapped, using:\n\n-a filter for
+                        particulate matter like dust and mold\n-a carbon filter to
+                        capture odors, gases and volatile organic compounds \n-and
+                        HEPA standard seals, so what goes inside stays inside."
+                    tags: []
+                    videoOrder: 3
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment
+                  - id: 664-discover-launch
+                    type: brightcove
+                    title: Get your hands on Dyson’s quietest, most powerful purifier
+                      now!
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/4924305b57b2417faeefb480ba24fa2e?v=09b077b1&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/4924305b57b2417faeefb480ba24fa2e?v=09b077b1
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6328586798112'
+                      duration: 15903
+                      description: Dyson Purifier Big+Quiet
+                      longDescription: "The Dyson Purifier Big+Quiet captures pollutants
+                        and projects purified air across large spaces. It tackles
+                        the often-invisible problem of indoor pollution, which can
+                        build up in the home through indoor activities and household
+                        products.\n\nOur quietest, most powerful purifier continually
+                        reduces your exposure to pollution, without disturbing you
+                        around the home."
+                    tags: []
+                    videoOrder: 4
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment/air-purifiers/big-quiet-formaldehyde
+                  - id: engineers-explained-ec-sensing
+                    type: brightcove
+                    title: Sensing – how purifiers help improve air quality​
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/4815d3e0047d4f09906f58d2b599801f?v=9ba78a91&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/4815d3e0047d4f09906f58d2b599801f?v=9ba78a91
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6353869828112'
+                      duration: 50795
+                      description: Sensing pollutants in your home
+                      longDescription: "Enjoy everyday things like cooking without
+                        worrying about the impact of indoor pollution.\n\nThanks to
+                        Auto mode, our latest purifiers can detect and remove common
+                        pollutants from your indoor air without you having to do anything.\n
+                        \nJoin environmental care design engineer Kathleen as she
+                        shows you:\n\n-how Auto mode works\n-some of the pollutants
+                        our purifiers can sense and remove.​"
+                    tags: []
+                    videoOrder: 5
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment
+                  - id: hepa-discover-pollen
+                    type: brightcove
+                    title: Pollen season has arrived
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/5758f2f0d3ac48519c9b7a06321c133a?v=abfc2b77&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/5758f2f0d3ac48519c9b7a06321c133a?v=abfc2b77
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6338422813112'
+                      duration: 40180
+                      description: Indoor air quality
+                      longDescription: "The air quality in your home matters. That's
+                        where we come in. To improve your home environment, your Dyson
+                        air purifier is engineered with a pleated HEPA filter. Capturing
+                        airborne dust, pollen, and allergens, to help you through
+                        the sneezy season. \n\nTo help keep your air cleaner, select
+                        Auto mode on your machine."
+                    tags: []
+                    videoOrder: 6
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment
+                  - id: breathe-discover-melbourne
+                    type: brightcove
+                    title: 'Breathe Melbourne: studying air quality'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/fc214cd92e4b42d8a1435e68c8e9f5f7?v=0c8c6cbc&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/fc214cd92e4b42d8a1435e68c8e9f5f7?v=0c8c6cbc
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6337597032112'
+                      duration: 130612
+                      description: Studying air quality in Melbourne
+                      longDescription: "We partnered with Deakin University in Australia
+                        to conduct a pioneering study – Breathe Melbourne. The aim
+                        was to measure children’s exposure to air pollution on their
+                        commute to and from school in Melbourne’s inner west.\n\n
+                        To do this, we adapted technology from our machines to create
+                        air quality sensing backpacks. The study not only educated
+                        children on the air they breathe, but also encouraged them
+                        to change their commute to reduce their exposure to air pollution."
+                    tags: []
+                    videoOrder: 7
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment
+                  - id: breathe-discover-london
+                    type: brightcove
+                    title: Studying air quality in London
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/8bc60075946f4c19b3877975225fda86?v=4412fea5&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/8bc60075946f4c19b3877975225fda86?v=4412fea5
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6337598508112'
+                      duration: 134260
+                      description: 'Breathe London: studying air quality'
+                      longDescription: "We partnered with Kings College London in
+                        the UK to conduct a pioneering study – Breathe London. The
+                        aim was to measure 250 children's exposure to air pollution
+                        on their commute to and from school. \n\nTo do this, we adapted
+                        technology from our machines to create air quality sensing
+                        backpacks. The study not only educated children on the air
+                        they breathe, but also encouraged the children to change their
+                        commute to reduce their exposure to air pollution."
+                    tags: []
+                    videoOrder: 8
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment
+                  - id: breathe-discover-delhi
+                    type: brightcove
+                    title: 'Breathe Delhi: studying air quality'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/a0a34541e4004c52bcfecb85788c61c4?v=b6912a4d&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/a0a34541e4004c52bcfecb85788c61c4?v=b6912a4d
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6337597620112'
+                      duration: 174026
+                      description: Studying air quality in Delhi
+                      longDescription: "We partnered with Delhi-based mother Karuna
+                        Chauhan, to conduct a pioneering study – Breathe Delhi. The
+                        aim was to study exposure to air pollution in the city, to
+                        educate individuals about air quality and empower people to
+                        take control of their pollution exposure.\n\nTo do this, we
+                        adapted technology from our machines to create air quality
+                        sensing backpacks. The study not only educated people on the
+                        air they breathe, but also encouraged them to change their
+                        habits to reduce their exposure to air pollution."
+                    tags: []
+                    videoOrder: 9
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/air-treatment
+                  collectionOrder: 6
+                - id: HC-Beauty-cn-DDEE
+                  type: collection
+                  title: 'Beauty '
+                  topic: beauty-cn-ddee
+                  poster:
+                    type: url
+                    url: 
+                      https://contenthub.dyson.com/api/public/content/d125dd697fdf44e88c66af6a40452c12?v=6cb0b5de
+                  items:
+                  - id: 605G-EE-scalp-protect
+                    type: brightcove
+                    title: 'Engineers answer: Scalp protect mode'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0d62b3b2209a493ab3fbf4f27eef70a0?v=3d7cfab8&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0d62b3b2209a493ab3fbf4f27eef70a0?v=3d7cfab8
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6365832451112'
+                      duration: 85717
+                      description: Scalp protect mode
+                      longDescription: "Niamh Cogley-Rock, Senior Design Engineer,
+                        explains Scalp protect mode on the Supersonic Nural™ hair
+                        dryer. ​\n\nWatch and learn how it helps maintain a healthier
+                        scalp and retain ideal moisture levels."
+                    tags: []
+                    videoOrder: 1
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 605G-EE-scalp-health
+                    type: brightcove
+                    title: 'Engineers answer: The importance of scalp health​'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/967366822bb9410d8f471341840b3d26?v=4a44c97c&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/967366822bb9410d8f471341840b3d26?v=4a44c97c
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6366096587112'
+                      duration: 28117
+                      description: The importance of scalp health
+                      longDescription: "Understand why good scalp health is important
+                        for achieving healthy hair. ​\n\nNiamh Cogley-Rock, our Senior
+                        Design Engineer, explains."
+                    tags: []
+                    videoOrder: 2
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 605G-EE-dome-diffuse
+                    type: brightcove
+                    title: 'Engineers answer: Dome mode and Diffuse mode'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/ba480c5900d647aab79a3962e859516d?v=73d1c281&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/ba480c5900d647aab79a3962e859516d?v=73d1c281
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6365831479112'
+                      duration: 39040
+                      description: Dome mode and Diffuse mode​
+                      longDescription: Niamh Cogley-Rock, Senior Design Engineer,
+                        discusses the different benefits of Dome mode and Diffuse
+                        mode on the Wave+Curl diffuser.
+                    tags: []
+                    videoOrder: 2
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/support/journey/tools/973924-01
+                  - id: engineers-explained-airwrap-attachments​
+                    type: brightcove
+                    title: 'Let’s talk: Dyson Airwrap™ attachments'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/bbd77354f7d8472d859eab4e8f8b023b?v=7ab17ab4&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/bbd77354f7d8472d859eab4e8f8b023b?v=7ab17ab4
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6336670853112'
+                      duration: 100895
+                      description: "Let's talk: Airwrap™ attachments"
+                      longDescription: In this episode of Engineers Explain, Dyson
+                        engineer Kavya Nair  shares how to get the most from your
+                        Airwrap™ attachments. From curling with the Airwrap™ barrels
+                        to pre-drying and smoothing with the Coanda smoothing dryer.
+                    tags: []
+                    videoOrder: 3
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-stylers/airwrap
+                  - id: 308F-Engineers-Film
+                    type: brightcove
+                    title: New Airwrap i.d.™ – Engineering the perfect curl
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/333d6a52803144519e0d7b12bacc9502?v=609ab732&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/333d6a52803144519e0d7b12bacc9502?v=609ab732
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6360811577112'
+                      duration: 155072
+                      description: Engineering the perfect curl
+                      longDescription: "Our engineers just made styling smarter. \n
+                        \nThe Dyson Airwrap i.d.™, our first Bluetooth® wireless technology
+                        enabled multi-styler and dryer, connects to the the MyDyson™
+                        app to offer a perfect curling sequence. \n\nIn this video,
+                        our experts explain how:\n• achieving the perfect curl has
+                        never been easier\n• the latest attachments, including the
+                        Conical barrel, unlock new styling opportunities\n• rigorous
+                        user testing and hair science helped develop our latest styler.\n
+                        \nThe Bluetooth® word mark and logos are registered trademarks
+                        owned by the Bluetooth SIG, Inc. and any use of such marks
+                        by Dyson is under license."
+                    tags: []
+                    videoOrder: 4
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-stylers/airwrap
+                  - id: engineers-explained-smooth-hair
+                    type: brightcove
+                    title: 'Dyson Airwrap™: Smooth air for smooth hair'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/69beca65a40f4c2296bdc2bc3e771faf?v=a06f95a1&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/69beca65a40f4c2296bdc2bc3e771faf?v=a06f95a1
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6337352955112'
+                      duration: 63028
+                      description: Smooth air for smooth hair
+                      longDescription: In the latest episode of Engineers Explain,
+                        Dyson engineer Rory Fisher explains how the Coanda effect,
+                        the airflow phenomenon, helps reduce frizz and flyaways to
+                        create smooth, sleek styles.
+                    tags: []
+                    videoOrder: 5
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-stylers/airwrap
+                  - id: 605gm-discover-launch
+                    type: brightcove
+                    title: Dyson Supersonic Nural™ hair dryer – evolution of an icon
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0bcec292b2d84f0a9a2620c5af4ad6c7?v=e984c766&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/0bcec292b2d84f0a9a2620c5af4ad6c7?v=e984c766
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6353783199112'
+                      duration: 24760
+                      description: New Supersonic™ – evolution of an icon
+                      longDescription: "Discover a new way to simplify your hair care
+                        routine.\n\nThe Dyson Supersonic Nural™ hair dryer:\n\n-Auto-adapts
+                        to enhance natural shine and protect scalp health.¹ \n-Attachment
+                        learning remembers your go-to styling preferences. \n-It even
+                        takes a break when you do, with Pause detect.\n\nNow available
+                        at dyson.com.\n\n¹When used in Scalp protect mode."
+                    tags: []
+                    videoOrder: 6
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-dryers/supersonic-nural/vinca-blue-topaz
+                  - id: 553-discover-Irinel-Influencer
+                    type: brightcove
+                    title: 'Dyson Airstrait™: love at first pass'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/132ee4f4b5f647e3ab01960dd351f49d?v=867971f5&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/132ee4f4b5f647e3ab01960dd351f49d?v=867971f5
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6339312832112'
+                      duration: 40052
+                      description: Love at first pass
+                      longDescription: Wow, in one pass.  We captured our Global Styling
+                        Ambassador Irinel de León using the Dyson Airstrait™ straightener
+                        for the first time.  See how she achieves a naturally straight
+                        finish, without plates or extreme heat. We can confirm, it
+                        has the wow factor.
+                    tags: []
+                    videoOrder: 7
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-straighteners/airstrait
+                  - id: engineers-explained-science-curls-airwrap
+                    type: brightcove
+                    title: 'Dyson Airwrap™: bonds + Coanda = curls'
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/274756edf4b340e7a626465774e0be8c?v=04f313bd&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/274756edf4b340e7a626465774e0be8c?v=04f313bd
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6336669696112'
+                      duration: 79668
+                      description: Bonds + Coanda = Curls
+                      longDescription: It looks a little like magic, but there’s clever
+                        science behind creating curls with Airwrap™. In the next episode
+                        of Engineers Explain, Dyson engineer Eva Comas Stokes is back
+                        – showing how resetting bonds and adding Coanda into the mix
+                        equals curls that last.
+                    tags: []
+                    videoOrder: 8
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/hair-care/hair-stylers/airwrap
+                  - id: 658-discover-clip-test
+                    type: brightcove
+                    title: Developing Dyson’s Wide and Sectioning hair clips
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/1213a2cc110e442996d76930b5e8d5dd?v=29a9c449&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/1213a2cc110e442996d76930b5e8d5dd?v=29a9c449
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6338421610112'
+                      duration: 99146
+                      description: Developing Dyson’s hair clips
+                      longDescription: "Our engineers, Veronica, Katherine, Alex and
+                        Benjamin, explain the Wide and Sectioning hair clips. \n\n
+                        They share the product development stages that include user
+                        trials, working closely with hair care professionals and prototype
+                        testing. Before demonstrating the rigorous Sample Hair clip
+                        and Kinetic Endurance test."
+                    tags: []
+                    videoOrder: 9
+                    ctaTitle: dyson.com
+                    ctaLink:
+                  collectionOrder: 7
+                - id: FC-Floor-DDEE
+                  type: collection
+                  title: 'Floor '
+                  topic: floor-ddee
+                  poster:
+                    type: url
+                    url: 
+                      https://contenthub.dyson.com/api/public/content/e39d7bbb13324db1aafc849a9a66af1d?v=c5f946ed
+                  items:
+                  - id: pet-science-discover-solution
+                    type: brightcove
+                    title: Pet hair, we care
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/07a08e6316074268b360c1388489b33c?v=12110ad7&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/07a08e6316074268b360c1388489b33c?v=12110ad7
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6338229440112'
+                      duration: 61300
+                      description: Pet hair, we care
+                      longDescription: "Dyson engineers and microbiologists explain
+                        the engineering behind our pet hair problem solvers – the
+                        Pet groom tool and Hair screw tool. \n\nThey reveal how we’ve
+                        developed a sophisticated filtration system that keeps allergens
+                        inside the machine. So what goes inside, stays inside."
+                    tags: []
+                    videoOrder: 1
+                    ctaTitle: dyson.com
+                    ctaLink:
+                  - id: hh15-discover-launch
+                    type: brightcove
+                    title: Dyson Car+Boat, our most powerful handheld vacuum
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/63696e70175945b1978a47b15885a02b?v=0c9567c7&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/63696e70175945b1978a47b15885a02b?v=0c9567c7
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6369714224112'
+                      duration: 37760
+                      description: Introducing Dyson Car+Boat
+                      longDescription: "Built for more than just the home, the Dyson
+                        Car+Boat is ideal for cleaning car interiors, boat cabins,
+                        and hard-to-reach spaces.\n\nTackle tight gaps under TV cabinets,
+                        car mats and cubby holes. No mess is out of reach with this
+                        lightweight, compact vacuum.\n \nEnjoy unrivalled suction
+                        power from the motor spinning at 110,000 rpm. Plus, a 50-minute
+                        run time¹ offers market leading battery performance.\n\n\n
+                        1. Tested to IEC 62885-4; 2020 Cl5.101 in low mode, with non
+                        motorised tool.  Runtime may vary depending on usage."
+                    tags: []
+                    videoOrder: 2
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/vacuum-cleaners/handhelds/car-boat/silver
+                  - id: 277-discover-jenga
+                    type: brightcove
+                    title: Dyson 360 Vis Nav™
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/d0eb38d314ac44c785e319f680ba57f1?v=628c169a&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/d0eb38d314ac44c785e319f680ba57f1?v=628c169a
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6337786620112'
+                      duration: 62026
+                      description: Robot obstacle race
+                      longDescription: "We challenged Dyson engineer Natalie to put
+                        the Dyson 360 Vis Nav™ robot vacuum to the test. Engineered
+                        with room-mapping, intelligent vision systems and a low profile,
+                        the robot vacuum is designed to clean around anything, from
+                        chairs and tables to wooden blocks.\n\nWatch until the end
+                        to see if the machine successfully avoided the multiple obstacles
+                        put in its path."
+                    tags: []
+                    videoOrder: 2
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/vacuum-cleaners/robot
+                  - id: floorcare-discover-pet-hair
+                    type: brightcove
+                    title: Dyson studies the science of pet hair, and how to remove
+                      it.
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/284745e25be249fa9b8fda4a5ddb0011?v=a1b9c0a1&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/284745e25be249fa9b8fda4a5ddb0011?v=a1b9c0a1
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6317536628112'
+                      duration: 159028
+                      description: Pet hair science
+                      longDescription: Our scientists have studied pet hair for over
+                        20 years, identifying many allergens present in it. But removing
+                        them from your home can be a challenge. Using high-speed cameras
+                        to capture how real hair moves, our engineers digitally simulate
+                        how it reacts with our products. Helping them to design specific
+                        vacuum technology that captures and removes it.
+                    tags: []
+                    videoOrder: 3
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/support/journey/tools/972205-01
+                  - id: 693-launch-EE
+                    type: brightcove
+                    title: Meet Dyson’s first dedicated wet floor cleaner
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/be674151390e41709caf4887fcc69ed6?v=2ef8058d&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/be674151390e41709caf4887fcc69ed6?v=2ef8058d
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6361382738112'
+                      duration: 156032
+                      description: 'Just launched: Dyson Wash G1™'
+                      longDescription: "Footprints, paw prints, cereal and sauces
+                        are no match for Wash G1™, Dyson’s new all-in-one wet floor
+                        cleaner. Watch the video to discover how Wash G1™ is engineered
+                        to wash hard floors. Properly.⁹\n\n• Removes wet and dry dirt
+                        from hard floors in one go.\n• Divides used water and dry
+                        debris into separate trays for hygienic disposal.\n• Delivers
+                        powerful, rapid stain removal from two counter-rotating motorized
+                        rollers.\n\n⁹According to Dyson internal methods, tested on
+                        ceramic tile and wood."
+                    tags: []
+                    videoOrder: 4
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.co.uk/floor-cleaners/wet/washg1
+                  - id: engineer-explain-vs-robot
+                    type: brightcove
+                    title: Engineer vs robot
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/7bbf72346f004db89504a494e7e0bfdf?v=59aa66b9&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/7bbf72346f004db89504a494e7e0bfdf?v=59aa66b9
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6342846062112'
+                      duration: 112010
+                      description: Engineer vs robot – can the Dyson 360° VisNav™
+                        triumph?
+                      longDescription: "Dyson engineer Josie puts our latest robot
+                        vacuum to the test. But will its suction prove powerful enough
+                        to pick up debris scattered across multiple floor types?\n
+                        \nWith breakfast mess on a hard floor, kids’ party carnage
+                        on a carpet, even outdoor detritus ground into a rug, the
+                        Dyson 360° VisNav™ robot vacuum is up against it.\n\nWe find
+                        out if our robot friend is up to the challenge."
+                    tags: []
+                    videoOrder: 5
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/vacuum-cleaners/robot
+                  - id: 780A-discover-launch
+                    type: brightcove
+                    title: Dyson 02 Probiotic hard floor cleaning solution
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/8705643c774a42edb4c359a5fbbfbcb1?v=64dadf23&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/8705643c774a42edb4c359a5fbbfbcb1?v=64dadf23
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6371350401112'
+                      duration: 41835
+                      description: New Dyson 02 Probiotic hard floor cleaning solution
+                      longDescription: "Deep cleans at the microscopic level for fresh-smelling
+                        floors.\n\nBillions of active enzymes target and break down
+                        organic matter on hard floors – removing common household
+                        spills and stains such as oil, milk and juice.\n\nThe non-foaming
+                        solution is specially developed for Dyson machines and with
+                        no harsh chemicals, it's safe for homes with pets and children.\n
+                        \nRecommended for all Dyson wet floor cleaners."
+                    tags: []
+                    videoOrder: 5
+                    ctaTitle: dyson.com
+                    ctaLink:
+                  - id: 277-discover-launch
+                    type: brightcove
+                    title: Dyson 360 Vis Nav™ robot vacuum – find out more!
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/b528742005ea4def8cc20e656fbe3f4d?v=854566fc&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/b528742005ea4def8cc20e656fbe3f4d?v=854566fc
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6328546652112'
+                      duration: 15071
+                      description: Dyson 360 Vis Nav™
+                      longDescription: "Freedom from cleaning is here. Dyson’s new
+                        robot vacuum gives your home a deep clean, without you doing
+                        the work. Control, customise and schedule your robot remotely
+                        – so wherever you are, you can return to a Dyson-clean home.\n
+                        \nDiscover the pioneering vacuum technology packed into this
+                        powerful robot."
+                    tags: []
+                    videoOrder: 6
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/vacuum-cleaners/robot
+                  - id: brand-discover-robotics-labs
+                    type: brightcove
+                    title: Step inside Dyson's Top Secret Robotics Labs
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/45dbd0d43b0a4764928e7b303614f952?v=b0c4acaf&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/45dbd0d43b0a4764928e7b303614f952?v=b0c4acaf
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6315102375112'
+                      duration: 63690
+                      description: Top secret robotics
+                      longDescription: How do you build an artificial being from scratch?
+                        In essence, give life to a robot? See how Dyson engineers
+                        create innovative solutions to these questions, in the same
+                        way that they approach every problem, no matter the level
+                        of complexity. Through pioneering research, intense curiosity,
+                        and the love of a challenge.
+                    tags: []
+                    videoOrder: 7
+                    ctaTitle: ''
+                    ctaLink:
+                  - id: HH15-EE-dustmites
+                    type: brightcove
+                    title: Dyson vs. dust mites
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/73e9fb97ce8449209d7d13875dc9fa86?v=02eff74a&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/73e9fb97ce8449209d7d13875dc9fa86?v=02eff74a
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6372560381112'
+                      duration: 119829
+                      description: Dyson vs. dust mites
+                      longDescription: "On average, we spend 6.5 hours in bed every
+                        night. But we’re not alone. Our beds are home to millions
+                        of dust mites which produce thousands of faecal pellets, a
+                        cause of allergies.\n \nOur expert explains how Dyson vacuums
+                        and tools help remove these pests and allergens for a cleaner,
+                        healthier sleep."
+                    tags: []
+                    videoOrder: 7
+                    ctaTitle: dyson.com
+                    ctaLink: 
+                      https://www.dyson.com/support/journey/spare-details.971361-02?source_description=yext%7Espares_and_accessories%7E971361-02
+                  collectionOrder: 8
+                - id: WT-Audio-DDEE
+                  type: collection
+                  title: Audio
+                  topic: audio-ddee
+                  poster:
+                    type: url
+                    url: 
+                      https://contenthub.dyson.com/api/public/content/8aef6b8ed2f04136bfd40e937225bb12?v=9d7b467c
+                  items:
+                  - id: 571H-Engineering-Film-Two
+                    type: brightcove
+                    title: Dyson OnTrac™ headphones – relentlessly engineered
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/c2d221d8e2de4df6a8057ee8def15bd1?v=0b6c4a5a&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/c2d221d8e2de4df6a8057ee8def15bd1?v=0b6c4a5a
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6361144420112'
+                      duration: 90000
+                      description: Dyson OnTrac™ headphones – relentlessly engineered
+                      longDescription: "Combining research, analysis and physical
+                        testing, our engineers have created outstanding audio performance.\n
+                        \nExperience advanced Active Noise Cancellation. Eight high
+                        sensitivity microphones isolate and remove up to 40dB of unwanted
+                        external noise.\n\nWhile high-density, microfibre ear cushions
+                        mould to form an acoustic seal.\n \nAnd with high-capacity
+                        lithium batteries, you get non-stop listening for up to 55
+                        hours.\n\nWatch the video to discover more."
+                    tags: []
+                    videoOrder: 3
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/sign-up/wearables
+                  - id: 571H-discover-headphones-remastered
+                    type: brightcove
+                    title: Dyson OnTrac™ – headphones, remastered
+                    thumbnail:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/3794a9e4da1d47b692ff17d7ce5606a4?v=02ab6f72&t=w640
+                    poster:
+                      type: url
+                      url: 
+                        https://contenthub.dyson.com/api/public/content/3794a9e4da1d47b692ff17d7ce5606a4?v=02ab6f72
+                    video:
+                      source:
+                        type: brightcove
+                        id: '6354867023112'
+                      duration: 30022
+                      description: Dyson OnTrac™ headphones
+                      longDescription: "Have you heard?\n\nOur latest headphones,
+                        Dyson OnTrac™, give you a completely immersive listening experience.\n
+                        \n•  Up to 55 hours of non-stop listening.¹\n•  Customizable
+                        colors to create your signature combination.\n•  Advanced
+                        noise cancellation that removes up to 40db of unwanted noise.\n
+                        \nLearn more on Dyson.com.\n\n¹With ANC on. Performance may
+                        vary based on environmental conditions and usage."
+                    tags: []
+                    videoOrder: 4
+                    ctaTitle: dyson.com
+                    ctaLink: https://www.dyson.com/headphones/ontrac/cnc-black-nickel
+                  collectionOrder: 9
+      parameters:
+      - name: locale
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: market
+        in: query
+        required: false
+        schema:
+          type: string
+  /v1/app-ui/content/support:
+    get:
+      summary: GET support
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        content:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                              type:
+                                type: string
+                              layout:
+                                type: string
+                              items:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    id:
+                                      type: string
+                                    type:
+                                      type: string
+                                    title:
+                                      type: string
+                                    description:
+                                      type: string
+                                    image:
+                                      type: string
+                                    url:
+                                      type: string
+              example:
+                sections:
+                - id: product-list
+                  content:
+                  - id: product-list
+                    type: list
+                    layout: spaced
+                    items:
+                    - id: 9RJ-US-UAA8845A
+                      type: link
+                      title: Dyson Purifier Cool PC1
+                      description: Theater Fan
+                      image: https://csassets.cp.dyson.com/TP11/4/d4aa7251-bde3-4fe0-81df-84fc6d039efc.heic
+                      url: dyson:///support/9RJ-US-UAA8845A
+                - id: support-options
+                  title: More options
+                  content:
+                  - id: support-options-list
+                    type: list
+                    layout: standard
+                    items:
+                    - id: digital-assistant
+                      type: link
+                      title: Dyson Digital Assistant
+                      description: The Digital Assistant can help, or connect you
+                        with an expert.
+                      titleIcon: asset:///icon/speech_ellipsis
+                      url: dyson:///support/digitalAssistant
+                    - id: contact-dyson
+                      type: link
+                      title: Contact Dyson
+                      description: Get in touch with a Dyson expert.
+                      titleIcon: asset:///icon/speech_dyson
+                      url: dyson:///support/contact
+      parameters:
+      - name: locale
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: market
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: platform
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: screenScale
+        in: query
+        required: false
+        schema:
+          type: string
+  /v1/notifier/applications/526513ecdf14474692a79b638b3c5d63:
+    put:
+      summary: PUT 526513ecdf14474692a79b638b3c5d63
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: string
+              example: 526513ecdf14474692a79b638b3c5d63
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                BuildIdentifier:
+                  type: string
+                Token:
+                  type: string
+                Platform:
+                  type: string
+                Version:
+                  type: string
+                Culture:
+                  type: string
+                Description:
+                  type: string
+            example:
+              BuildIdentifier: black-production
+              Token: 99f7996f350c0a48962afef5827c23af531608c4cb6a984fab2550815f2fa6e9
+              Platform: Ios
+              Version: 6.4.25340
+              Culture: en-US
+              Description: desc
+  /v1/applog:
+    post:
+      summary: POST applog
+      responses:
+        '200':
+          description: OK
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                device_platform:
+                  type: string
+                device_os_version:
+                  type: string
+                machine_model:
+                  type: string
+                events:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                      action:
+                        type: string
+                      session_identifier:
+                        type: string
+                      date:
+                        type: string
+                      type:
+                        type: string
+                session_identifier:
+                  type: string
+                serial_number:
+                  type: string
+                summary:
+                  type: object
+                  properties:
+                    resolve:
+                      type: object
+                      properties:
+                        success:
+                          type: object
+                          properties:
+                            connection_status:
+                              type: number
+                        attempts:
+                          type: object
+                          properties:
+                            connection_status:
+                              type: number
+                    current_state:
+                      type: object
+                      properties:
+                        attempts:
+                          type: object
+                          properties:
+                            connection_status:
+                              type: number
+                        success:
+                          type: object
+                          properties:
+                            connection_status:
+                              type: number
+                    success:
+                      type: string
+                    mqtt_connect:
+                      type: object
+                      properties:
+                        attempts:
+                          type: object
+                          properties:
+                            connection_status:
+                              type: number
+                        success:
+                          type: object
+                          properties:
+                            connection_status:
+                              type: number
+                report_type:
+                  type: string
+                device_model:
+                  type: string
+                app_version:
+                  type: string
+                device_manufacturer:
+                  type: string
+            example:
+              device_platform: iOS
+              device_os_version: 18.6.2
+              machine_model: '438'
+              events:
+              - status: start
+                action: resolve
+                session_identifier: 8D79C514-99C0-4408-9E66-94EE0D7E41F0
+                date: '2025-09-09T17:51:32Z'
+                type: connectionStatus
+              - status: success
+                action: resolve
+                session_identifier: 8D79C514-99C0-4408-9E66-94EE0D7E41F0
+                date: '2025-09-09T17:51:32Z'
+                type: connectionStatus
+              - status: success
+                action: connect
+                session_identifier: 8D79C514-99C0-4408-9E66-94EE0D7E41F0
+                date: '2025-09-09T17:51:34Z'
+                type: connectionStatus
+              - status: success
+                action: currentState
+                session_identifier: 8D79C514-99C0-4408-9E66-94EE0D7E41F0
+                date: '2025-09-09T17:51:36Z'
+                type: connectionStatus
+              session_identifier: 8D79C514-99C0-4408-9E66-94EE0D7E41F0
+              serial_number: 9RJ-US-UAA8845A
+              summary:
+                resolve:
+                  success:
+                    connection_status: 1
+                  attempts:
+                    connection_status: 1
+                current_state:
+                  attempts:
+                    connection_status: 1
+                  success:
+                    connection_status: 1
+                success: connectionStatus
+                mqtt_connect:
+                  attempts:
+                    connection_status: 1
+                  success:
+                    connection_status: 1
+              report_type: iOS-Connectivity
+              device_model: iPad7,11
+              app_version: 6.4.25340
+              device_manufacturer: Apple
+  /v1/insights/ec/9RJ-US-UAA8845A/monthly:
+    get:
+      summary: GET monthly
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reportYear:
+                    type: number
+                  reportMonth:
+                    type: number
+                  monthlyDominantPollutant:
+                    type: string
+                  mostPollutedDay:
+                    type: object
+                    properties:
+                      date:
+                        type: string
+                      dominantPollutant:
+                        type: string
+                      averageAq:
+                        type: number
+                      hourlyAq:
+                        type: array
+                        items:
+                          type: number
+                  monthAq:
+                    type: object
+                    properties:
+                      min:
+                        type: array
+                        items:
+                          type: number
+                      max:
+                        type: array
+                        items:
+                          type: number
+                      avg:
+                        type: array
+                        items:
+                          type: number
+                  monthlyTrend:
+                    type: object
+                    nullable: true
+                  monthlyAverageAq:
+                    type: number
+              example:
+                reportYear: 2025
+                reportMonth: 8
+                monthlyDominantPollutant: pm25
+                mostPollutedDay:
+                  date: '2025-08-09'
+                  dominantPollutant: pm25
+                  averageAq: 19.916666666666668
+                  hourlyAq:
+                  - 36
+                  - 38
+                  - 38
+                  - 43
+                  - 45
+                  - 48
+                  - 62
+                  - 56
+                  - 33
+                  - 20
+                monthAq:
+                  min:
+                  - 0
+                  - 0
+                  - 0
+                  - 0
+                  - 0
+                  - 1
+                  - 0
+                  - 0
+                  - 0
+                  - 0
+                  max:
+                  - 15
+                  - 14
+                  - 12
+                  - 22
+                  - 40
+                  - 26
+                  - 19
+                  - 59
+                  - 62
+                  - 16
+                  avg:
+                  - 6
+                  - 2
+                  - 1
+                  - 8
+                  - 16
+                  - 12
+                  - 6
+                  - 11
+                  - 23
+                  - 4
+                monthlyTrend:
+                monthlyAverageAq: 5
+x-path-templates:
+# Remove the  prefix to generate an endpoint with its URL
+# Lines that are closer to the top take precedence, the matching is greedy
+  []
