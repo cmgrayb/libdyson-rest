@@ -71,6 +71,14 @@ try:
             iot_data = client.get_iot_credentials(device.serial_number)
             print(f"  IoT Endpoint: {iot_data.endpoint}")
 
+        # Check for firmware updates
+        try:
+            pending_release = client.get_pending_release(device.serial_number)
+            print(f"  Pending Firmware: {pending_release.version}")
+            print(f"  Update Pushed: {pending_release.pushed}")
+        except Exception as e:
+            print(f"  No pending firmware info available")
+
 finally:
     client.close()
 ```
@@ -138,6 +146,7 @@ DysonClient(
 ##### Device Management
 - `get_devices() -> List[Device]`: List all account devices
 - `get_iot_credentials(serial_number) -> IoTData`: Get AWS IoT connection info
+- `get_pending_release(serial_number) -> PendingRelease`: Get pending firmware release info
 
 ##### Session Management
 - `close() -> None`: Close session and clear state
@@ -188,6 +197,14 @@ class LoginInformation:
 class IoTData:
     endpoint: str              # AWS IoT endpoint
     iot_credentials: IoTCredentials  # Connection credentials
+```
+
+#### PendingRelease
+```python
+@dataclass
+class PendingRelease:
+    version: str     # Pending firmware version
+    pushed: bool     # Whether update has been pushed to device
 ```
 
 ### Exception Hierarchy
