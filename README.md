@@ -17,6 +17,7 @@ A Python library for interacting with Dyson devices through their official REST 
 - **Type-Safe Models**: Comprehensive data models with proper type hints
 - **Error Handling**: Detailed exception hierarchy for robust error handling
 - **Context Manager Support**: Automatic resource cleanup
+- **Async/Await Support**: Full asynchronous client for Home Assistant and other async environments
 
 ## Installation
 
@@ -34,7 +35,58 @@ cd libdyson-rest
 pip install -e .
 ```
 
+## Documentation
+
+For comprehensive API documentation, see:
+
+- **[API Reference](docs/API.md)** - Complete method documentation for both sync and async clients
+- **[Examples](examples/)** - Practical usage examples and troubleshooting tools
+- **[Type Checking Guide](docs/STRICT_TYPE_CHECKING.md)** - Advanced type checking configuration
+- **[Modern Type Hints](docs/MODERN_TYPE_HINTS.md)** - Type hint patterns and best practices
+
+### Quick Reference
+
+| Client Type | Import | Context Manager | Best For |
+|------------|--------|-----------------|----------|
+| **Synchronous** | `from libdyson_rest import DysonClient` | `with DysonClient() as client:` | Scripts, simple applications |
+| **Asynchronous** | `from libdyson_rest import AsyncDysonClient` | `async with AsyncDysonClient() as client:` | Home Assistant, web servers, concurrent apps |
+
 ## Quick Start
+
+### Synchronous Usage
+
+```python
+from libdyson_rest import DysonClient
+
+# Initialize the client
+client = DysonClient(email="your@email.com")
+
+# High-level authentication (recommended)
+if client.authenticate("123456"):  # OTP code from email
+    devices = client.get_devices()
+    for device in devices:
+        print(f"Device: {device.name} ({device.serial})")
+        
+client.close()
+```
+
+### Asynchronous Usage (Recommended for Home Assistant)
+
+```python
+import asyncio
+from libdyson_rest import AsyncDysonClient
+
+async def main():
+    async with AsyncDysonClient(email="your@email.com") as client:
+        if await client.authenticate("123456"):  # OTP code from email
+            devices = await client.get_devices()
+            for device in devices:
+                print(f"Device: {device.name} ({device.serial})")
+
+asyncio.run(main())
+```
+
+### Manual Authentication Flow
 
 ```python
 from libdyson_rest import DysonClient
@@ -81,6 +133,43 @@ try:
 
 finally:
     client.close()
+```
+
+### Async/Await Usage (Recommended for Home Assistant)
+
+```python
+import asyncio
+from libdyson_rest import AsyncDysonClient
+
+async def main():
+    # Use async context manager for automatic cleanup
+    async with AsyncDysonClient(
+        email="your@email.com",
+        password="your_password",
+        country="US",
+        culture="en-US"
+    ) as client:
+        # Two-step authentication process
+        challenge = await client.begin_login()
+        print(f"Challenge ID: {challenge.challenge_id}")
+        print("Check your email for an OTP code")
+
+        otp_code = input("Enter OTP code: ")
+        login_info = await client.complete_login(str(challenge.challenge_id), otp_code)
+        print(f"Logged in! Account: {login_info.account}")
+
+        # Get devices
+        devices = await client.get_devices()
+        for device in devices:
+            print(f"Device: {device.name} ({device.serial_number})")
+
+            # Get IoT credentials for connected devices
+            if device.connection_category.value != "nonConnected":
+                iot_data = await client.get_iot_credentials(device.serial_number)
+                print(f"  IoT Endpoint: {iot_data.endpoint}")
+
+# Run the async function
+asyncio.run(main())
 ```
 
 ## Authentication Flow
@@ -151,6 +240,42 @@ DysonClient(
 ##### Session Management
 - `close() -> None`: Close session and clear state
 - `__enter__()` and `__exit__()`: Context manager support
+
+### AsyncDysonClient
+
+The async client provides the same functionality as `DysonClient` but with async/await support for better performance in async environments like Home Assistant.
+
+#### Constructor
+```python
+AsyncDysonClient(
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+    country: str = "US",
+    culture: str = "en-US",
+    timeout: int = 30,
+    user_agent: str = "android client"
+)
+```
+
+#### Core Methods (All Async)
+
+##### Authentication
+- `await provision() -> str`: Required initial API call
+- `await get_user_status(email=None) -> UserStatus`: Check account status
+- `await begin_login(email=None) -> LoginChallenge`: Start login process
+- `await complete_login(challenge_id, otp_code, email=None, password=None) -> LoginInformation`: Complete authentication
+- `await authenticate(otp_code=None) -> bool`: Convenience method for full auth flow
+
+##### Device Management
+- `await get_devices() -> List[Device]`: List all account devices
+- `await get_iot_credentials(serial_number) -> IoTData`: Get AWS IoT connection info
+- `await get_pending_release(serial_number) -> PendingRelease`: Get pending firmware release info
+
+##### Session Management
+- `await close() -> None`: Close async session and clear state
+- `async with AsyncDysonClient() as client:`: Async context manager support
+
+**Note**: All methods except `decrypt_local_credentials()`, `get_auth_token()`, and `set_auth_token()` are async and must be awaited.
 
 ### Data Models
 
@@ -571,10 +696,54 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - All user inputs are validated
 - API responses are sanitized
 
+## Home Assistant Integration
+
+This library is designed to work seamlessly with Home Assistant and other async Python environments. Use the `AsyncDysonClient` for optimal performance:
+
+```python
+import asyncio
+from libdyson_rest import AsyncDysonClient
+
+class DysonDeviceCoordinator:
+    """Example Home Assistant coordinator pattern."""
+    
+    def __init__(self, hass, email, password, auth_token=None):
+        self.hass = hass
+        self.client = AsyncDysonClient(
+            email=email,
+            password=password,
+            auth_token=auth_token
+        )
+    
+    async def async_update_data(self):
+        """Update device data."""
+        try:
+            devices = await self.client.get_devices()
+            return {device.serial_number: device for device in devices}
+        except Exception as err:
+            _LOGGER.error("Error updating Dyson devices: %s", err)
+            raise UpdateFailed(f"Error communicating with API: {err}")
+    
+    async def async_get_iot_credentials(self, serial_number):
+        """Get IoT credentials for MQTT connection."""
+        return await self.client.get_iot_credentials(serial_number)
+    
+    async def async_close(self):
+        """Close the client session."""
+        await self.client.close()
+```
+
+### Performance Benefits
+
+- **Non-blocking I/O**: All HTTP requests are non-blocking
+- **Concurrent Operations**: Multiple device operations can run simultaneously
+- **Resource Efficient**: Proper async session management
+- **Home Assistant Ready**: Follows HA async patterns and best practices
+
 ## Roadmap
 
-- [ ] Complete API endpoint coverage
-- [ ] Asynchronous client support
+- [x] Complete API endpoint coverage
+- [x] Asynchronous client support
 - [ ] WebSocket real-time updates
 - [ ] Command-line interface
 - [ ] Docker container support

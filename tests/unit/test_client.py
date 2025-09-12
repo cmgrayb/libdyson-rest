@@ -211,22 +211,22 @@ class TestDysonClient:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            "version": "438MPF.00.01.007.0002",
+            "version": "MOCK.99.99.999.9999",
             "pushed": False,
         }
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="test_token")
 
-        pending_release = client.get_pending_release("9RJ-US-UAA8845A")
+        pending_release = client.get_pending_release("MOCK-TEST-SN12345")
 
-        assert pending_release.version == "438MPF.00.01.007.0002"
+        assert pending_release.version == "MOCK.99.99.999.9999"
         assert pending_release.pushed is False
 
         # Verify correct URL was called
         mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
-        assert "/v1/assets/devices/9RJ-US-UAA8845A/pendingrelease" in args[0]
+        assert "/v1/assets/devices/MOCK-TEST-SN12345/pendingrelease" in args[0]
 
         client.close()
 
@@ -238,7 +238,7 @@ class TestDysonClient:
             DysonAuthError,
             match="Must authenticate before getting pending release info",
         ):
-            client.get_pending_release("9RJ-US-UAA8845A")
+            client.get_pending_release("MOCK-TEST-SN12345")
 
         client.close()
 
@@ -250,6 +250,6 @@ class TestDysonClient:
         client = DysonClient(auth_token="test_token")
 
         with pytest.raises(DysonConnectionError, match="Failed to get pending release"):
-            client.get_pending_release("9RJ-US-UAA8845A")
+            client.get_pending_release("MOCK-TEST-SN12345")
 
         client.close()
