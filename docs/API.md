@@ -1,10 +1,520 @@
 # Dyson REST API Client Documentation
 
-This document prov    async with AsyncDysonClient("user@example.com", "your_password") as client:
+This document prov    # Dyson REST API Client Documentation
+
+This document provides comprehensive documentation for both the synchronous and asynchronous Dyson REST API clients.
+
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Client Overview](#client-overview)
+- [Synchronous Client (DysonClient)](#synchronous-client-dysonclient)
+- [Asynchronous Client (AsyncDysonClient)](#asynchronous-client-asyncdysonclient)
+- [Method Comparison Table](#method-comparison-table)
+- [Authentication Flow](#authentication-flow)
+- [Error Handling](#error-handling)
+- [Data Models](#data-models)
+
+## Quick Start
+
+### Synchronous Usage
+```python
+from libdyson_rest import DysonClient
+
+# Two-step authentication (recommended)
+client = DysonClient("user@example.com", "your_password")
+if not client.authenticate():  # Returns False - OTP needed
+    otp = input("Enter OTP from email: ")
+    client.complete_authentication(otp)
+
+devices = client.get_devices()
+for device in devices:
+    print(f"Device: {device.name} ({device.serial})")
+
+# Context manager usage
+with DysonClient("user@example.com", "your_password") as client:
+    if not client.authenticate():
+        otp = input("Enter OTP from email: ")
+        client.complete_authentication(otp)
+    devices = client.get_devices()
+```
+
+### Asynchronous Usage
+```python
+import asyncio
+from libdyson_rest import AsyncDysonClient
+
+async def main():
+    # Two-step authentication (recommended)
+    client = AsyncDysonClient("user@example.com", "your_password")
+    if not await client.authenticate():  # Returns False - OTP needed
+        otp = input("Enter OTP from email: ")
+        await client.complete_authentication(otp)
+        
+    devices = await client.get_devices()
+    for device in devices:
+        print(f"Device: {device.name} ({device.serial})")
+    await client.close()
+
+    # Context manager usage
+    async with AsyncDysonClient("user@example.com", "your_password") as client:
         if not await client.authenticate():
             otp = input("Enter OTP from email: ")
             await client.complete_authentication(otp)
         devices = await client.get_devices()
+
+asyncio.run(main())
+```
+
+## Client Overview
+
+The library provides two client implementations:
+
+- **`DysonClient`**: Synchronous client using `requests` library
+- **`AsyncDysonClient`**: Asynchronous client using `httpx` library
+
+Both clients provide identical APIs except for the async/await syntax and context manager protocols.
+
+## Synchronous Client (DysonClient)
+
+### Constructor
+
+```python
+class DysonClient:
+    def __init__(
+        self,
+        email: str | None = None,
+        password: str | None = None,
+        auth_token: str | None = None,
+        request_timeout: int = 30,
+        user_agent: str = "android client"
+    ) -> None
+```
+
+**Parameters:**
+- `email` (str | None): User's email address for authentication
+- `password` (str | None): User's password for authentication
+- `auth_token` (str | None): Pre-existing authentication token
+- `request_timeout` (int): Request timeout in seconds (default: 30)
+- `user_agent` (str): User agent string for requests (default: "android client")
+
+### Authentication Methods
+
+#### `authenticate()`
+```python
+def authenticate(self) -> bool
+```
+Initiates the authentication process. Returns `True` if authentication completes without OTP, `False` if OTP is required.
+
+**Returns:** `bool` - True if authenticated, False if OTP required
+
+**Raises:**
+- `DysonAuthError`: Authentication failed
+- `DysonConnectionError`: Network/connection issues
+
+#### `complete_authentication(otp_code: str)`
+```python
+def complete_authentication(self, otp_code: str) -> None
+```
+Completes authentication using the OTP code received via email.
+
+**Parameters:**
+- `otp_code` (str): One-time password from email
+
+**Raises:**
+- `DysonAuthError`: Invalid OTP or authentication failed
+- `DysonConnectionError`: Network/connection issues
+
+#### `login_challenge(email: str, password: str)`
+```python
+def login_challenge(self, email: str, password: str) -> LoginChallenge
+```
+Low-level method to initiate login challenge (used internally by `authenticate()`).
+
+**Parameters:**
+- `email` (str): User's email address
+- `password` (str): User's password
+
+**Returns:** `LoginChallenge` object containing challenge details
+
+#### `complete_login(challenge_id: str, otp_code: str, email: str | None = None, password: str | None = None)`
+```python
+def complete_login(
+    self,
+    challenge_id: str,
+    otp_code: str,
+    email: str | None = None,
+    password: str | None = None,
+) -> LoginInformation
+```
+Low-level method to complete login with OTP (used internally by `complete_authentication()`).
+
+**Parameters:**
+- `challenge_id` (str): Challenge ID from login_challenge response
+- `otp_code` (str): One-time password from email
+- `email` (str | None): User's email (optional if set in constructor)
+- `password` (str | None): User's password (optional if set in constructor)
+
+**Returns:** `LoginInformation` object containing auth token and account details
+
+### Device Management Methods
+
+#### `get_devices()`
+```python
+def get_devices(self) -> list[DysonDevice]
+```
+Retrieves all Dyson devices associated with the account.
+
+**Returns:** List of `DysonDevice` objects
+
+**Raises:**
+- `DysonAuthError`: Not authenticated or token expired
+- `DysonAPIError`: API request failed
+- `DysonConnectionError`: Network/connection issues
+
+#### `get_device_by_serial(serial: str)`
+```python
+def get_device_by_serial(self, serial: str) -> DysonDevice | None
+```
+Retrieves a specific device by its serial number.
+
+**Parameters:**
+- `serial` (str): Device serial number
+
+**Returns:** `DysonDevice` object if found, `None` otherwise
+
+#### `get_device_credentials(device: DysonDevice)`
+```python
+def get_device_credentials(self, device: DysonDevice) -> dict[str, str]
+```
+Retrieves MQTT credentials for a specific device.
+
+**Parameters:**
+- `device` (DysonDevice): Device object
+
+**Returns:** Dictionary containing MQTT credentials (`username`, `password`, `hostname`)
+
+**Raises:**
+- `DysonAuthError`: Not authenticated or token expired
+- `DysonAPIError`: API request failed
+- `DysonConnectionError`: Network/connection issues
+
+### Context Manager Support
+
+```python
+with DysonClient("user@example.com", "password") as client:
+    if not client.authenticate():
+        otp = input("Enter OTP: ")
+        client.complete_authentication(otp)
+    devices = client.get_devices()
+# Client is automatically cleaned up
+```
+
+## Asynchronous Client (AsyncDysonClient)
+
+### Constructor
+
+```python
+class AsyncDysonClient:
+    def __init__(
+        self,
+        email: str | None = None,
+        password: str | None = None,
+        auth_token: str | None = None,
+        request_timeout: int = 30,
+        user_agent: str = "android client"
+    ) -> None
+```
+
+**Parameters:** Same as `DysonClient`
+
+### Authentication Methods
+
+#### `authenticate()`
+```python
+async def authenticate(self) -> bool
+```
+Async version of authenticate method.
+
+**Returns:** `bool` - True if authenticated, False if OTP required
+
+#### `complete_authentication(otp_code: str)`
+```python
+async def complete_authentication(self, otp_code: str) -> None
+```
+Async version of complete_authentication method.
+
+**Parameters:**
+- `otp_code` (str): One-time password from email
+
+#### `login_challenge(email: str, password: str)`
+```python
+async def login_challenge(self, email: str, password: str) -> LoginChallenge
+```
+Async version of login_challenge method.
+
+#### `complete_login(challenge_id: str, otp_code: str, email: str | None = None, password: str | None = None)`
+```python
+async def complete_login(
+    self,
+    challenge_id: str,
+    otp_code: str,
+    email: str | None = None,
+    password: str | None = None,
+) -> LoginInformation
+```
+Async version of complete_login method.
+
+### Device Management Methods
+
+#### `get_devices()`
+```python
+async def get_devices(self) -> list[DysonDevice]
+```
+Async version of get_devices method.
+
+#### `get_device_by_serial(serial: str)`
+```python
+async def get_device_by_serial(self, serial: str) -> DysonDevice | None
+```
+Async version of get_device_by_serial method.
+
+#### `get_device_credentials(device: DysonDevice)`
+```python
+async def get_device_credentials(self, device: DysonDevice) -> dict[str, str]
+```
+Async version of get_device_credentials method.
+
+### Resource Management
+
+#### `close()`
+```python
+async def close(self) -> None
+```
+Properly closes the HTTP client session. Always call this when done with the client, or use async context manager.
+
+### Async Context Manager Support
+
+```python
+async with AsyncDysonClient("user@example.com", "password") as client:
+    if not await client.authenticate():
+        otp = input("Enter OTP: ")
+        await client.complete_authentication(otp)
+    devices = await client.get_devices()
+# Client is automatically closed
+```
+
+## Method Comparison Table
+
+| Feature | Synchronous | Asynchronous | Notes |
+|---------|-------------|--------------|-------|
+| Constructor | `DysonClient()` | `AsyncDysonClient()` | Same parameters |
+| Authentication | `authenticate()` | `await authenticate()` | Returns bool |
+| Complete Auth | `complete_authentication()` | `await complete_authentication()` | Takes OTP code |
+| Get Devices | `get_devices()` | `await get_devices()` | Returns device list |
+| Get Device | `get_device_by_serial()` | `await get_device_by_serial()` | Find by serial |
+| Get Credentials | `get_device_credentials()` | `await get_device_credentials()` | MQTT credentials |
+| Context Manager | `with client:` | `async with client:` | Auto cleanup |
+| Resource Cleanup | Automatic | `await client.close()` | Manual or context manager |
+
+## Authentication Flow
+
+The library uses a two-step authentication process:
+
+1. **Initial Authentication**: Call `authenticate()` with email/password
+   - If MFA is disabled: Returns `True`, authentication complete
+   - If MFA is enabled: Returns `False`, OTP sent to email
+
+2. **OTP Completion**: If `authenticate()` returns `False`, call `complete_authentication(otp)`
+   - Provide the OTP code received via email
+   - Authentication completes successfully
+
+### Example Flow
+```python
+# Step 1: Initial authentication
+client = DysonClient("user@example.com", "password")
+if client.authenticate():
+    print("Authentication complete!")
+else:
+    # Step 2: OTP required
+    otp = input("Enter OTP from email: ")
+    client.complete_authentication(otp)
+    print("Authentication complete with OTP!")
+
+# Now authenticated - can make API calls
+devices = client.get_devices()
+```
+
+### Legacy Single-Step Authentication
+```python
+# Deprecated: Single-step with OTP (if known)
+client = DysonClient("user@example.com", "password")
+login_info = client.complete_login(challenge_id, "123456")
+```
+
+## Error Handling
+
+The library defines custom exceptions for different error scenarios:
+
+### Exception Hierarchy
+```
+DysonError (base)
+├── DysonAuthError (authentication failures)
+├── DysonAPIError (API response errors)
+└── DysonConnectionError (network/connection issues)
+```
+
+### Exception Details
+
+#### `DysonError`
+Base exception class for all Dyson-related errors.
+
+#### `DysonAuthError`
+Raised when authentication fails:
+- Invalid credentials
+- Invalid OTP code
+- Token expired
+- Account locked
+
+#### `DysonAPIError`
+Raised when API requests fail:
+- Invalid API response format
+- Server errors (5xx)
+- Rate limiting
+- Invalid device serial
+
+#### `DysonConnectionError`
+Raised when network issues occur:
+- Connection timeout
+- DNS resolution failure
+- SSL/TLS errors
+- Network unreachable
+
+### Error Handling Example
+```python
+from libdyson_rest import DysonClient, DysonAuthError, DysonAPIError, DysonConnectionError
+
+try:
+    client = DysonClient("user@example.com", "password")
+    if not client.authenticate():
+        otp = input("Enter OTP: ")
+        client.complete_authentication(otp)
+    
+    devices = client.get_devices()
+    
+except DysonAuthError as e:
+    print(f"Authentication failed: {e}")
+except DysonAPIError as e:
+    print(f"API error: {e}")
+except DysonConnectionError as e:
+    print(f"Connection error: {e}")
+```
+
+## Data Models
+
+### DysonDevice
+
+Represents a Dyson device with the following attributes:
+
+```python
+@dataclass
+class DysonDevice:
+    serial: str           # Device serial number
+    name: str            # User-assigned device name
+    product_type: str    # Product identifier (e.g., "520")
+    version: str         # Firmware version
+    auto_update: bool    # Auto-update enabled
+    new_version_available: bool  # Firmware update available
+    category: str        # Device category (e.g., "purifier")
+    
+    # Optional attributes (may be None)
+    local_credentials: dict[str, str] | None  # Local MQTT credentials
+    connection_type: str | None               # Connection type
+    mqtt_server: str | None                   # MQTT server hostname
+```
+
+### LoginChallenge
+
+Represents a login challenge response:
+
+```python
+@dataclass
+class LoginChallenge:
+    challenge_id: str    # Challenge identifier for OTP completion
+    user_id: str        # User account identifier
+```
+
+### LoginInformation
+
+Represents completed login information:
+
+```python
+@dataclass  
+class LoginInformation:
+    token: str          # Authentication token
+    account: dict       # Account details
+    challenge_id: str   # Challenge identifier used
+```
+
+### Usage Examples with Data Models
+
+```python
+# Working with devices
+devices = client.get_devices()
+for device in devices:
+    print(f"Device: {device.name}")
+    print(f"Serial: {device.serial}")
+    print(f"Type: {device.product_type}")
+    print(f"Category: {device.category}")
+    
+    if device.new_version_available:
+        print("⚠️  Firmware update available")
+    
+    # Get MQTT credentials for device
+    credentials = client.get_device_credentials(device)
+    print(f"MQTT Host: {credentials['hostname']}")
+
+# Find specific device
+device = client.get_device_by_serial("ABC-DEF-123")
+if device:
+    print(f"Found: {device.name}")
+else:
+    print("Device not found")
+```
+
+## Migration from v0.6.x
+
+If upgrading from version 0.6.x, note the following changes:
+
+### Authentication Changes
+- **Old (v0.6.x)**: Single `authenticate(otp)` method
+- **New (v0.7.0)**: Two-step `authenticate()` → `complete_authentication(otp)`
+
+```python
+# Old v0.6.x approach
+client = DysonClient("user@example.com", "password")
+client.authenticate("123456")  # OTP required upfront
+
+# New v0.7.0 approach
+client = DysonClient("user@example.com", "password")
+if not client.authenticate():  # Try without OTP first
+    otp = input("Enter OTP: ")
+    client.complete_authentication(otp)
+```
+
+### Async Client Changes
+- **New in v0.7.0**: Full async support with `AsyncDysonClient`
+- SSL blocking issues resolved with lazy HTTP client initialization
+- Proper async context manager support
+
+### API Endpoint Updates
+- Updated to use latest Dyson API endpoints (/v3/manifest)
+- Better error handling and validation
+- Enhanced device metadata support
+
+---
+
+This documentation covers the complete API surface for both synchronous and asynchronous clients. For additional examples and troubleshooting guides, see the `examples/` directory in the repository.
 
 asyncio.run(main())
 ```omprehensive documentation for both the synchronous and asynchronous Dyson REST API clients.
