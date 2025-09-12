@@ -336,6 +336,9 @@ class DysonClient:
 
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid login response: {e}") from e
+        except Exception as e:
+            # Catch any other errors from model validation
+            raise DysonAPIError(f"Invalid login response: {e}") from e
 
     def authenticate(self, otp_code: str | None = None) -> bool:
         """
