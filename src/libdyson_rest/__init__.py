@@ -11,8 +11,9 @@ Key Features:
 - Type-safe data models
 - Comprehensive error handling
 - Context manager support
+- Both synchronous and asynchronous client support
 
-Basic Usage:
+Basic Usage (Synchronous):
     from libdyson_rest import DysonClient
 
     client = DysonClient(email="your@email.com", password="password")
@@ -26,13 +27,34 @@ Basic Usage:
     devices = client.get_devices()
     for device in devices:
         print(f"Device: {device.name} ({device.serial_number})")
+
+Basic Usage (Asynchronous):
+    from libdyson_rest import AsyncDysonClient
+
+    async def main():
+        async with AsyncDysonClient(email="your@email.com", password="password") as client:
+            # Two-step authentication
+            challenge = await client.begin_login()
+            # Check email for OTP code
+            login_info = await client.complete_login(str(challenge.challenge_id), "123456")
+
+            # Get devices
+            devices = await client.get_devices()
+            for device in devices:
+                print(f"Device: {device.name} ({device.serial_number})")
 """
 
-__version__ = "0.6.0"
-__author__ = "libdyson-rest contributors"
-__email__ = "contributors@libdyson-rest.dev"
+__version__ = "0.7.0"
+__author__ = "Christopher Gray"
+__email__ = "79777799+cmgrayb@users.noreply.github.com"
 
 from .client import DysonClient
+
+# Conditionally import async client (requires httpx)
+try:
+    from .async_client import AsyncDysonClient
+except ImportError:
+    pass
 from .exceptions import (
     DysonAPIError,
     DysonAuthError,
@@ -52,8 +74,9 @@ from .models import (
 )
 
 __all__ = [
-    # Core client
+    # Core clients
     "DysonClient",
+    "AsyncDysonClient",
     # Exceptions
     "DysonAPIError",
     "DysonAuthError",
