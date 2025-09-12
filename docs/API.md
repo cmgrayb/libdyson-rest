@@ -1,6 +1,13 @@
 # Dyson REST API Client Documentation
 
-This document provides comprehensive documentation for both the synchronous and asynchronous Dyson REST API clients.
+This document prov    async with AsyncDysonClient("user@example.com", "your_password") as client:
+        if not await client.authenticate():
+            otp = input("Enter OTP from email: ")
+            await client.complete_authentication(otp)
+        devices = await client.get_devices()
+
+asyncio.run(main())
+```omprehensive documentation for both the synchronous and asynchronous Dyson REST API clients.
 
 ## Table of Contents
 
@@ -19,17 +26,22 @@ This document provides comprehensive documentation for both the synchronous and 
 ```python
 from libdyson_rest import DysonClient
 
-# Basic usage
-client = DysonClient("user@example.com")
-if client.authenticate("123456"):  # OTP code
-    devices = client.get_devices()
-    for device in devices:
-        print(f"Device: {device.name} ({device.serial})")
+# Two-step authentication (recommended)
+client = DysonClient("user@example.com", "your_password")
+if not client.authenticate():  # Returns False - OTP needed
+    otp = input("Enter OTP from email: ")
+    client.complete_authentication(otp)
+
+devices = client.get_devices()
+for device in devices:
+    print(f"Device: {device.name} ({device.serial})")
 
 # Context manager usage
-with DysonClient("user@example.com") as client:
-    if client.authenticate("123456"):
-        devices = client.get_devices()
+with DysonClient("user@example.com", "your_password") as client:
+    if not client.authenticate():
+        otp = input("Enter OTP from email: ")
+        client.complete_authentication(otp)
+    devices = client.get_devices()
 ```
 
 ### Asynchronous Usage
@@ -38,16 +50,19 @@ import asyncio
 from libdyson_rest import AsyncDysonClient
 
 async def main():
-    # Basic usage
-    client = AsyncDysonClient("user@example.com")
-    if await client.authenticate("123456"):  # OTP code
-        devices = await client.get_devices()
-        for device in devices:
-            print(f"Device: {device.name} ({device.serial})")
+    # Two-step authentication (recommended)
+    client = AsyncDysonClient("user@example.com", "your_password")
+    if not await client.authenticate():  # Returns False - OTP needed
+        otp = input("Enter OTP from email: ")
+        await client.complete_authentication(otp)
+        
+    devices = await client.get_devices()
+    for device in devices:
+        print(f"Device: {device.name} ({device.serial})")
     await client.close()
 
     # Context manager usage
-    async with AsyncDysonClient("user@example.com") as client:
+    async with AsyncDysonClient("user@example.com", "your_password") as client:
         if await client.authenticate("123456"):
             devices = await client.get_devices()
 
@@ -142,13 +157,34 @@ print(f"Auth token: {login_info.token}")
 High-level authentication method that handles the complete flow.
 
 ```python
-if client.authenticate("123456"):
+# Two-step authentication (recommended)
+if not client.authenticate():  # Returns False if OTP needed
+    otp = input("Enter OTP code from email: ")
+    client.complete_authentication(otp)
     print("Authentication successful!")
-    # Can now use authenticated methods
+
+# Single-step authentication (if you already have OTP)
+if client.authenticate("123456"):
+    print("Authentication completed in one step!")
 ```
 
 **Parameters:**
-- `otp_code` (str | None): 6-digit OTP code (will prompt user if None)
+- `otp_code` (str | None): 6-digit OTP code from email (optional)
+
+**Returns:** `bool` - True if authentication completed, False if OTP code still needed
+
+#### `complete_authentication(otp_code: str) -> bool`
+Complete authentication using the stored challenge ID from a previous `authenticate()` call.
+
+```python
+# This method is called after authenticate() returns False
+success = client.complete_authentication("123456")
+if success:
+    print("Authentication completed!")
+```
+
+**Parameters:**
+- `otp_code` (str): 6-digit OTP code from email
 
 **Returns:** `bool` indicating authentication success
 
@@ -309,8 +345,25 @@ login_info = await client.complete_login("123456")
 
 #### `async def authenticate(otp_code: str | None = None) -> bool`
 ```python
-if await client.authenticate("123456"):
+# Two-step authentication (recommended)
+if not await client.authenticate():  # Returns False if OTP needed
+    otp = input("Enter OTP code from email: ")
+    await client.complete_authentication(otp)
     print("Authentication successful!")
+
+# Single-step authentication (if you already have OTP)
+if await client.authenticate("123456"):
+    print("Authentication completed in one step!")
+```
+
+#### `async def complete_authentication(otp_code: str) -> bool`
+Complete authentication using the stored challenge ID from a previous `authenticate()` call.
+
+```python
+# This method is called after authenticate() returns False
+success = await client.complete_authentication("123456")
+if success:
+    print("Authentication completed!")
 ```
 
 ### Async Device Methods
@@ -375,25 +428,92 @@ The following utility methods are synchronous in both clients:
 
 ## Authentication Flow
 
-### Complete Authentication Example (Sync)
+### Two-Step Authentication (Recommended)
+
+The new authentication flow properly handles the OTP process by returning `False` when an OTP code is needed:
+
+#### Synchronous Client
+```python
+from libdyson_rest import DysonClient
+
+client = DysonClient("user@example.com", "your_password")
+
+try:
+    # Step 1: Start authentication (triggers OTP email)
+    if not client.authenticate():  # Returns False - OTP needed
+        print("Check your email for OTP code")
+        otp_code = input("Enter OTP code: ")
+        
+        # Step 2: Complete authentication with OTP
+        if client.complete_authentication(otp_code):
+            print("Authentication successful!")
+            devices = client.get_devices()
+            print(f"Found {len(devices)} devices")
+    else:
+        print("Authentication completed immediately") 
+        
+finally:
+    client.close()
+```
+
+#### Asynchronous Client  
+```python
+import asyncio
+from libdyson_rest import AsyncDysonClient
+
+async def authenticate():
+    client = AsyncDysonClient("user@example.com", "your_password")
+    
+    try:
+        # Step 1: Start authentication (triggers OTP email)
+        if not await client.authenticate():  # Returns False - OTP needed
+            print("Check your email for OTP code")
+            otp_code = input("Enter OTP code: ")
+            
+            # Step 2: Complete authentication with OTP
+            if await client.complete_authentication(otp_code):
+                print("Authentication successful!")
+                devices = await client.get_devices()
+                print(f"Found {len(devices)} devices")
+        else:
+            print("Authentication completed immediately")
+            
+    finally:
+        await client.close()
+
+asyncio.run(authenticate())
+```
+
+### Single-Step Authentication (If You Have OTP)
+
+If you already have the OTP code, you can complete authentication in one call:
+
+```python
+# Sync
+if client.authenticate("123456"):  # OTP code
+    devices = client.get_devices()
+
+# Async  
+if await client.authenticate("123456"):  # OTP code
+    devices = await client.get_devices()
+```
+
+### Manual Authentication Steps
+
+For advanced use cases, you can use the lower-level methods:
 
 ```python
 from libdyson_rest import DysonClient
 
-client = DysonClient("user@example.com")
+client = DysonClient("user@example.com", "your_password")
 
 try:
-    # Method 1: High-level authentication
-    if client.authenticate("123456"):  # OTP from email/SMS
-        devices = client.get_devices()
-        print(f"Found {len(devices)} devices")
-    
-    # Method 2: Step-by-step authentication
+    # Step-by-step authentication
     challenge = client.begin_login()
     print(f"Check your email/SMS for OTP (Challenge: {challenge.challenge_id})")
     
     otp_code = input("Enter OTP code: ")
-    login_info = client.complete_login(otp_code)
+    login_info = client.complete_login(challenge.challenge_id, otp_code)
     
     # Token is automatically set, can now use authenticated methods
     devices = client.get_devices()
@@ -404,31 +524,6 @@ try:
 finally:
     client.close()
 ```
-
-### Complete Authentication Example (Async)
-
-```python
-import asyncio
-from libdyson_rest import AsyncDysonClient
-
-async def authenticate_and_get_devices():
-    client = AsyncDysonClient("user@example.com")
-    
-    try:
-        # Method 1: High-level authentication
-        if await client.authenticate("123456"):  # OTP from email/SMS
-            devices = await client.get_devices()
-            print(f"Found {len(devices)} devices")
-        
-        # Method 2: Step-by-step authentication
-        challenge = await client.begin_login()
-        print(f"Check your email/SMS for OTP (Challenge: {challenge.challenge_id})")
-        
-        otp_code = input("Enter OTP code: ")
-        login_info = await client.complete_login(otp_code)
-        
-        # Token is automatically set, can now use authenticated methods
-        devices = await client.get_devices()
         
         # Save token for later use
         saved_token = client.auth_token

@@ -112,6 +112,7 @@ class DysonClient:
         self._auth_token: str | None = auth_token
         self.account_id: str | None = None
         self._provisioned = False
+        self._current_challenge_id: str | None = None
 
         # If auth_token provided, set up session headers immediately
         if auth_token:
@@ -232,7 +233,7 @@ class DysonClient:
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid login challenge response: {e}") from e
 
-    def complete_login(
+    def complete_login(  # noqa: C901
         self,
         challenge_id: str,
         otp_code: str,
@@ -274,6 +275,13 @@ class DysonClient:
             "password": target_password,
         }
 
+        # Debug logging for troubleshooting
+        logger.debug(f"complete_login - URL: {url}")
+        logger.debug(f"complete_login - Params: {params}")
+        logger.debug(f"complete_login - Payload keys: {list(payload.keys())}")
+        logger.debug(f"complete_login - Challenge ID: {challenge_id}")
+        logger.debug(f"complete_login - OTP Code: {otp_code}")
+
         try:
             response = self.session.post(
                 url, params=params, json=payload, timeout=self.timeout
@@ -286,6 +294,28 @@ class DysonClient:
                 and e.response.status_code == 401
             ):
                 raise DysonAuthError("Invalid credentials or OTP code") from e
+            elif (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 400
+            ):
+                # Enhanced error details for 400 Bad Request
+                try:
+                    error_body = e.response.text
+                    logger.error(f"400 Bad Request - Response body: {error_body}")
+                    logger.error(f"400 Bad Request - Request URL: {e.response.url}")
+                    if hasattr(e, "request") and e.request is not None:
+                        logger.error(
+                            f"400 Bad Request - Request headers: {dict(e.request.headers)}"
+                        )
+                except (AttributeError, ValueError, TypeError) as log_error:
+                    # Only catch specific exceptions that might occur during logging
+                    logger.debug(
+                        f"Could not extract detailed error information: {log_error}"
+                    )
+                raise DysonAuthError(
+                    f"Bad request to Dyson API (400): {e}. Check API parameters."
+                ) from e
             raise DysonConnectionError(f"Failed to complete login: {e}") from e
 
         try:
@@ -321,7 +351,7 @@ class DysonClient:
             otp_code: One-time password code. If None, only completes up to begin_login()
 
         Returns:
-            True if authentication successful (or if OTP required and not provided)
+            True if authentication completed successfully, False if OTP code still needed
 
         Raises:
             DysonAuthError: If authentication fails
@@ -340,15 +370,43 @@ class DysonClient:
 
         # Begin login process
         challenge = self.begin_login()
+        self._current_challenge_id = str(challenge.challenge_id)
         logger.info(f"Login challenge received: {challenge.challenge_id}")
 
         # If OTP code provided, complete the login
         if otp_code:
-            self.complete_login(str(challenge.challenge_id), otp_code)
+            self.complete_login(self._current_challenge_id, otp_code)
             return True
 
-        # OTP code required - user needs to provide it via complete_login()
+        # OTP code required - user needs to provide it via complete_authentication()
         logger.info("OTP code required to complete authentication")
+        return False
+
+    def complete_authentication(self, otp_code: str) -> bool:
+        """
+        Complete authentication using the stored challenge ID from authenticate().
+
+        This method should be called after authenticate() returns False, once you have
+        received the OTP code from email.
+
+        Args:
+            otp_code: OTP code received via email
+
+        Returns:
+            True if authentication completed successfully
+
+        Raises:
+            DysonAuthError: If no pending challenge or authentication fails
+            DysonConnectionError: If connection fails
+            DysonAPIError: If API request fails
+        """
+        if not self._current_challenge_id:
+            raise DysonAuthError(
+                "No pending authentication challenge. Call authenticate() first."
+            )
+
+        self.complete_login(self._current_challenge_id, otp_code)
+        self._current_challenge_id = None  # Clear challenge after use
         return True
 
     def get_devices(self) -> list[Device]:
