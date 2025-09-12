@@ -42,6 +42,210 @@ paths:
                   email: true
                 machineRegistration:
                   warranty: true
+  
+  /v1/provisioningservice/application/Android/version:
+    get:
+      operationId: provision
+      summary: provision
+      description: >
+        Gets version info. Required initial call - server ignores other requests 
+        from clients which haven't made this request recently.
+      responses:
+        '200':
+          description: Version information
+          content:
+            application/json:
+              schema:
+                type: string
+  
+  /v3/userregistration/email/userstatus:
+    post:
+      operationId: getUserStatus
+      summary: getUserStatus
+      description: Gets the status of a user by providing their email address.
+      parameters:
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+            default: "android client"
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '[A-Z]{2}'
+            maxLength: 2
+            minLength: 2
+            default: "US"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: User status information
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - accountStatus
+                  - authenticationMethod
+                properties:
+                  accountStatus:
+                    type: string
+                    enum: [ACTIVE, UNREGISTERED]
+                  authenticationMethod:
+                    type: string
+                    enum: [EMAIL_PWD_2FA]
+        '415':
+          description: Unsupported Media Type
+        '429':
+          description: Too Many Requests
+
+  /v3/userregistration/email/auth:
+    post:
+      operationId: beginLogin
+      summary: beginLogin
+      description: Begins the login process by requesting a challenge ID.
+      parameters:
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+            default: "android client"
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '[A-Z]{2}'
+            default: "US"
+        - name: culture
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '[a-z]{2}-[A-Z]{2}'
+            default: "en-US"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Login challenge with challenge ID
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - challengeId
+                properties:
+                  challengeId:
+                    type: string
+                    format: uuid
+        '415':
+          description: Unsupported Media Type
+        '429':
+          description: Too Many Requests
+
+  /v3/userregistration/email/verify:
+    post:
+      operationId: completeLogin
+      summary: completeLogin
+      description: Finishes the login process by responding to the authentication challenge.
+      parameters:
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+            default: "android client"
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '[A-Z]{2}'
+            default: "US"
+        - name: culture
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '[a-z]{2}-[A-Z]{2}'
+            default: "en-US"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - challengeId
+                - email
+                - otpCode
+                - password
+              properties:
+                challengeId:
+                  type: string
+                  format: uuid
+                email:
+                  type: string
+                  format: email
+                otpCode:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login complete with account ID and token
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - account
+                  - token
+                  - tokenType
+                properties:
+                  account:
+                    type: string
+                    format: uuid
+                  token:
+                    type: string
+                  tokenType:
+                    type: string
+                    enum: [Bearer]
+        '400':
+          description: Bad Request - Invalid parameters
+        '401':
+          description: Unauthorized - Invalid credentials or OTP
+        '415':
+          description: Unsupported Media Type
+        '429':
+          description: Too Many Requests
+
   /v1/userregistration/ownership:
     get:
       summary: GET ownership
