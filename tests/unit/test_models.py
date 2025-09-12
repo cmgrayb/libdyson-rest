@@ -1,10 +1,18 @@
 """Tests for libdyson-rest data models."""
 
 from libdyson_rest.models import (
+    MQTT,
+    CapabilityString,
+    ConnectedConfiguration,
+    ConnectionCategory,
+    Device,
+    DeviceCategory,
     DysonCredentials,
     DysonDevice,
     DysonDeviceState,
+    Firmware,
     PendingRelease,
+    RemoteBrokerType,
     credentials_from_dict,
     device_from_dict,
 )
@@ -189,3 +197,132 @@ def test_pending_release_from_dict() -> None:
 
     assert release.version == "438MPF.00.01.007.0002"
     assert release.pushed is False
+
+
+def test_device_to_dict_basic() -> None:
+    """Test Device.to_dict() with basic data."""
+    device = Device(
+        category=DeviceCategory.ENVIRONMENT_CLEANER,
+        connection_category=ConnectionCategory.WIFI_ONLY,
+        model="ABC123",
+        name="Test Device",
+        serial_number="SN123456",
+        type="520",
+        variant=None,
+        connected_configuration=None,
+    )
+
+    result = device.to_dict()
+
+    expected = {
+        "category": "ec",
+        "connectionCategory": "wifiOnly",
+        "model": "ABC123",
+        "name": "Test Device",
+        "serialNumber": "SN123456",
+        "type": "520",
+    }
+
+    assert result == expected
+
+
+def test_device_to_dict_with_variant() -> None:
+    """Test Device.to_dict() with variant field."""
+    device = Device(
+        category=DeviceCategory.ENVIRONMENT_CLEANER,
+        connection_category=ConnectionCategory.WIFI_ONLY,
+        model="ABC123",
+        name="Test Device",
+        serial_number="SN123456",
+        type="520",
+        variant="EU",
+        connected_configuration=None,
+    )
+
+    result = device.to_dict()
+
+    assert result["variant"] == "EU"
+
+
+def test_device_to_dict_with_connected_config() -> None:
+    """Test Device.to_dict() with connected configuration."""
+    firmware = Firmware(
+        auto_update_enabled=True,
+        new_version_available=False,
+        version="1.0.0",
+        capabilities=[CapabilityString.SCHEDULING],
+        minimum_app_version="2.0.0",
+    )
+
+    mqtt = MQTT(
+        local_broker_credentials={"user": "test", "pass": "secret"},
+        mqtt_root_topic_level="root/topic",
+        remote_broker_type=RemoteBrokerType.WSS,
+    )
+
+    config = ConnectedConfiguration(firmware=firmware, mqtt=mqtt)
+
+    device = Device(
+        category=DeviceCategory.ENVIRONMENT_CLEANER,
+        connection_category=ConnectionCategory.WIFI_ONLY,
+        model="ABC123",
+        name="Test Device",
+        serial_number="SN123456",
+        type="520",
+        variant=None,
+        connected_configuration=config,
+    )
+
+    result = device.to_dict()
+
+    assert "connectedConfiguration" in result
+    assert "firmware" in result["connectedConfiguration"]
+    assert "mqtt" in result["connectedConfiguration"]
+
+    firmware_dict = result["connectedConfiguration"]["firmware"]
+    assert firmware_dict["autoUpdateEnabled"] is True
+    assert firmware_dict["newVersionAvailable"] is False
+    assert firmware_dict["version"] == "1.0.0"
+    assert firmware_dict["capabilities"] == ["Scheduling"]
+    assert firmware_dict["minimumAppVersion"] == "2.0.0"
+
+    mqtt_dict = result["connectedConfiguration"]["mqtt"]
+    assert mqtt_dict["localBrokerCredentials"] == {"user": "test", "pass": "secret"}
+    assert mqtt_dict["mqttRootTopicLevel"] == "root/topic"
+    assert mqtt_dict["remoteBrokerType"] == "wss"
+
+
+def test_device_to_dict_with_config_no_capabilities() -> None:
+    """Test Device.to_dict() with connected config but no capabilities."""
+    firmware = Firmware(
+        auto_update_enabled=True,
+        new_version_available=False,
+        version="1.0.0",
+        capabilities=None,
+        minimum_app_version=None,
+    )
+
+    mqtt = MQTT(
+        local_broker_credentials={"user": "test"},
+        mqtt_root_topic_level="root/topic",
+        remote_broker_type=RemoteBrokerType.WSS,
+    )
+
+    config = ConnectedConfiguration(firmware=firmware, mqtt=mqtt)
+
+    device = Device(
+        category=DeviceCategory.ENVIRONMENT_CLEANER,
+        connection_category=ConnectionCategory.WIFI_ONLY,
+        model="ABC123",
+        name="Test Device",
+        serial_number="SN123456",
+        type="520",
+        variant=None,
+        connected_configuration=config,
+    )
+
+    result = device.to_dict()
+
+    firmware_dict = result["connectedConfiguration"]["firmware"]
+    assert "capabilities" not in firmware_dict
+    assert "minimumAppVersion" not in firmware_dict

@@ -114,16 +114,25 @@ class AsyncDysonClient:
         self._auth_token: str | None = auth_token
         self.account_id: str | None = None
         self._provisioned = False
+        self._current_challenge_id: str | None = None
 
-        # If auth_token provided, set up session headers immediately
+        # Store client configuration for lazy initialization
+        self._base_headers = headers
+        self._client: httpx.AsyncClient | None = None
+
+        # If auth_token provided, add it to headers
         if auth_token:
-            headers["Authorization"] = f"Bearer {auth_token}"
+            self._base_headers["Authorization"] = f"Bearer {auth_token}"
 
-        # Create async client
-        self._client = httpx.AsyncClient(
-            headers=headers,
-            timeout=timeout,
-        )
+    @property
+    def client(self) -> httpx.AsyncClient:
+        """Lazy initialization of httpx client to avoid blocking SSL operations during __init__."""
+        if self._client is None:
+            self._client = httpx.AsyncClient(
+                headers=self._base_headers.copy(),
+                timeout=self.timeout,
+            )
+        return self._client
 
     async def provision(self) -> str:
         """
@@ -144,7 +153,7 @@ class AsyncDysonClient:
         )
 
         try:
-            response = await self._client.get(url)
+            response = await self.client.get(url)
             response.raise_for_status()
         except httpx.RequestError as e:
             raise DysonConnectionError(f"Failed to provision API access: {e}") from e
@@ -187,7 +196,7 @@ class AsyncDysonClient:
         payload = {"email": target_email}
 
         try:
-            response = await self._client.post(url, params=params, json=payload)
+            response = await self.client.post(url, params=params, json=payload)
             response.raise_for_status()
         except httpx.RequestError as e:
             raise DysonConnectionError(f"Failed to get user status: {e}") from e
@@ -228,7 +237,7 @@ class AsyncDysonClient:
         payload = {"email": target_email}
 
         try:
-            response = await self._client.post(url, params=params, json=payload)
+            response = await self.client.post(url, params=params, json=payload)
             response.raise_for_status()
         except httpx.RequestError as e:
             raise DysonConnectionError(f"Failed to begin login: {e}") from e
@@ -283,7 +292,7 @@ class AsyncDysonClient:
         }
 
         try:
-            response = await self._client.post(url, params=params, json=payload)
+            response = await self.client.post(url, params=params, json=payload)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -303,7 +312,11 @@ class AsyncDysonClient:
             self.account_id = str(login_info.account)
 
             # Set authorization header for future requests
-            self._client.headers.update({"Authorization": f"Bearer {self._auth_token}"})
+            self._base_headers["Authorization"] = f"Bearer {self._auth_token}"
+            if self._client is not None:
+                self.client.headers.update(
+                    {"Authorization": f"Bearer {self._auth_token}"}
+                )
 
             logger.info(f"Authentication successful for account: {self.account_id}")
             return login_info
@@ -316,13 +329,13 @@ class AsyncDysonClient:
         Convenience method for full authentication flow.
 
         If OTP code is provided, completes the full authentication process.
-        If not provided, begins the login process and requires separate complete_login() call.
+        If not provided, begins the login process and stores challenge ID for later completion.
 
         Args:
             otp_code: OTP code from email (optional)
 
         Returns:
-            True if authentication was initiated or completed successfully
+            True if authentication was completed, False if OTP code still needed
 
         Raises:
             DysonAuthError: If credentials are missing
@@ -334,15 +347,43 @@ class AsyncDysonClient:
 
         # Begin login process
         challenge = await self.begin_login()
+        self._current_challenge_id = str(challenge.challenge_id)
         logger.info(f"Login challenge received: {challenge.challenge_id}")
 
         # If OTP code provided, complete the login
         if otp_code:
-            await self.complete_login(str(challenge.challenge_id), otp_code)
+            await self.complete_login(self._current_challenge_id, otp_code)
             return True
 
-        # OTP code required - user needs to provide it via complete_login()
+        # OTP code required - user needs to provide it via complete_authentication()
         logger.info("OTP code required to complete authentication")
+        return False
+
+    async def complete_authentication(self, otp_code: str) -> bool:
+        """
+        Complete authentication using the stored challenge ID from authenticate().
+
+        This method should be called after authenticate() returns False, once you have
+        received the OTP code from email.
+
+        Args:
+            otp_code: OTP code received via email
+
+        Returns:
+            True if authentication completed successfully
+
+        Raises:
+            DysonAuthError: If no pending challenge or authentication fails
+            DysonConnectionError: If connection fails
+            DysonAPIError: If API request fails
+        """
+        if not self._current_challenge_id:
+            raise DysonAuthError(
+                "No pending authentication challenge. Call authenticate() first."
+            )
+
+        await self.complete_login(self._current_challenge_id, otp_code)
+        self._current_challenge_id = None  # Clear challenge after use
         return True
 
     async def get_devices(self) -> list[Device]:
@@ -360,10 +401,10 @@ class AsyncDysonClient:
         if not self._auth_token:
             raise DysonAuthError("Must authenticate before getting devices")
 
-        url = urljoin(DYSON_API_HOST, "/v2/provisioningservice/manifest")
+        url = urljoin(DYSON_API_HOST, "/v3/manifest")
 
         try:
-            response = await self._client.get(url)
+            response = await self.client.get(url)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -406,7 +447,7 @@ class AsyncDysonClient:
         url = urljoin(DYSON_API_HOST, f"/v1/devices/{serial_number}/credentials")
 
         try:
-            response = await self._client.get(url)
+            response = await self.client.get(url)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -448,7 +489,7 @@ class AsyncDysonClient:
         )
 
         try:
-            response = await self._client.get(url)
+            response = await self.client.get(url)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -534,7 +575,9 @@ class AsyncDysonClient:
             token: Bearer token from previous authentication
         """
         self._auth_token = token
-        self._client.headers.update({"Authorization": f"Bearer {token}"})
+        self._base_headers["Authorization"] = f"Bearer {token}"
+        if self._client is not None:
+            self.client.headers.update({"Authorization": f"Bearer {token}"})
         logger.info("Authentication token set directly")
 
     @property
@@ -557,13 +600,19 @@ class AsyncDysonClient:
         """
         self._auth_token = value
         if value:
-            self._client.headers.update({"Authorization": f"Bearer {value}"})
+            self._base_headers["Authorization"] = f"Bearer {value}"
+            if self._client is not None:
+                self.client.headers.update({"Authorization": f"Bearer {value}"})
         else:
-            self._client.headers.pop("Authorization", None)
+            self._base_headers.pop("Authorization", None)
+            if self._client is not None:
+                self.client.headers.pop("Authorization", None)
 
     async def close(self) -> None:
         """Close the async session and clear authentication state."""
-        await self._client.aclose()
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
         self._auth_token = None
         self.account_id = None
         self._provisioned = False
