@@ -23,7 +23,7 @@ from typing import Any
 
 def __init__(self, email: str | None = None, password: str | None = None, auth_token: str | None = None) -> None: ...
 def begin_login(self) -> LoginChallenge: ...
-def complete_login(self, challenge_id: str, verification_code: str) -> None: ...
+def complete_login(self, challenge_id: str, otp_code: str, email: str | None = None, password: str | None = None) -> LoginInformation: ...
 def get_devices(self) -> list[Device]: ...
 
 @property
@@ -35,7 +35,7 @@ def auth_token(self) -> str | None: ...
 1. **Import Simplification**: Removed `List` and `Optional` from typing imports, using built-in types
 2. **Union Syntax**: Replaced `Optional[T]` with `T | None` (Python 3.10+ syntax)
 3. **Built-in Collections**: Replaced `List[T]` with `list[T]` (Python 3.9+ syntax)
-4. **Method Return Type**: Changed `complete_login()` return from `LoginInformation` to `None`
+4. **Parameter Consistency**: Updated parameter name from `verification_code` to `otp_code` for clarity
 5. **Property Implementation**: Added `@property` decorator for `auth_token` accessor
 6. **Internal State**: Made auth token storage private (`_auth_token`) with public property access
 
@@ -60,8 +60,8 @@ def __init__(
 def begin_login(self, email: str | None = None) -> LoginChallenge:
     """Returns challenge for OTP verification"""
 
-def complete_login(self, challenge_id: str, otp_code: str, email: str | None = None, password: str | None = None) -> None:
-    """Completes login and updates internal auth state"""
+def complete_login(self, challenge_id: str, otp_code: str, email: str | None = None, password: str | None = None) -> LoginInformation:
+    """Completes login and returns authentication information"""
 ```
 
 #### **Device Management**
