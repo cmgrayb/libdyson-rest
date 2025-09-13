@@ -211,7 +211,9 @@ class AsyncDysonClient:
         except (ValueError, TypeError, KeyError) as e:
             raise DysonAPIError(f"Invalid user status response: {e}") from e
 
-    async def begin_login(self, email: str | None = None) -> LoginChallenge:
+    async def begin_login(  # noqa: C901
+        self, email: str | None = None
+    ) -> LoginChallenge:
         """
         Begin the login process by requesting an OTP challenge.
 
@@ -239,9 +241,24 @@ class AsyncDysonClient:
         try:
             response = await self.client.post(url, params=params, json=payload)
             response.raise_for_status()
-        except httpx.RequestError as e:
-            raise DysonConnectionError(f"Failed to begin login: {e}") from e
         except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Invalid email address or not authorized") from e
+            elif e.response.status_code == 400:
+                # Enhanced error details for 400 Bad Request
+                try:
+                    error_body = e.response.text
+                    logger.error(f"400 Bad Request - Response body: {error_body}")
+                    logger.error(f"400 Bad Request - Request URL: {e.response.url}")
+                except (AttributeError, ValueError, TypeError) as log_error:
+                    logger.debug(
+                        f"Could not extract detailed error information: {log_error}"
+                    )
+                raise DysonAuthError(
+                    f"Bad request to Dyson API (400): {e}. Check email format."
+                ) from e
+            raise DysonConnectionError(f"Failed to begin login: {e}") from e
+        except httpx.RequestError as e:
             raise DysonConnectionError(f"Failed to begin login: {e}") from e
 
         try:
@@ -252,7 +269,7 @@ class AsyncDysonClient:
         except (ValueError, TypeError, KeyError) as e:
             raise DysonAPIError(f"Invalid login challenge response: {e}") from e
 
-    async def complete_login(
+    async def complete_login(  # noqa: C901
         self,
         challenge_id: str,
         otp_code: str,
@@ -297,6 +314,24 @@ class AsyncDysonClient:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
                 raise DysonAuthError("Invalid credentials or OTP code") from e
+            elif e.response.status_code == 400:
+                # Enhanced error details for 400 Bad Request
+                try:
+                    error_body = e.response.text
+                    logger.error(f"400 Bad Request - Response body: {error_body}")
+                    logger.error(f"400 Bad Request - Request URL: {e.response.url}")
+                    if hasattr(e, "request") and e.request is not None:
+                        logger.error(
+                            f"400 Bad Request - Request headers: {dict(e.request.headers)}"
+                        )
+                except (AttributeError, ValueError, TypeError) as log_error:
+                    # Only catch specific exceptions that might occur during logging
+                    logger.debug(
+                        f"Could not extract detailed error information: {log_error}"
+                    )
+                raise DysonAuthError(
+                    f"Bad request to Dyson API (400): {e}. Check API parameters."
+                ) from e
             raise DysonConnectionError(f"Failed to complete login: {e}") from e
         except httpx.RequestError as e:
             raise DysonConnectionError(f"Failed to complete login: {e}") from e
