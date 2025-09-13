@@ -545,39 +545,75 @@ class AsyncDysonClient:
         self, encrypted_password: str, serial_number: str
     ) -> str:
         """
-        Decrypt the local MQTT broker password using device credentials.
+        Decrypt the local MQTT broker credentials for direct device connection.
 
-        This is a synchronous utility method that doesn't require HTTP requests.
+        This method decrypts the MQTT password needed to connect to the device's
+        local MQTT broker when on the same network.
 
         Args:
-            encrypted_password: Base64-encoded encrypted password from device
-            serial_number: Device serial number (used as decryption key)
+            encrypted_password: Base64 encoded encrypted password from
+                device.connected_configuration.mqtt.local_broker_credentials
+            serial_number: Device serial number used as decryption key
 
         Returns:
-            Decrypted password string
+            Decrypted MQTT password for local broker connection
 
         Raises:
             DysonAPIError: If decryption fails
         """
         try:
-            # Decode base64
+            # Fixed AES key used by Dyson (from Go implementation)
+            aes_key = bytes(
+                [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8,
+                    9,
+                    10,
+                    11,
+                    12,
+                    13,
+                    14,
+                    15,
+                    16,
+                    17,
+                    18,
+                    19,
+                    20,
+                    21,
+                    22,
+                    23,
+                    24,
+                    25,
+                    26,
+                    27,
+                    28,
+                    29,
+                    30,
+                    31,
+                    32,
+                ]
+            )
+
+            # Zero-filled 16-byte IV
+            iv = bytes(16)
+
+            # Decode the base64 encrypted password
             encrypted_bytes = base64.b64decode(encrypted_password)
 
-            # Use serial number as key (padded/truncated to 32 bytes)
-            key = serial_number.ljust(32, "\0")[:32].encode("utf-8")
-
-            # Extract IV and encrypted data
-            iv = encrypted_bytes[:16]
-            encrypted_data = encrypted_bytes[16:]
-
-            # Create cipher
+            # Create AES-CBC cipher
             cipher = Cipher(
-                algorithms.AES(key), modes.CBC(iv), backend=default_backend()
+                algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend()
             )
             decryptor = cipher.decryptor()
 
             # Decrypt the data
-            decrypted_bytes = decryptor.update(encrypted_data) + decryptor.finalize()
+            decrypted_bytes = decryptor.update(encrypted_bytes) + decryptor.finalize()
 
             # Remove padding (trim backspace characters)
             decrypted_text = decrypted_bytes.decode("utf-8").rstrip("\b").rstrip("\x00")
