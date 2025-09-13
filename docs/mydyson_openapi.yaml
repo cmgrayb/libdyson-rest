@@ -492,10 +492,9 @@ paths:
                   ClientId: 1498975d-0340-4685-82f5-7e6aab81d61e
                   TokenKey: token
                   TokenValue: 1498975d-0340-4685-82f5-7e6aab81d61e
-                  TokenSignature: 
-                    WOGssntQSssGHnrdJdEc/+Zpf5jy9si5cRLBHfKKTjr29Ise3ZLjk4qJhNP2n3Sy+TXDh83BeI3myoY7N1++6EY2MZCF2KGG/JHrltX9fdC7Zlse0qFH6Syn4G1Wa8XblVMdTAZnv7nlECa2qLg7GGyxE1TvmP/X9ioYvPYyFMOq3LnnLBSHNw2HJFYfOgS/8UxrQJNvgMVyhpUGGIc5zkwNO6BjjvLS3AhwrI4+hBgeT/Kf/d72IsSCStdpwzJE8kXSgT2nnX6DokIpVKzJpXigu8RYcRpelutNVisJhCbyJymbCJWgslsyOTRmS+tdoNDaX1/UWskS6rBR1NyBFQ==
+                  TokenSignature: EXAMPLE_TOKEN_SIGNATURE_BASE64_ENCODED_STRING_PLACEHOLDER
                   CustomAuthorizerName: cld-iot-credentials-lambda-authorizer
-                Endpoint: a1u2wvl3e2lrc4-ats.iot.eu-west-1.amazonaws.com
+                Endpoint: example-iot-endpoint.iot.region.amazonaws.com
       requestBody:
         content:
           application/json:
@@ -569,8 +568,7 @@ paths:
                 connectedConfiguration:
                   mqtt:
                     remoteBrokerType: wss
-                    localBrokerCredentials: 
-                      zVGln87HAMt8wVbgjkjrjgS7AuV9MP9GC/2s3z/LoY2bM3cQhp1eaUoHsFKylgZ6rRiVbrzJE3Fc0ii+A8GPdohNh+T/3nifUfsDp1Nk+bpixZuZGIit7oiFPDaI/xW+f1iP5ZHUlEoFRk+Q26mbd+k4ecXJC8HcuKAc5Bg+bCf0A/9BQhouNUfq+EpFF+Qr
+                    localBrokerCredentials: EXAMPLE_ENCRYPTED_CREDENTIALS_BASE64_PLACEHOLDER
                     mqttRootTopicLevel: 438M
                   firmware:
                     version: 438MPF.00.01.003.0011
@@ -2986,9 +2984,9 @@ paths:
         required: false
         schema:
           type: string
-  /v1/notifier/applications/526513ecdf14474692a79b638b3c5d63:
+  /v1/notifier/applications/EXAMPLE_APPLICATION_ID:
     put:
-      summary: PUT 526513ecdf14474692a79b638b3c5d63
+      summary: PUT EXAMPLE_APPLICATION_ID
       responses:
         '200':
           description: ''
@@ -2996,7 +2994,7 @@ paths:
             application/json:
               schema:
                 type: string
-              example: 526513ecdf14474692a79b638b3c5d63
+              example: EXAMPLE_APPLICATION_ID
       requestBody:
         content:
           application/json:
@@ -3017,7 +3015,7 @@ paths:
                   type: string
             example:
               BuildIdentifier: black-production
-              Token: 99f7996f350c0a48962afef5827c23af531608c4cb6a984fab2550815f2fa6e9
+              Token: EXAMPLE_PUSH_NOTIFICATION_TOKEN_PLACEHOLDER
               Platform: Ios
               Version: 6.4.25340
               Culture: en-US
@@ -3265,7 +3263,3 @@ paths:
                   - 4
                 monthlyTrend:
                 monthlyAverageAq: 5
-x-path-templates:
-# Remove the  prefix to generate an endpoint with its URL
-# Lines that are closer to the top take precedence, the matching is greedy
-  []

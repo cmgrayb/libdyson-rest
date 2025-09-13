@@ -339,9 +339,9 @@ class TestAsyncDysonClient:
         assert "Authentication token expired or invalid" in str(exc_info.value)
         await client.close()
 
-    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.post")
     @pytest.mark.asyncio
-    async def test_get_iot_credentials_success(self, mock_get: AsyncMock) -> None:
+    async def test_get_iot_credentials_success(self, mock_post: AsyncMock) -> None:
         """Test successful IoT credentials retrieval."""
         # Mock response data
         mock_response = Mock()
@@ -356,7 +356,7 @@ class TestAsyncDysonClient:
             },
         }
         mock_response.raise_for_status.return_value = None
-        mock_get.return_value = mock_response
+        mock_post.return_value = mock_response
 
         client = AsyncDysonClient(auth_token="test_token")
 
@@ -365,7 +365,12 @@ class TestAsyncDysonClient:
         assert iot_data.endpoint == "mock-iot-endpoint.example.com"
         assert iot_data.iot_credentials.custom_authorizer_name == "MockAuthorizer"
 
-        mock_get.assert_called_once()
+        # Verify the correct endpoint and payload were used
+        mock_post.assert_called_once()
+        call_args = mock_post.call_args
+        assert "/v2/authorize/iot-credentials" in str(call_args)
+        assert call_args.kwargs["json"] == {"Serial": "MOCK-TEST-SN12345"}
+
         await client.close()
 
     @pytest.mark.asyncio
@@ -378,6 +383,60 @@ class TestAsyncDysonClient:
 
         assert "Must authenticate before getting IoT credentials" in str(exc_info.value)
         await client.close()
+
+    def test_iot_credentials_endpoint_parity(self) -> None:
+        """Test that sync and async clients use the same IoT credentials endpoint."""
+        from unittest.mock import patch
+
+        from libdyson_rest.client import DysonClient
+
+        # Test the endpoints both clients would call
+        with (
+            patch(
+                "libdyson_rest.async_client.httpx.AsyncClient.post"
+            ) as mock_async_post,
+            patch("libdyson_rest.client.requests.Session.post") as mock_sync_post,
+        ):
+
+            # Configure mock responses
+            mock_response = Mock()
+            mock_response.json.return_value = {
+                "Endpoint": "test-endpoint.example.com",
+                "IoTCredentials": {
+                    "ClientId": "12345678-1234-1234-1234-123456789abc",
+                    "CustomAuthorizerName": "TestAuthorizer",
+                    "TokenKey": "test_token_key",
+                    "TokenSignature": "test_token_signature",
+                    "TokenValue": "87654321-4321-4321-4321-987654321abc",
+                },
+            }
+            mock_response.raise_for_status.return_value = None
+
+            mock_async_post.return_value = mock_response
+            mock_sync_post.return_value = mock_response
+
+            # Test async client
+            async def test_async():
+                async_client = AsyncDysonClient(auth_token="test_token")
+                await async_client.get_iot_credentials("TEST-SERIAL-123")
+                await async_client.close()
+                return mock_async_post.call_args
+
+            import asyncio
+
+            async_call_args = asyncio.run(test_async())
+
+            # Test sync client
+            sync_client = DysonClient(auth_token="test_token")
+            sync_client.get_iot_credentials("TEST-SERIAL-123")
+            sync_call_args = mock_sync_post.call_args
+            sync_client.close()
+
+            # Both should use the same endpoint and payload
+            assert "/v2/authorize/iot-credentials" in str(async_call_args)
+            assert "/v2/authorize/iot-credentials" in str(sync_call_args)
+            assert async_call_args.kwargs["json"] == {"Serial": "TEST-SERIAL-123"}
+            assert sync_call_args.kwargs["json"] == {"Serial": "TEST-SERIAL-123"}
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
     @pytest.mark.asyncio

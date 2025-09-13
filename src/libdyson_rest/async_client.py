@@ -463,13 +463,13 @@ class AsyncDysonClient:
 
     async def get_iot_credentials(self, serial_number: str) -> IoTData:
         """
-        Get AWS IoT credentials for direct device communication.
+        Get AWS IoT connection credentials for a specific device.
 
         Args:
             serial_number: Device serial number
 
         Returns:
-            IoTData containing AWS IoT connection information
+            IoTData object with endpoint and credentials
 
         Raises:
             DysonAuthError: If not authenticated
@@ -479,10 +479,11 @@ class AsyncDysonClient:
         if not self._auth_token:
             raise DysonAuthError("Must authenticate before getting IoT credentials")
 
-        url = urljoin(DYSON_API_HOST, f"/v1/devices/{serial_number}/credentials")
+        url = urljoin(DYSON_API_HOST, "/v2/authorize/iot-credentials")
+        payload = {"Serial": serial_number}
 
         try:
-            response = await self.client.get(url)
+            response = await self.client.post(url, json=payload)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
