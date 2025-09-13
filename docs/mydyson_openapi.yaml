@@ -272,7 +272,7 @@ paths:
         required: false
         schema:
           type: string
-  /v1/machine/9RJ-US-UAA8845A/timezone:
+  /v1/machine/XXX-XX-XXXXXXX/timezone:
     get:
       summary: GET timezone
       responses:
@@ -287,7 +287,7 @@ paths:
                     type: string
               example:
                 timezone: America/Los_Angeles
-  /v1/assets/devices/9RJ-US-UAA8845A/pendingrelease:
+  /v1/assets/devices/XXX-XX-XXXXXXX/pendingrelease:
     get:
       summary: GET pendingrelease
       responses:
@@ -323,9 +323,9 @@ paths:
         required: false
         schema:
           type: string
-  /v1/app-ui/content/sections/9RJ-US-UAA8845A:
+  /v1/app-ui/content/sections/XXX-XX-XXXXXXX:
     get:
-      summary: GET 9rj-us-uaa8845a
+      summary: GET xxx-xx-xxxxxxx
       responses:
         '200':
           description: ''
@@ -436,7 +436,7 @@ paths:
         required: false
         schema:
           type: string
-  /v1/messageprocessor/devices/9RJ-US-UAA8845A/connectionstatus:
+  /v1/messageprocessor/devices/XXX-XX-XXXXXXX/connectionstatus:
     get:
       summary: GET connectionstatus
       responses:
@@ -505,7 +505,7 @@ paths:
                 Serial:
                   type: string
             example:
-              Serial: 9RJ-US-UAA8845A
+              Serial: XXX-XX-XXXXXXX
   /v3/manifest:
     get:
       summary: GET manifest
@@ -563,7 +563,7 @@ paths:
                     productName:
                       type: string
               example:
-              - serialNumber: 9RJ-US-UAA8845A
+              - serialNumber: XXX-XX-XXXXXXX
                 name: Theater Fan
                 type: '438'
                 connectedConfiguration:
@@ -599,7 +599,7 @@ paths:
         required: false
         schema:
           type: string
-  /v1/environment/devices/9RJ-US-UAA8845A/data:
+  /v1/environment/devices/XXX-XX-XXXXXXX/data:
     get:
       summary: GET data
       responses:
@@ -708,9 +708,9 @@ paths:
         '200':
           description: OK
           content: {}
-  /v2/personalized-content/9RJ-US-UAA8845A:
+  /v2/personalized-content/XXX-XX-XXXXXXX:
     get:
-      summary: GET 9rj-us-uaa8845a
+      summary: GET xxx-xx-xxxxxxx
       responses:
         '200':
           description: ''
@@ -2939,12 +2939,12 @@ paths:
                     type: list
                     layout: spaced
                     items:
-                    - id: 9RJ-US-UAA8845A
+                    - id: XXX-XX-XXXXXXX
                       type: link
                       title: Dyson Purifier Cool PC1
                       description: Theater Fan
                       image: https://csassets.cp.dyson.com/TP11/4/d4aa7251-bde3-4fe0-81df-84fc6d039efc.heic
-                      url: dyson:///support/9RJ-US-UAA8845A
+                      url: dyson:///support/XXX-XX-XXXXXXX
                 - id: support-options
                   title: More options
                   content:
@@ -3138,7 +3138,7 @@ paths:
                 date: '2025-09-09T17:51:36Z'
                 type: connectionStatus
               session_identifier: 8D79C514-99C0-4408-9E66-94EE0D7E41F0
-              serial_number: 9RJ-US-UAA8845A
+              serial_number: XXX-XX-XXXXXXX
               summary:
                 resolve:
                   success:
@@ -3160,7 +3160,7 @@ paths:
               device_model: iPad7,11
               app_version: 6.4.25340
               device_manufacturer: Apple
-  /v1/insights/ec/9RJ-US-UAA8845A/monthly:
+  /v1/insights/ec/XXX-XX-XXXXXXX/monthly:
     get:
       summary: GET monthly
       responses:
