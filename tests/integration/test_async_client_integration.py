@@ -104,8 +104,9 @@ class TestAsyncDysonClientIntegration:
             assert client.country == "UK"
             assert client.culture == "en-GB"
 
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.post")
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
-    async def test_device_operations_workflow(self, mock_get) -> None:
+    async def test_device_operations_workflow(self, mock_get, mock_post) -> None:
         """Test device operations workflow."""
         # Mock devices response
         devices_response = Mock()
@@ -148,7 +149,9 @@ class TestAsyncDysonClientIntegration:
         }
         release_response.raise_for_status.return_value = None
 
-        mock_get.side_effect = [devices_response, iot_response, release_response]
+        # Configure mocks: devices and pending release use GET, IoT credentials uses POST
+        mock_get.side_effect = [devices_response, release_response]
+        mock_post.return_value = iot_response
 
         async with AsyncDysonClient(auth_token="test_token") as client:
             # Get devices
