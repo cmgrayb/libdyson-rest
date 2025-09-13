@@ -1,8 +1,8 @@
 """
-Main client for interacting with the Dyson REST API.
+Asynchronous client for interacting with the Dyson REST API.
 
-This client implements the official Dyson App API as documented in the OpenAPI specification.
-Authentication uses a two-step process with OTP codes.
+This client implements the same API as DysonClient but using async/await patterns
+for better performance in Home Assistant and other async environments.
 """
 
 import base64
@@ -11,7 +11,7 @@ import logging
 from typing import Any, cast
 from urllib.parse import urljoin
 
-import requests
+import httpx
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -42,19 +42,21 @@ DYSON_API_HOST = "https://appapi.cp.dyson.com"
 DEFAULT_USER_AGENT = "android client"
 
 
-class DysonClient:
+class AsyncDysonClient:
     """
-    Client for interacting with the Dyson REST API.
+    Asynchronous client for interacting with the Dyson REST API.
 
     This client handles the complete authentication flow, device discovery, and IoT credential
     retrieval for Dyson devices through their REST API according to the OpenAPI specification.
 
+    All methods are async and should be awaited.
+
     Authentication Flow:
-    1. provision() - Required initial call
-    2. get_user_status() - Check user account status
-    3. begin_login() - Start authentication process
-    4. complete_login() - Complete authentication with OTP code
-    5. API calls with Bearer token
+    1. await provision() - Required initial call
+    2. await get_user_status() - Check user account status
+    3. await begin_login() - Start authentication process
+    4. await complete_login() - Complete authentication with OTP code
+    5. Async API calls with Bearer token
     """
 
     def __init__(
@@ -68,7 +70,7 @@ class DysonClient:
         user_agent: str = DEFAULT_USER_AGENT,
     ) -> None:
         """
-        Initialize the Dyson client.
+        Initialize the async Dyson client.
 
         Args:
             email: User email for authentication
@@ -105,8 +107,8 @@ class DysonClient:
         self.timeout = timeout
         self.user_agent = user_agent
 
-        self.session = requests.Session()
-        self.session.headers.update({"User-Agent": user_agent})
+        # Build headers
+        headers = {"User-Agent": user_agent}
 
         # Authentication state
         self._auth_token: str | None = auth_token
@@ -114,11 +116,25 @@ class DysonClient:
         self._provisioned = False
         self._current_challenge_id: str | None = None
 
-        # If auth_token provided, set up session headers immediately
-        if auth_token:
-            self.session.headers.update({"Authorization": f"Bearer {auth_token}"})
+        # Store client configuration for lazy initialization
+        self._base_headers = headers
+        self._client: httpx.AsyncClient | None = None
 
-    def provision(self) -> str:
+        # If auth_token provided, add it to headers
+        if auth_token:
+            self._base_headers["Authorization"] = f"Bearer {auth_token}"
+
+    @property
+    def client(self) -> httpx.AsyncClient:
+        """Lazy initialization of httpx client to avoid blocking SSL operations during __init__."""
+        if self._client is None:
+            self._client = httpx.AsyncClient(
+                headers=self._base_headers.copy(),
+                timeout=self.timeout,
+            )
+        return self._client
+
+    async def provision(self) -> str:
         """
         Make the required provisioning call to the API.
 
@@ -137,9 +153,11 @@ class DysonClient:
         )
 
         try:
-            response = self.session.get(url, timeout=self.timeout)
+            response = await self.client.get(url)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
+            raise DysonConnectionError(f"Failed to provision API access: {e}") from e
+        except httpx.HTTPStatusError as e:
             raise DysonConnectionError(f"Failed to provision API access: {e}") from e
 
         try:
@@ -148,40 +166,41 @@ class DysonClient:
             version = str(version_data) if version_data is not None else ""
             logger.info(f"API provisioned successfully, version: {version}")
             return version
-        except json.JSONDecodeError as e:
+        except (ValueError, TypeError) as e:
             raise DysonAPIError(f"Invalid JSON response from provision: {e}") from e
 
-    def get_user_status(self, email: str | None = None) -> UserStatus:
+    async def get_user_status(self, email: str | None = None) -> UserStatus:
         """
-        Get the status of a user account.
+        Check the status of a user account.
 
         Args:
-            email: Email address to check. If None, uses client's email.
+            email: Email address to check status for. Uses instance email if not provided.
 
         Returns:
-            UserStatus object with account status and authentication method
+            UserStatus object containing account information
 
         Raises:
+            DysonAuthError: If no email is available
             DysonConnectionError: If connection fails
             DysonAPIError: If API request fails
         """
-        if not self._provisioned:
-            self.provision()
-
         target_email = email or self.email
         if not target_email:
-            raise DysonAPIError("Email address is required")
+            raise DysonAuthError("Email required for user status check")
 
         url = urljoin(DYSON_API_HOST, "/v3/userregistration/email/userstatus")
-        params = {"country": self.country}
+        params = {
+            "country": self.country,
+            "culture": self.culture,
+        }
         payload = {"email": target_email}
 
         try:
-            response = self.session.post(
-                url, params=params, json=payload, timeout=self.timeout
-            )
+            response = await self.client.post(url, params=params, json=payload)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
+            raise DysonConnectionError(f"Failed to get user status: {e}") from e
+        except httpx.HTTPStatusError as e:
             raise DysonConnectionError(f"Failed to get user status: {e}") from e
 
         try:
@@ -189,40 +208,57 @@ class DysonClient:
             # Type safety: cast to UserStatusResponseDict
             typed_data = cast(UserStatusResponseDict, data)
             return UserStatus.from_dict(typed_data)
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
+        except (ValueError, TypeError, KeyError) as e:
             raise DysonAPIError(f"Invalid user status response: {e}") from e
 
-    def begin_login(self, email: str | None = None) -> LoginChallenge:
+    async def begin_login(  # noqa: C901
+        self, email: str | None = None
+    ) -> LoginChallenge:
         """
-        Begin the login process by requesting a challenge ID.
+        Begin the login process by requesting an OTP challenge.
+
+        This will trigger an OTP code to be sent to the user's email address.
 
         Args:
-            email: Email address for login. If None, uses client's email.
+            email: Email address for login. Uses instance email if not provided.
 
         Returns:
-            LoginChallenge object with challenge ID for completing login
+            LoginChallenge containing challenge ID for completing login
 
         Raises:
+            DysonAuthError: If no email is available
             DysonConnectionError: If connection fails
             DysonAPIError: If API request fails
         """
-        if not self._provisioned:
-            self.provision()
-
         target_email = email or self.email
         if not target_email:
-            raise DysonAPIError("Email address is required")
+            raise DysonAuthError("Email required for login")
 
         url = urljoin(DYSON_API_HOST, "/v3/userregistration/email/auth")
         params = {"country": self.country, "culture": self.culture}
         payload = {"email": target_email}
 
         try:
-            response = self.session.post(
-                url, params=params, json=payload, timeout=self.timeout
-            )
+            response = await self.client.post(url, params=params, json=payload)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Invalid email address or not authorized") from e
+            elif e.response.status_code == 400:
+                # Enhanced error details for 400 Bad Request
+                try:
+                    error_body = e.response.text
+                    logger.error(f"400 Bad Request - Response body: {error_body}")
+                    logger.error(f"400 Bad Request - Request URL: {e.response.url}")
+                except (AttributeError, ValueError, TypeError) as log_error:
+                    logger.debug(
+                        f"Could not extract detailed error information: {log_error}"
+                    )
+                raise DysonAuthError(
+                    f"Bad request to Dyson API (400): {e}. Check email format."
+                ) from e
+            raise DysonConnectionError(f"Failed to begin login: {e}") from e
+        except httpx.RequestError as e:
             raise DysonConnectionError(f"Failed to begin login: {e}") from e
 
         try:
@@ -230,10 +266,10 @@ class DysonClient:
             # Type safety: cast to LoginChallengeResponseDict
             typed_data = cast(LoginChallengeResponseDict, data)
             return LoginChallenge.from_dict(typed_data)
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
+        except (ValueError, TypeError, KeyError) as e:
             raise DysonAPIError(f"Invalid login challenge response: {e}") from e
 
-    def complete_login(  # noqa: C901
+    async def complete_login(  # noqa: C901
         self,
         challenge_id: str,
         otp_code: str,
@@ -241,25 +277,22 @@ class DysonClient:
         password: str | None = None,
     ) -> LoginInformation:
         """
-        Complete the login process with the challenge response.
+        Complete the login process using the OTP code.
 
         Args:
             challenge_id: Challenge ID from begin_login()
-            otp_code: One-time password code (usually from email or SMS)
-            email: Email address for login. If None, uses client's email.
-            password: Password for login. If None, uses client's password.
+            otp_code: OTP code received via email
+            email: Email address for login. Uses instance email if not provided.
+            password: Password for login. Uses instance password if not provided.
 
         Returns:
-            LoginInformation: Contains account and token information
+            LoginInformation containing authentication token and account details
 
         Raises:
-            DysonAuthError: If authentication fails
+            DysonAuthError: If credentials are missing or invalid
             DysonConnectionError: If connection fails
             DysonAPIError: If API request fails
         """
-        if not self._provisioned:
-            self.provision()
-
         target_email = email or self.email
         target_password = password or self.password
 
@@ -275,30 +308,13 @@ class DysonClient:
             "password": target_password,
         }
 
-        # Debug logging for troubleshooting
-        logger.debug(f"complete_login - URL: {url}")
-        logger.debug(f"complete_login - Params: {params}")
-        logger.debug(f"complete_login - Payload keys: {list(payload.keys())}")
-        logger.debug(f"complete_login - Challenge ID: {challenge_id}")
-        logger.debug(f"complete_login - OTP Code: {otp_code}")
-
         try:
-            response = self.session.post(
-                url, params=params, json=payload, timeout=self.timeout
-            )
+            response = await self.client.post(url, params=params, json=payload)
             response.raise_for_status()
-        except requests.RequestException as e:
-            if (
-                hasattr(e, "response")
-                and e.response is not None
-                and e.response.status_code == 401
-            ):
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
                 raise DysonAuthError("Invalid credentials or OTP code") from e
-            elif (
-                hasattr(e, "response")
-                and e.response is not None
-                and e.response.status_code == 400
-            ):
+            elif e.response.status_code == 400:
                 # Enhanced error details for 400 Bad Request
                 try:
                     error_body = e.response.text
@@ -317,6 +333,8 @@ class DysonClient:
                     f"Bad request to Dyson API (400): {e}. Check API parameters."
                 ) from e
             raise DysonConnectionError(f"Failed to complete login: {e}") from e
+        except httpx.RequestError as e:
+            raise DysonConnectionError(f"Failed to complete login: {e}") from e
 
         try:
             data = response.json()
@@ -329,63 +347,54 @@ class DysonClient:
             self.account_id = str(login_info.account)
 
             # Set authorization header for future requests
-            self.session.headers.update({"Authorization": f"Bearer {self._auth_token}"})
+            self._base_headers["Authorization"] = f"Bearer {self._auth_token}"
+            if self._client is not None:
+                self.client.headers.update(
+                    {"Authorization": f"Bearer {self._auth_token}"}
+                )
 
             logger.info(f"Authentication successful for account: {self.account_id}")
             return login_info
 
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
-            raise DysonAPIError(f"Invalid login response: {e}") from e
-        except Exception as e:
-            # Catch any other errors from model validation
+        except (ValueError, TypeError, KeyError) as e:
             raise DysonAPIError(f"Invalid login response: {e}") from e
 
-    def authenticate(self, otp_code: str | None = None) -> bool:
+    async def authenticate(self, otp_code: str | None = None) -> bool:
         """
-        Convenience method for complete authentication flow.
+        Convenience method for full authentication flow.
 
-        This method handles the full authentication process:
-        1. Provision API access
-        2. Check user status
-        3. Begin login process
-        4. Complete login with OTP (if provided)
+        If OTP code is provided, completes the full authentication process.
+        If not provided, begins the login process and stores challenge ID for later completion.
 
         Args:
-            otp_code: One-time password code. If None, only completes up to begin_login()
+            otp_code: OTP code from email (optional)
 
         Returns:
-            True if authentication completed successfully, False if OTP code still needed
+            True if authentication was completed, False if OTP code still needed
 
         Raises:
-            DysonAuthError: If authentication fails
+            DysonAuthError: If credentials are missing
             DysonConnectionError: If connection fails
             DysonAPIError: If API request fails
         """
         if not self.email or not self.password:
-            raise DysonAuthError("Email and password are required for authentication")
-
-        # Provision API access
-        self.provision()
-
-        # Check user status
-        user_status = self.get_user_status()
-        logger.info(f"User status: {user_status.account_status.value}")
+            raise DysonAuthError("Email and password required for authentication")
 
         # Begin login process
-        challenge = self.begin_login()
+        challenge = await self.begin_login()
         self._current_challenge_id = str(challenge.challenge_id)
         logger.info(f"Login challenge received: {challenge.challenge_id}")
 
         # If OTP code provided, complete the login
         if otp_code:
-            self.complete_login(self._current_challenge_id, otp_code)
+            await self.complete_login(self._current_challenge_id, otp_code)
             return True
 
         # OTP code required - user needs to provide it via complete_authentication()
         logger.info("OTP code required to complete authentication")
         return False
 
-    def complete_authentication(self, otp_code: str) -> bool:
+    async def complete_authentication(self, otp_code: str) -> bool:
         """
         Complete authentication using the stored challenge ID from authenticate().
 
@@ -408,13 +417,13 @@ class DysonClient:
                 "No pending authentication challenge. Call authenticate() first."
             )
 
-        self.complete_login(self._current_challenge_id, otp_code)
+        await self.complete_login(self._current_challenge_id, otp_code)
         self._current_challenge_id = None  # Clear challenge after use
         return True
 
-    def get_devices(self) -> list[Device]:
+    async def get_devices(self) -> list[Device]:
         """
-        Get list of devices associated with the authenticated account.
+        Retrieve all devices associated with the authenticated account.
 
         Returns:
             List of Device objects
@@ -430,15 +439,13 @@ class DysonClient:
         url = urljoin(DYSON_API_HOST, "/v3/manifest")
 
         try:
-            response = self.session.get(url, timeout=self.timeout)
+            response = await self.client.get(url)
             response.raise_for_status()
-        except requests.RequestException as e:
-            if (
-                hasattr(e, "response")
-                and e.response is not None
-                and e.response.status_code == 401
-            ):
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
                 raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get devices: {e}") from e
+        except httpx.RequestError as e:
             raise DysonConnectionError(f"Failed to get devices: {e}") from e
 
         try:
@@ -451,10 +458,10 @@ class DysonClient:
                 cast(DeviceResponseDict, device) for device in devices_data
             ]
             return [Device.from_dict(device_data) for device_data in typed_devices]
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
+        except (ValueError, TypeError, KeyError) as e:
             raise DysonAPIError(f"Invalid devices response: {e}") from e
 
-    def get_iot_credentials(self, serial_number: str) -> IoTData:
+    async def get_iot_credentials(self, serial_number: str) -> IoTData:
         """
         Get AWS IoT connection credentials for a specific device.
 
@@ -476,15 +483,13 @@ class DysonClient:
         payload = {"Serial": serial_number}
 
         try:
-            response = self.session.post(url, json=payload, timeout=self.timeout)
+            response = await self.client.post(url, json=payload)
             response.raise_for_status()
-        except requests.RequestException as e:
-            if (
-                hasattr(e, "response")
-                and e.response is not None
-                and e.response.status_code == 401
-            ):
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
                 raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get IoT credentials: {e}") from e
+        except httpx.RequestError as e:
             raise DysonConnectionError(f"Failed to get IoT credentials: {e}") from e
 
         try:
@@ -492,18 +497,18 @@ class DysonClient:
             # Type safety: cast to IoTDataResponseDict
             typed_data = cast(IoTDataResponseDict, data)
             return IoTData.from_dict(typed_data)
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
+        except (ValueError, TypeError, KeyError) as e:
             raise DysonAPIError(f"Invalid IoT credentials response: {e}") from e
 
-    def get_pending_release(self, serial_number: str) -> PendingRelease:
+    async def get_pending_release(self, serial_number: str) -> PendingRelease:
         """
-        Get pending firmware release information for a specific device.
+        Get pending firmware release information for a device.
 
         Args:
             serial_number: Device serial number
 
         Returns:
-            PendingRelease object with version and push status
+            PendingRelease containing firmware update information
 
         Raises:
             DysonAuthError: If not authenticated
@@ -520,15 +525,13 @@ class DysonClient:
         )
 
         try:
-            response = self.session.get(url, timeout=self.timeout)
+            response = await self.client.get(url)
             response.raise_for_status()
-        except requests.RequestException as e:
-            if (
-                hasattr(e, "response")
-                and e.response is not None
-                and e.response.status_code == 401
-            ):
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
                 raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get pending release: {e}") from e
+        except httpx.RequestError as e:
             raise DysonConnectionError(f"Failed to get pending release: {e}") from e
 
         try:
@@ -536,7 +539,7 @@ class DysonClient:
             # Type safety: cast to PendingReleaseResponseDict
             typed_data = cast(PendingReleaseResponseDict, data)
             return PendingRelease.from_dict(typed_data)
-        except (json.JSONDecodeError, KeyError, ValueError) as e:
+        except (ValueError, TypeError, KeyError) as e:
             raise DysonAPIError(f"Invalid pending release response: {e}") from e
 
     def decrypt_local_credentials(
@@ -644,7 +647,9 @@ class DysonClient:
             token: Bearer token from previous authentication
         """
         self._auth_token = token
-        self.session.headers.update({"Authorization": f"Bearer {token}"})
+        self._base_headers["Authorization"] = f"Bearer {token}"
+        if self._client is not None:
+            self.client.headers.update({"Authorization": f"Bearer {token}"})
         logger.info("Authentication token set directly")
 
     @property
@@ -667,21 +672,27 @@ class DysonClient:
         """
         self._auth_token = value
         if value:
-            self.session.headers.update({"Authorization": f"Bearer {value}"})
+            self._base_headers["Authorization"] = f"Bearer {value}"
+            if self._client is not None:
+                self.client.headers.update({"Authorization": f"Bearer {value}"})
         else:
-            self.session.headers.pop("Authorization", None)
+            self._base_headers.pop("Authorization", None)
+            if self._client is not None:
+                self.client.headers.pop("Authorization", None)
 
-    def close(self) -> None:
-        """Close the session and clear authentication state."""
-        self.session.close()
+    async def close(self) -> None:
+        """Close the async session and clear authentication state."""
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
         self._auth_token = None
         self.account_id = None
         self._provisioned = False
 
-    def __enter__(self) -> "DysonClient":
-        """Context manager entry."""
+    async def __aenter__(self) -> "AsyncDysonClient":
+        """Async context manager entry."""
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        """Context manager exit."""
-        self.close()
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Async context manager exit."""
+        await self.close()
