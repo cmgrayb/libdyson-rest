@@ -456,3 +456,106 @@ class TestAsyncDysonClient:
 
         client.set_auth_token("test_token")
         assert client.auth_token == "test_token"
+
+    def test_decrypt_local_credentials_success(self) -> None:
+        """Test decrypt_local_credentials method with synthetic test data."""
+        import base64
+        import json
+
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+        client = AsyncDysonClient()
+
+        # Create test password data
+        test_password = "test_password_123"
+        password_data = {"apPasswordHash": test_password}
+
+        # Convert to JSON and pad to multiple of 16 bytes
+        json_data = json.dumps(password_data)
+        padded_data = json_data.ljust((len(json_data) + 15) // 16 * 16, "\0")
+
+        # Use the same encryption method as the real implementation
+        aes_key = bytes([i for i in range(1, 33)])  # 1,2,3,...,32
+        iv = bytes(16)  # Zero-filled IV
+
+        # Encrypt the test data
+        cipher = Cipher(
+            algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend()
+        )
+        encryptor = cipher.encryptor()
+        encrypted_bytes = (
+            encryptor.update(padded_data.encode("utf-8")) + encryptor.finalize()
+        )
+
+        # Base64 encode
+        encrypted_b64 = base64.b64encode(encrypted_bytes).decode("ascii")
+
+        # Test decryption
+        result = client.decrypt_local_credentials(encrypted_b64, "TEST-SERIAL-123")
+        assert result == test_password
+
+    def test_decrypt_local_credentials_sync_async_parity(self) -> None:
+        """Test that sync and async clients produce identical decryption results."""
+        import base64
+        import json
+
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+        from libdyson_rest.client import DysonClient
+
+        # Create test password data
+        test_password = "sync_async_test_password"
+        password_data = {"apPasswordHash": test_password}
+
+        # Convert to JSON and pad to multiple of 16 bytes
+        json_data = json.dumps(password_data)
+        padded_data = json_data.ljust((len(json_data) + 15) // 16 * 16, "\0")
+
+        # Use the same encryption method as the real implementation
+        aes_key = bytes([i for i in range(1, 33)])  # 1,2,3,...,32
+        iv = bytes(16)  # Zero-filled IV
+
+        # Encrypt the test data
+        cipher = Cipher(
+            algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend()
+        )
+        encryptor = cipher.encryptor()
+        encrypted_bytes = (
+            encryptor.update(padded_data.encode("utf-8")) + encryptor.finalize()
+        )
+
+        # Base64 encode
+        encrypted_b64 = base64.b64encode(encrypted_bytes).decode("ascii")
+
+        # Test both clients
+        async_client = AsyncDysonClient()
+        sync_client = DysonClient()
+
+        async_result = async_client.decrypt_local_credentials(
+            encrypted_b64, "TEST-SERIAL-456"
+        )
+        sync_result = sync_client.decrypt_local_credentials(
+            encrypted_b64, "TEST-SERIAL-456"
+        )
+
+        # Both should produce the same result
+        assert async_result == sync_result == test_password
+
+        sync_client.close()
+
+    def test_decrypt_local_credentials_invalid_base64(self) -> None:
+        """Test decrypt_local_credentials with invalid base64 input."""
+        client = AsyncDysonClient()
+
+        with pytest.raises(DysonAPIError, match="Failed to decrypt local credentials"):
+            client.decrypt_local_credentials("invalid_base64!", "TEST-SERIAL-123")
+
+    def test_decrypt_local_credentials_invalid_encrypted_data(self) -> None:
+        """Test decrypt_local_credentials with valid base64 but invalid encrypted data."""
+        client = AsyncDysonClient()
+
+        # Valid base64 but not valid encrypted data
+        with pytest.raises(DysonAPIError, match="Failed to decrypt local credentials"):
+            client.decrypt_local_credentials("dGVzdA==", "TEST-SERIAL-456")
