@@ -2,6 +2,7 @@
 
 from unittest.mock import AsyncMock, Mock, patch
 
+import httpx
 import pytest
 
 from libdyson_rest.async_client import AsyncDysonClient
@@ -223,6 +224,51 @@ class TestAsyncDysonClient:
             await client.complete_login("challenge_123", "123456")
 
         assert "Invalid credentials or OTP code" in str(exc_info.value)
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.post")
+    @pytest.mark.asyncio
+    async def test_complete_login_400_error(self, mock_post: AsyncMock) -> None:
+        """Test complete_login handles 400 bad request errors."""
+        # Mock 400 response
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.text = "Bad Request"
+        mock_response.url = "https://api.example.com/login"
+        mock_response.headers = {"Content-Type": "application/json"}
+        mock_error = httpx.HTTPStatusError(
+            "Bad Request", request=Mock(), response=mock_response
+        )
+        mock_post.side_effect = mock_error
+
+        client = AsyncDysonClient(email="test@example.com", password="password")
+
+        with pytest.raises(DysonAuthError) as exc_info:
+            await client.complete_login("challenge_123", "123456")
+
+        assert "Bad request to Dyson API (400)" in str(exc_info.value)
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.post")
+    @pytest.mark.asyncio
+    async def test_begin_login_400_error(self, mock_post: AsyncMock) -> None:
+        """Test begin_login handles 400 bad request errors."""
+        # Mock 400 response
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.text = "Bad Request"
+        mock_response.url = "https://api.example.com/auth"
+        mock_error = httpx.HTTPStatusError(
+            "Bad Request", request=Mock(), response=mock_response
+        )
+        mock_post.side_effect = mock_error
+
+        client = AsyncDysonClient(email="test@example.com", password="password")
+
+        with pytest.raises(DysonAuthError) as exc_info:
+            await client.begin_login()
+
+        assert "Bad request to Dyson API (400)" in str(exc_info.value)
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
