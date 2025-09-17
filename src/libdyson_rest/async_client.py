@@ -132,11 +132,22 @@ class AsyncDysonClient:
         blocking SSL certificate loading operations.
         """
         if self._client is None:
-            # Initialize the client asynchronously
-            self._client = httpx.AsyncClient(
-                headers=self._base_headers.copy(),
-                timeout=self.timeout,
-            )
+            # Create the client in a thread pool to avoid blocking SSL operations
+            import asyncio
+
+            def create_client() -> httpx.AsyncClient:
+                return httpx.AsyncClient(
+                    headers=self._base_headers.copy(),
+                    timeout=self.timeout,
+                )
+
+            # Run the potentially blocking client creation in a thread pool
+            loop = asyncio.get_event_loop()
+            self._client = await loop.run_in_executor(None, create_client)
+
+        # At this point self._client cannot be None due to the logic above
+        if self._client is None:
+            raise RuntimeError("Failed to initialize HTTP client")
         return self._client
 
     async def provision(self) -> str:
