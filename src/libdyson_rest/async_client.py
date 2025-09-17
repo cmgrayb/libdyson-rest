@@ -124,14 +124,30 @@ class AsyncDysonClient:
         if auth_token:
             self._base_headers["Authorization"] = f"Bearer {auth_token}"
 
-    @property
-    def client(self) -> httpx.AsyncClient:
-        """Lazy initialization of httpx client to avoid blocking SSL operations during __init__."""
+    async def _get_client(self) -> httpx.AsyncClient:
+        """
+        Get or create the async HTTP client.
+
+        This method ensures the client is initialized asynchronously to avoid
+        blocking SSL certificate loading operations.
+        """
         if self._client is None:
-            self._client = httpx.AsyncClient(
-                headers=self._base_headers.copy(),
-                timeout=self.timeout,
-            )
+            # Create the client in a thread pool to avoid blocking SSL operations
+            import asyncio
+
+            def create_client() -> httpx.AsyncClient:
+                return httpx.AsyncClient(
+                    headers=self._base_headers.copy(),
+                    timeout=self.timeout,
+                )
+
+            # Run the potentially blocking client creation in a thread pool
+            loop = asyncio.get_event_loop()
+            self._client = await loop.run_in_executor(None, create_client)
+
+        # At this point self._client cannot be None due to the logic above
+        if self._client is None:
+            raise RuntimeError("Failed to initialize HTTP client")
         return self._client
 
     async def provision(self) -> str:
@@ -153,7 +169,8 @@ class AsyncDysonClient:
         )
 
         try:
-            response = await self.client.get(url)
+            client = await self._get_client()
+            response = await client.get(url)
             response.raise_for_status()
         except httpx.RequestError as e:
             raise DysonConnectionError(f"Failed to provision API access: {e}") from e
@@ -196,7 +213,8 @@ class AsyncDysonClient:
         payload = {"email": target_email}
 
         try:
-            response = await self.client.post(url, params=params, json=payload)
+            client = await self._get_client()
+            response = await client.post(url, params=params, json=payload)
             response.raise_for_status()
         except httpx.RequestError as e:
             raise DysonConnectionError(f"Failed to get user status: {e}") from e
@@ -239,7 +257,8 @@ class AsyncDysonClient:
         payload = {"email": target_email}
 
         try:
-            response = await self.client.post(url, params=params, json=payload)
+            client = await self._get_client()
+            response = await client.post(url, params=params, json=payload)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -309,7 +328,8 @@ class AsyncDysonClient:
         }
 
         try:
-            response = await self.client.post(url, params=params, json=payload)
+            client = await self._get_client()
+            response = await client.post(url, params=params, json=payload)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -349,9 +369,8 @@ class AsyncDysonClient:
             # Set authorization header for future requests
             self._base_headers["Authorization"] = f"Bearer {self._auth_token}"
             if self._client is not None:
-                self.client.headers.update(
-                    {"Authorization": f"Bearer {self._auth_token}"}
-                )
+                client = await self._get_client()
+                client.headers.update({"Authorization": f"Bearer {self._auth_token}"})
 
             logger.info(f"Authentication successful for account: {self.account_id}")
             return login_info
@@ -439,7 +458,8 @@ class AsyncDysonClient:
         url = urljoin(DYSON_API_HOST, "/v3/manifest")
 
         try:
-            response = await self.client.get(url)
+            client = await self._get_client()
+            response = await client.get(url)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -483,7 +503,8 @@ class AsyncDysonClient:
         payload = {"Serial": serial_number}
 
         try:
-            response = await self.client.post(url, json=payload)
+            client = await self._get_client()
+            response = await client.post(url, json=payload)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -525,7 +546,8 @@ class AsyncDysonClient:
         )
 
         try:
-            response = await self.client.get(url)
+            client = await self._get_client()
+            response = await client.get(url)
             response.raise_for_status()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
@@ -649,7 +671,8 @@ class AsyncDysonClient:
         self._auth_token = token
         self._base_headers["Authorization"] = f"Bearer {token}"
         if self._client is not None:
-            self.client.headers.update({"Authorization": f"Bearer {token}"})
+            # Don't call _get_client() since we're not in an async context
+            self._client.headers.update({"Authorization": f"Bearer {token}"})
         logger.info("Authentication token set directly")
 
     @property
@@ -674,11 +697,13 @@ class AsyncDysonClient:
         if value:
             self._base_headers["Authorization"] = f"Bearer {value}"
             if self._client is not None:
-                self.client.headers.update({"Authorization": f"Bearer {value}"})
+                # Don't call _get_client() since we're not in an async context
+                self._client.headers.update({"Authorization": f"Bearer {value}"})
         else:
             self._base_headers.pop("Authorization", None)
             if self._client is not None:
-                self.client.headers.pop("Authorization", None)
+                # Don't call _get_client() since we're not in an async context
+                self._client.headers.pop("Authorization", None)
 
     async def close(self) -> None:
         """Close the async session and clear authentication state."""
