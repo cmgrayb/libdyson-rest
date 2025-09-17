@@ -42,6 +42,210 @@ paths:
                   email: true
                 machineRegistration:
                   warranty: true
+  
+  /v1/provisioningservice/application/Android/version:
+    get:
+      operationId: provision
+      summary: provision
+      description: >
+        Gets version info. Required initial call - server ignores other requests 
+        from clients which haven't made this request recently.
+      responses:
+        '200':
+          description: Version information
+          content:
+            application/json:
+              schema:
+                type: string
+  
+  /v3/userregistration/email/userstatus:
+    post:
+      operationId: getUserStatus
+      summary: getUserStatus
+      description: Gets the status of a user by providing their email address.
+      parameters:
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+            default: "android client"
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '[A-Z]{2}'
+            maxLength: 2
+            minLength: 2
+            default: "US"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: User status information
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - accountStatus
+                  - authenticationMethod
+                properties:
+                  accountStatus:
+                    type: string
+                    enum: [ACTIVE, UNREGISTERED]
+                  authenticationMethod:
+                    type: string
+                    enum: [EMAIL_PWD_2FA]
+        '415':
+          description: Unsupported Media Type
+        '429':
+          description: Too Many Requests
+
+  /v3/userregistration/email/auth:
+    post:
+      operationId: beginLogin
+      summary: beginLogin
+      description: Begins the login process by requesting a challenge ID.
+      parameters:
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+            default: "android client"
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '[A-Z]{2}'
+            default: "US"
+        - name: culture
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '[a-z]{2}-[A-Z]{2}'
+            default: "en-US"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Login challenge with challenge ID
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - challengeId
+                properties:
+                  challengeId:
+                    type: string
+                    format: uuid
+        '415':
+          description: Unsupported Media Type
+        '429':
+          description: Too Many Requests
+
+  /v3/userregistration/email/verify:
+    post:
+      operationId: completeLogin
+      summary: completeLogin
+      description: Finishes the login process by responding to the authentication challenge.
+      parameters:
+        - name: User-Agent
+          in: header
+          required: true
+          schema:
+            type: string
+            default: "android client"
+        - name: country
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '[A-Z]{2}'
+            default: "US"
+        - name: culture
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '[a-z]{2}-[A-Z]{2}'
+            default: "en-US"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - challengeId
+                - email
+                - otpCode
+                - password
+              properties:
+                challengeId:
+                  type: string
+                  format: uuid
+                email:
+                  type: string
+                  format: email
+                otpCode:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login complete with account ID and token
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - account
+                  - token
+                  - tokenType
+                properties:
+                  account:
+                    type: string
+                    format: uuid
+                  token:
+                    type: string
+                  tokenType:
+                    type: string
+                    enum: [Bearer]
+        '400':
+          description: Bad Request - Invalid parameters
+        '401':
+          description: Unauthorized - Invalid credentials or OTP
+        '415':
+          description: Unsupported Media Type
+        '429':
+          description: Too Many Requests
+
   /v1/userregistration/ownership:
     get:
       summary: GET ownership
@@ -68,7 +272,7 @@ paths:
         required: false
         schema:
           type: string
-  /v1/machine/9RJ-US-UAA8845A/timezone:
+  /v1/machine/XXX-XX-XXXXXXX/timezone:
     get:
       summary: GET timezone
       responses:
@@ -83,7 +287,7 @@ paths:
                     type: string
               example:
                 timezone: America/Los_Angeles
-  /v1/assets/devices/9RJ-US-UAA8845A/pendingrelease:
+  /v1/assets/devices/XXX-XX-XXXXXXX/pendingrelease:
     get:
       summary: GET pendingrelease
       responses:
@@ -119,9 +323,9 @@ paths:
         required: false
         schema:
           type: string
-  /v1/app-ui/content/sections/9RJ-US-UAA8845A:
+  /v1/app-ui/content/sections/XXX-XX-XXXXXXX:
     get:
-      summary: GET 9rj-us-uaa8845a
+      summary: GET xxx-xx-xxxxxxx
       responses:
         '200':
           description: ''
@@ -232,7 +436,7 @@ paths:
         required: false
         schema:
           type: string
-  /v1/messageprocessor/devices/9RJ-US-UAA8845A/connectionstatus:
+  /v1/messageprocessor/devices/XXX-XX-XXXXXXX/connectionstatus:
     get:
       summary: GET connectionstatus
       responses:
@@ -288,10 +492,9 @@ paths:
                   ClientId: 1498975d-0340-4685-82f5-7e6aab81d61e
                   TokenKey: token
                   TokenValue: 1498975d-0340-4685-82f5-7e6aab81d61e
-                  TokenSignature: 
-                    WOGssntQSssGHnrdJdEc/+Zpf5jy9si5cRLBHfKKTjr29Ise3ZLjk4qJhNP2n3Sy+TXDh83BeI3myoY7N1++6EY2MZCF2KGG/JHrltX9fdC7Zlse0qFH6Syn4G1Wa8XblVMdTAZnv7nlECa2qLg7GGyxE1TvmP/X9ioYvPYyFMOq3LnnLBSHNw2HJFYfOgS/8UxrQJNvgMVyhpUGGIc5zkwNO6BjjvLS3AhwrI4+hBgeT/Kf/d72IsSCStdpwzJE8kXSgT2nnX6DokIpVKzJpXigu8RYcRpelutNVisJhCbyJymbCJWgslsyOTRmS+tdoNDaX1/UWskS6rBR1NyBFQ==
+                  TokenSignature: EXAMPLE_TOKEN_SIGNATURE_BASE64_ENCODED_STRING_PLACEHOLDER
                   CustomAuthorizerName: cld-iot-credentials-lambda-authorizer
-                Endpoint: a1u2wvl3e2lrc4-ats.iot.eu-west-1.amazonaws.com
+                Endpoint: example-iot-endpoint.iot.region.amazonaws.com
       requestBody:
         content:
           application/json:
@@ -301,7 +504,7 @@ paths:
                 Serial:
                   type: string
             example:
-              Serial: 9RJ-US-UAA8845A
+              Serial: XXX-XX-XXXXXXX
   /v3/manifest:
     get:
       summary: GET manifest
@@ -359,14 +562,13 @@ paths:
                     productName:
                       type: string
               example:
-              - serialNumber: 9RJ-US-UAA8845A
+              - serialNumber: XXX-XX-XXXXXXX
                 name: Theater Fan
                 type: '438'
                 connectedConfiguration:
                   mqtt:
                     remoteBrokerType: wss
-                    localBrokerCredentials: 
-                      zVGln87HAMt8wVbgjkjrjgS7AuV9MP9GC/2s3z/LoY2bM3cQhp1eaUoHsFKylgZ6rRiVbrzJE3Fc0ii+A8GPdohNh+T/3nifUfsDp1Nk+bpixZuZGIit7oiFPDaI/xW+f1iP5ZHUlEoFRk+Q26mbd+k4ecXJC8HcuKAc5Bg+bCf0A/9BQhouNUfq+EpFF+Qr
+                    localBrokerCredentials: EXAMPLE_ENCRYPTED_CREDENTIALS_BASE64_PLACEHOLDER
                     mqttRootTopicLevel: 438M
                   firmware:
                     version: 438MPF.00.01.003.0011
@@ -395,7 +597,7 @@ paths:
         required: false
         schema:
           type: string
-  /v1/environment/devices/9RJ-US-UAA8845A/data:
+  /v1/environment/devices/XXX-XX-XXXXXXX/data:
     get:
       summary: GET data
       responses:
@@ -504,9 +706,9 @@ paths:
         '200':
           description: OK
           content: {}
-  /v2/personalized-content/9RJ-US-UAA8845A:
+  /v2/personalized-content/XXX-XX-XXXXXXX:
     get:
-      summary: GET 9rj-us-uaa8845a
+      summary: GET xxx-xx-xxxxxxx
       responses:
         '200':
           description: ''
@@ -2735,12 +2937,12 @@ paths:
                     type: list
                     layout: spaced
                     items:
-                    - id: 9RJ-US-UAA8845A
+                    - id: XXX-XX-XXXXXXX
                       type: link
                       title: Dyson Purifier Cool PC1
                       description: Theater Fan
                       image: https://csassets.cp.dyson.com/TP11/4/d4aa7251-bde3-4fe0-81df-84fc6d039efc.heic
-                      url: dyson:///support/9RJ-US-UAA8845A
+                      url: dyson:///support/XXX-XX-XXXXXXX
                 - id: support-options
                   title: More options
                   content:
@@ -2782,9 +2984,9 @@ paths:
         required: false
         schema:
           type: string
-  /v1/notifier/applications/526513ecdf14474692a79b638b3c5d63:
+  /v1/notifier/applications/EXAMPLE_APPLICATION_ID:
     put:
-      summary: PUT 526513ecdf14474692a79b638b3c5d63
+      summary: PUT EXAMPLE_APPLICATION_ID
       responses:
         '200':
           description: ''
@@ -2792,7 +2994,7 @@ paths:
             application/json:
               schema:
                 type: string
-              example: 526513ecdf14474692a79b638b3c5d63
+              example: EXAMPLE_APPLICATION_ID
       requestBody:
         content:
           application/json:
@@ -2813,7 +3015,7 @@ paths:
                   type: string
             example:
               BuildIdentifier: black-production
-              Token: 99f7996f350c0a48962afef5827c23af531608c4cb6a984fab2550815f2fa6e9
+              Token: EXAMPLE_PUSH_NOTIFICATION_TOKEN_PLACEHOLDER
               Platform: Ios
               Version: 6.4.25340
               Culture: en-US
@@ -2934,7 +3136,7 @@ paths:
                 date: '2025-09-09T17:51:36Z'
                 type: connectionStatus
               session_identifier: 8D79C514-99C0-4408-9E66-94EE0D7E41F0
-              serial_number: 9RJ-US-UAA8845A
+              serial_number: XXX-XX-XXXXXXX
               summary:
                 resolve:
                   success:
@@ -2956,7 +3158,7 @@ paths:
               device_model: iPad7,11
               app_version: 6.4.25340
               device_manufacturer: Apple
-  /v1/insights/ec/9RJ-US-UAA8845A/monthly:
+  /v1/insights/ec/XXX-XX-XXXXXXX/monthly:
     get:
       summary: GET monthly
       responses:
@@ -3061,7 +3263,3 @@ paths:
                   - 4
                 monthlyTrend:
                 monthlyAverageAq: 5
-x-path-templates:
-# Remove the  prefix to generate an endpoint with its URL
-# Lines that are closer to the top take precedence, the matching is greedy
-  []

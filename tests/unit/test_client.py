@@ -211,22 +211,22 @@ class TestDysonClient:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            "version": "438MPF.00.01.007.0002",
+            "version": "MOCK.99.99.999.9999",
             "pushed": False,
         }
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="test_token")
 
-        pending_release = client.get_pending_release("9RJ-US-UAA8845A")
+        pending_release = client.get_pending_release("MOCK-TEST-SN12345")
 
-        assert pending_release.version == "438MPF.00.01.007.0002"
+        assert pending_release.version == "MOCK.99.99.999.9999"
         assert pending_release.pushed is False
 
         # Verify correct URL was called
         mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
-        assert "/v1/assets/devices/9RJ-US-UAA8845A/pendingrelease" in args[0]
+        assert "/v1/assets/devices/MOCK-TEST-SN12345/pendingrelease" in args[0]
 
         client.close()
 
@@ -238,7 +238,7 @@ class TestDysonClient:
             DysonAuthError,
             match="Must authenticate before getting pending release info",
         ):
-            client.get_pending_release("9RJ-US-UAA8845A")
+            client.get_pending_release("MOCK-TEST-SN12345")
 
         client.close()
 
@@ -250,6 +250,106 @@ class TestDysonClient:
         client = DysonClient(auth_token="test_token")
 
         with pytest.raises(DysonConnectionError, match="Failed to get pending release"):
-            client.get_pending_release("9RJ-US-UAA8845A")
+            client.get_pending_release("MOCK-TEST-SN12345")
+
+        client.close()
+
+    @patch("libdyson_rest.client.requests.Session.post")
+    def test_complete_login_401_error(self, mock_post: Mock) -> None:
+        """Test complete_login handles 401 authentication errors."""
+        mock_response = Mock()
+        mock_response.status_code = 401
+        mock_error = requests.RequestException("Unauthorized")
+        mock_error.response = mock_response
+        mock_post.side_effect = mock_error
+
+        client = DysonClient("test@example.com", "password")
+
+        with pytest.raises(DysonAuthError, match="Invalid credentials or OTP code"):
+            client.complete_login("challenge123", "123456")
+
+        client.close()
+
+    @patch("libdyson_rest.client.requests.Session.post")
+    def test_complete_login_400_error(self, mock_post: Mock) -> None:
+        """Test complete_login handles 400 bad request errors."""
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.text = "Bad Request"
+        mock_response.url = "https://api.example.com/login"
+        mock_error = requests.RequestException("Bad Request")
+        mock_error.response = mock_response
+        mock_error.request = Mock()
+        mock_error.request.headers = {"Content-Type": "application/json"}
+        mock_post.side_effect = mock_error
+
+        client = DysonClient("test@example.com", "password")
+
+        with pytest.raises(DysonAuthError, match="Bad request to Dyson API \\(400\\)"):
+            client.complete_login("challenge123", "123456")
+
+        client.close()
+
+    @patch("libdyson_rest.client.requests.Session.post")
+    def test_complete_login_400_error_logging_exception(self, mock_post: Mock) -> None:
+        """Test complete_login handles 400 errors when logging fails."""
+        mock_response = Mock()
+        mock_response.status_code = 400
+        # Make response.text raise an exception to test logging error handling
+        mock_response.text = Mock(side_effect=AttributeError("No text"))
+        mock_response.url = "https://api.example.com/login"
+        mock_error = requests.RequestException("Bad Request")
+        mock_error.response = mock_response
+        mock_post.side_effect = mock_error
+
+        client = DysonClient("test@example.com", "password")
+
+        with pytest.raises(DysonAuthError, match="Bad request to Dyson API \\(400\\)"):
+            client.complete_login("challenge123", "123456")
+
+        client.close()
+
+    @patch("libdyson_rest.client.requests.Session.post")
+    def test_complete_login_connection_error(self, mock_post: Mock) -> None:
+        """Test complete_login handles general connection errors."""
+        mock_post.side_effect = requests.RequestException("Connection failed")
+
+        client = DysonClient("test@example.com", "password")
+
+        with pytest.raises(DysonConnectionError, match="Failed to complete login"):
+            client.complete_login("challenge123", "123456")
+
+        client.close()
+
+    @patch("libdyson_rest.client.requests.Session.post")
+    def test_complete_login_invalid_json_response(self, mock_post: Mock) -> None:
+        """Test complete_login handles invalid JSON responses."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.side_effect = ValueError("Invalid JSON")
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = DysonClient("test@example.com", "password")
+
+        with pytest.raises(DysonAPIError, match="Invalid login response"):
+            client.complete_login("challenge123", "123456")
+
+        client.close()
+
+    @patch("libdyson_rest.client.requests.Session.post")
+    def test_complete_login_missing_key_response(self, mock_post: Mock) -> None:
+        """Test complete_login handles responses with missing keys."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"invalid": "data"}  # Missing required keys
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = DysonClient("test@example.com", "password")
+
+        # The validation layer raises JSONValidationError, which gets caught and re-raised as DysonAPIError
+        with pytest.raises(DysonAPIError, match="Invalid login response"):
+            client.complete_login("challenge123", "123456")
 
         client.close()
