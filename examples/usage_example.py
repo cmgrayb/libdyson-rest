@@ -274,7 +274,9 @@ def regional_endpoint_example() -> None:
     logger.info(f"Default client configured for region: {default_client.country}")
     default_client.close()
 
-    logger.info("\nNOTE: Regional endpoint selection is automatic based on country code.")
+    logger.info(
+        "\nNOTE: Regional endpoint selection is automatic based on country code."
+    )
     logger.info("No code changes needed - just specify the correct country parameter!")
 
 

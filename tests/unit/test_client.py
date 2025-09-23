@@ -362,7 +362,9 @@ class TestDysonClient:
         mock_response.json.return_value = {"version": "1.0.0"}
         mock_get.return_value = mock_response
 
-        client = DysonClient(country="AU", email="test@example.com", password="password")
+        client = DysonClient(
+            country="AU", email="test@example.com", password="password"
+        )
         client.provision()
 
         # Verify the correct AU endpoint was called
@@ -379,7 +381,9 @@ class TestDysonClient:
         mock_response.json.return_value = {"version": "1.0.0"}
         mock_get.return_value = mock_response
 
-        client = DysonClient(country="NZ", email="test@example.com", password="password")
+        client = DysonClient(
+            country="NZ", email="test@example.com", password="password"
+        )
         client.provision()
 
         # Verify the correct NZ endpoint was called
@@ -396,7 +400,9 @@ class TestDysonClient:
         mock_response.json.return_value = {"version": "1.0.0"}
         mock_get.return_value = mock_response
 
-        client = DysonClient(country="CN", email="test@example.com", password="password")
+        client = DysonClient(
+            country="CN", email="test@example.com", password="password"
+        )
         client.provision()
 
         # Verify the correct CN endpoint was called
@@ -415,10 +421,12 @@ class TestDysonClient:
 
         # Test with various countries that should fall back to .com
         test_countries = ["US", "GB", "DE", "CA", "JP"]
-        
+
         for country in test_countries:
             mock_get.reset_mock()
-            client = DysonClient(country=country, email="test@example.com", password="password")
+            client = DysonClient(
+                country=country, email="test@example.com", password="password"
+            )
             client.provision()
 
             # Verify the default .com endpoint was called
