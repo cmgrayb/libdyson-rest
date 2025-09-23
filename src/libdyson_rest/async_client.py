@@ -66,6 +66,7 @@ class AsyncDysonClient:
         culture: str = "en-US",
         timeout: int = 30,
         user_agent: str = DEFAULT_USER_AGENT,
+        debug: bool = False,
     ) -> None:
         """
         Initialize the async Dyson client.
@@ -78,6 +79,7 @@ class AsyncDysonClient:
             culture: Locale/language code (IETF language code, e.g., 'en-US')
             timeout: Request timeout in seconds
             user_agent: User agent string for requests
+            debug: Enable detailed debug logging (includes HTTP requests/responses)
 
         Raises:
             ValueError: If country or culture format is invalid
@@ -104,9 +106,14 @@ class AsyncDysonClient:
         self.culture = culture
         self.timeout = timeout
         self.user_agent = user_agent
+        self.debug = debug
 
         # Build headers
         headers = {"User-Agent": user_agent}
+
+        # Configure debug logging if enabled
+        if debug:
+            self._configure_debug_logging()
 
         # Authentication state
         self._auth_token: str | None = auth_token
@@ -121,6 +128,13 @@ class AsyncDysonClient:
         # If auth_token provided, add it to headers
         if auth_token:
             self._base_headers["Authorization"] = f"Bearer {auth_token}"
+
+    def _configure_debug_logging(self) -> None:
+        """Configure detailed HTTP debug logging."""
+        import logging
+
+        # Enable debug logging for httpx
+        logging.getLogger("httpx").setLevel(logging.DEBUG)
 
     async def _get_client(self) -> httpx.AsyncClient:
         """
@@ -167,20 +181,46 @@ class AsyncDysonClient:
             "/v1/provisioningservice/application/Android/version",
         )
 
+        logger.debug(f"Provisioning API access for country {self.country} at {url}")
+
         try:
             client = await self._get_client()
             response = await client.get(url)
+
+            # Enhanced debug logging when debug mode is enabled
+            if self.debug:
+                logger.debug(f"🌐 Country: {self.country}")
+                logger.debug(f"📡 Request URL: {url}")
+                logger.debug(f"⏱️  Timeout: {self.timeout}s")
+                logger.debug(f"🔤 User-Agent: {self.user_agent}")
+                logger.debug(f"📥 Response Status: {response.status_code}")
+                logger.debug(f"📥 Response Headers: {dict(response.headers)}")
+
             response.raise_for_status()
         except httpx.RequestError as e:
+            if self.debug:
+                logger.error(f"❌ Provisioning failed (Request Error): {e}")
+                logger.error(f"❌ Request URL: {url}")
+            else:
+                logger.error(f"Failed to provision API access: {e}")
             raise DysonConnectionError(f"Failed to provision API access: {e}") from e
         except httpx.HTTPStatusError as e:
+            if self.debug:
+                logger.error(f"❌ Provisioning failed (HTTP Status Error): {e}")
+                logger.error(f"❌ Request URL: {url}")
+                logger.error(f"❌ Response status: {e.response.status_code}")
+                logger.error(f"❌ Response text: {e.response.text[:500]}")
+            else:
+                logger.error(f"Failed to provision API access: {e}")
             raise DysonConnectionError(f"Failed to provision API access: {e}") from e
 
         try:
             version_data = response.json()
+            if self.debug:
+                logger.debug(f"📋 Response data: {version_data}")
             self._provisioned = True
             version = str(version_data) if version_data is not None else ""
-            logger.info(f"API provisioned successfully, version: {version}")
+            logger.debug(f"API provisioned successfully, version: {version}")
             return version
         except (ValueError, TypeError) as e:
             raise DysonAPIError(f"Invalid JSON response from provision: {e}") from e

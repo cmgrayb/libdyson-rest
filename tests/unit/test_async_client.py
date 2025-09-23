@@ -71,6 +71,8 @@ class TestAsyncDysonClient:
         mock_response = Mock()
         mock_response.json.return_value = "1.2.3"
         mock_response.raise_for_status.return_value = None
+        mock_response.headers = {"Content-Type": "application/json"}
+        mock_response.status_code = 200
         mock_get.return_value = mock_response
 
         client = AsyncDysonClient()
@@ -622,10 +624,12 @@ class TestAsyncDysonClient:
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
     @pytest.mark.asyncio
     async def test_regional_endpoint_australia(self, mock_get: AsyncMock) -> None:
-        """Test that Australian clients use AU endpoint."""
+        """Test that Australian clients use the default .com endpoint."""
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = "1.0.0"
+        mock_response.headers = {"Content-Type": "application/json"}
+        mock_response.status_code = 200
         mock_get.return_value = mock_response
 
         client = AsyncDysonClient(
@@ -633,19 +637,21 @@ class TestAsyncDysonClient:
         )
         await client.provision()
 
-        # Verify the correct AU endpoint was called
+        # Verify AU uses the default .com endpoint
         mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
-        assert "appapi.cp.dyson.au" in args[0]
+        assert "appapi.cp.dyson.com" in args[0]
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
     @pytest.mark.asyncio
     async def test_regional_endpoint_new_zealand(self, mock_get: AsyncMock) -> None:
-        """Test that New Zealand clients use NZ endpoint."""
+        """Test that New Zealand clients use the default .com endpoint."""
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = "1.0.0"
+        mock_response.headers = {"Content-Type": "application/json"}
+        mock_response.status_code = 200
         mock_get.return_value = mock_response
 
         client = AsyncDysonClient(
@@ -653,10 +659,10 @@ class TestAsyncDysonClient:
         )
         await client.provision()
 
-        # Verify the correct NZ endpoint was called
+        # Verify NZ uses the default .com endpoint
         mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
-        assert "appapi.cp.dyson.nz" in args[0]
+        assert "appapi.cp.dyson.com" in args[0]
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
@@ -666,6 +672,8 @@ class TestAsyncDysonClient:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = "1.0.0"
+        mock_response.headers = {"Content-Type": "application/json"}
+        mock_response.status_code = 200
         mock_get.return_value = mock_response
 
         client = AsyncDysonClient(

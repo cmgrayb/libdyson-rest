@@ -417,28 +417,20 @@ The library automatically selects the appropriate Dyson API endpoint based on yo
 
 | Country Code | Region | API Endpoint |
 |--------------|--------|--------------|
-| `AU` | Australia | `https://appapi.cp.dyson.au` |
-| `NZ` | New Zealand | `https://appapi.cp.dyson.nz` |
 | `CN` | China | `https://appapi.cp.dyson.cn` |
 | All others | Default | `https://appapi.cp.dyson.com` |
 
 **Examples:**
 ```python
-# Australian users
-client = DysonClient(country="AU")  # Uses appapi.cp.dyson.au
-
-# New Zealand users  
-client = DysonClient(country="NZ")  # Uses appapi.cp.dyson.nz
-
 # Chinese users
 client = DysonClient(country="CN")  # Uses appapi.cp.dyson.cn
 
-# US, UK, German, and other users
+# All other users (US, UK, AU, NZ, etc.)
 client = DysonClient(country="US")  # Uses appapi.cp.dyson.com (default)
 client = DysonClient(country="GB")  # Uses appapi.cp.dyson.com (default)
 ```
 
-**Note**: Regional endpoint selection is automatic and requires no code changes. Simply specify the correct country code for your region, and the library will route requests to the appropriate API server for optimal performance.
+**Note**: Regional endpoint selection is automatic and requires no code changes. Simply specify the correct country code for your region, and the library will route requests to the appropriate API server.
 
 ## API Compliance
 
@@ -483,10 +475,10 @@ pip install libdyson-rest
 pip install --pre libdyson-rest
 
 # Install specific version
-pip install libdyson-rest==0.3.0b1
+pip install libdyson-rest==0.7.0b1
 
 # Install from TestPyPI (alpha/dev versions)
-pip install -i https://test.pypi.org/simple/ libdyson-rest==0.3.0a1
+pip install -i https://test.pypi.org/simple/ libdyson-rest==0.7.0a1
 ```
 
 ### For Beta Testers
