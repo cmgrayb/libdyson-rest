@@ -475,10 +475,10 @@ pip install libdyson-rest
 pip install --pre libdyson-rest
 
 # Install specific version
-pip install libdyson-rest==0.3.0b1
+pip install libdyson-rest==0.7.0b1
 
 # Install from TestPyPI (alpha/dev versions)
-pip install -i https://test.pypi.org/simple/ libdyson-rest==0.3.0a1
+pip install -i https://test.pypi.org/simple/ libdyson-rest==0.7.0a1
 ```
 
 ### For Beta Testers
