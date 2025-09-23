@@ -76,3 +76,41 @@ def safe_json_loads(data: str) -> Dict[str, Any]:
         return result if isinstance(result, dict) else {}
     except json.JSONDecodeError:
         return {}
+
+
+def get_api_hostname(country: str) -> str:
+    """
+    Determine the appropriate Dyson API hostname based on country code.
+
+    This function maps country codes to their respective regional API endpoints.
+    Known regional endpoints include Australia (AU), New Zealand (NZ), and China (CN).
+    All other countries, including the United States (US), use the default endpoint.
+
+    Args:
+        country: ISO 3166-1 alpha-2 country code (e.g., 'US', 'AU', 'NZ', 'CN')
+
+    Returns:
+        The appropriate API hostname URL for the given country
+
+    Examples:
+        >>> get_api_hostname('AU')
+        'https://appapi.cp.dyson.au'
+        >>> get_api_hostname('US')
+        'https://appapi.cp.dyson.com'
+        >>> get_api_hostname('GB')  # Unknown region defaults to .com
+        'https://appapi.cp.dyson.com'
+
+    Note:
+        This function provides automatic regional endpoint resolution for improved
+        connectivity in regions with dedicated Dyson API servers. Countries without
+        dedicated endpoints gracefully fall back to the primary .com endpoint.
+    """
+    # Regional endpoint mappings for countries with dedicated API servers
+    regional_endpoints = {
+        "AU": "https://appapi.cp.dyson.au",  # Australia
+        "NZ": "https://appapi.cp.dyson.nz",  # New Zealand
+        "CN": "https://appapi.cp.dyson.cn",  # China
+    }
+
+    # Return regional endpoint if available, otherwise default to .com
+    return regional_endpoints.get(country, "https://appapi.cp.dyson.com")

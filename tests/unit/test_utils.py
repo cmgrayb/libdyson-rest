@@ -3,6 +3,7 @@
 from libdyson_rest.utils import (
     decode_base64,
     encode_base64,
+    get_api_hostname,
     hash_password,
     safe_json_loads,
     validate_email,
@@ -59,3 +60,57 @@ def test_safe_json_loads() -> None:
     array_json = "[1, 2, 3]"
     result = safe_json_loads(array_json)
     assert result == {}
+
+
+def test_get_api_hostname_regional_endpoints() -> None:
+    """Test that known regional country codes return correct endpoints."""
+    assert get_api_hostname("AU") == "https://appapi.cp.dyson.au"
+    assert get_api_hostname("NZ") == "https://appapi.cp.dyson.nz"
+    assert get_api_hostname("CN") == "https://appapi.cp.dyson.cn"
+
+
+def test_get_api_hostname_default_fallback() -> None:
+    """Test that unknown/default countries return the .com endpoint."""
+    # US (default)
+    assert get_api_hostname("US") == "https://appapi.cp.dyson.com"
+    
+    # Other countries without dedicated endpoints
+    test_countries = ["GB", "DE", "FR", "CA", "JP", "KR", "IT", "ES"]
+    for country in test_countries:
+        result = get_api_hostname(country)
+        assert result == "https://appapi.cp.dyson.com", f"Failed for {country}"
+
+
+def test_get_api_hostname_edge_cases() -> None:
+    """Test edge cases for API hostname resolution."""
+    # Empty string
+    assert get_api_hostname("") == "https://appapi.cp.dyson.com"
+    
+    # Invalid/malformed country codes
+    invalid_codes = ["USA", "AUS", "123", "A", "ABC", "!@#", "XX"]
+    for invalid_code in invalid_codes:
+        result = get_api_hostname(invalid_code)
+        assert result == "https://appapi.cp.dyson.com", f"Failed for {invalid_code}"
+
+
+def test_get_api_hostname_case_sensitivity() -> None:
+    """Test that country code matching is case-sensitive."""
+    # Lowercase versions should fall back to default (exact match only)
+    assert get_api_hostname("au") == "https://appapi.cp.dyson.com"
+    assert get_api_hostname("nz") == "https://appapi.cp.dyson.com"
+    assert get_api_hostname("cn") == "https://appapi.cp.dyson.com"
+    
+    # Only uppercase should match regional endpoints
+    assert get_api_hostname("AU") == "https://appapi.cp.dyson.au"
+    assert get_api_hostname("NZ") == "https://appapi.cp.dyson.nz"
+    assert get_api_hostname("CN") == "https://appapi.cp.dyson.cn"
+
+
+def test_get_api_hostname_deterministic() -> None:
+    """Test that the function returns consistent results."""
+    test_inputs = ["AU", "US", "GB", "CN", "NZ", "XX"]
+    
+    for country in test_inputs:
+        result1 = get_api_hostname(country)
+        result2 = get_api_hostname(country)
+        assert result1 == result2, f"Function not deterministic for {country}"

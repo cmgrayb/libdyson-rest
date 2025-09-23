@@ -32,11 +32,9 @@ from .types import (
     PendingReleaseResponseDict,
     UserStatusResponseDict,
 )
+from .utils import get_api_hostname
 
 logger = logging.getLogger(__name__)
-
-# Dyson API hostname - this is an allowed static value
-DYSON_API_HOST = "https://appapi.cp.dyson.com"
 
 # Default headers required by the API
 DEFAULT_USER_AGENT = "android client"
@@ -133,7 +131,8 @@ class DysonClient:
             DysonAPIError: If API request fails
         """
         url = urljoin(
-            DYSON_API_HOST, "/v1/provisioningservice/application/Android/version"
+            get_api_hostname(self.country),
+            "/v1/provisioningservice/application/Android/version",
         )
 
         try:
@@ -172,7 +171,9 @@ class DysonClient:
         if not target_email:
             raise DysonAPIError("Email address is required")
 
-        url = urljoin(DYSON_API_HOST, "/v3/userregistration/email/userstatus")
+        url = urljoin(
+            get_api_hostname(self.country), "/v3/userregistration/email/userstatus"
+        )
         params = {"country": self.country}
         payload = {"email": target_email}
 
@@ -213,7 +214,7 @@ class DysonClient:
         if not target_email:
             raise DysonAPIError("Email address is required")
 
-        url = urljoin(DYSON_API_HOST, "/v3/userregistration/email/auth")
+        url = urljoin(get_api_hostname(self.country), "/v3/userregistration/email/auth")
         params = {"country": self.country, "culture": self.culture}
         payload = {"email": target_email}
 
@@ -266,7 +267,9 @@ class DysonClient:
         if not target_email or not target_password:
             raise DysonAuthError("Email and password are required for authentication")
 
-        url = urljoin(DYSON_API_HOST, "/v3/userregistration/email/verify")
+        url = urljoin(
+            get_api_hostname(self.country), "/v3/userregistration/email/verify"
+        )
         params = {"country": self.country, "culture": self.culture}
         payload = {
             "challengeId": challenge_id,
@@ -427,7 +430,7 @@ class DysonClient:
         if not self._auth_token:
             raise DysonAuthError("Must authenticate before getting devices")
 
-        url = urljoin(DYSON_API_HOST, "/v3/manifest")
+        url = urljoin(get_api_hostname(self.country), "/v3/manifest")
 
         try:
             response = self.session.get(url, timeout=self.timeout)
@@ -472,7 +475,7 @@ class DysonClient:
         if not self._auth_token:
             raise DysonAuthError("Must authenticate before getting IoT credentials")
 
-        url = urljoin(DYSON_API_HOST, "/v2/authorize/iot-credentials")
+        url = urljoin(get_api_hostname(self.country), "/v2/authorize/iot-credentials")
         payload = {"Serial": serial_number}
 
         try:
@@ -516,7 +519,8 @@ class DysonClient:
             )
 
         url = urljoin(
-            DYSON_API_HOST, f"/v1/assets/devices/{serial_number}/pendingrelease"
+            get_api_hostname(self.country),
+            f"/v1/assets/devices/{serial_number}/pendingrelease",
         )
 
         try:

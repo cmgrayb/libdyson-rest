@@ -618,3 +618,80 @@ class TestAsyncDysonClient:
         # Valid base64 but not valid encrypted data
         with pytest.raises(DysonAPIError, match="Failed to decrypt local credentials"):
             client.decrypt_local_credentials("dGVzdA==", "TEST-SERIAL-456")
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_regional_endpoint_australia(self, mock_get: AsyncMock) -> None:
+        """Test that Australian clients use AU endpoint."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = "1.0.0"
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(country="AU", email="test@example.com", password="password")
+        await client.provision()
+
+        # Verify the correct AU endpoint was called
+        mock_get.assert_called_once()
+        args, kwargs = mock_get.call_args
+        assert "appapi.cp.dyson.au" in args[0]
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_regional_endpoint_new_zealand(self, mock_get: AsyncMock) -> None:
+        """Test that New Zealand clients use NZ endpoint."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = "1.0.0"
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(country="NZ", email="test@example.com", password="password")
+        await client.provision()
+
+        # Verify the correct NZ endpoint was called
+        mock_get.assert_called_once()
+        args, kwargs = mock_get.call_args
+        assert "appapi.cp.dyson.nz" in args[0]
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_regional_endpoint_china(self, mock_get: AsyncMock) -> None:
+        """Test that Chinese clients use CN endpoint."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = "1.0.0"
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(country="CN", email="test@example.com", password="password")
+        await client.provision()
+
+        # Verify the correct CN endpoint was called
+        mock_get.assert_called_once()
+        args, kwargs = mock_get.call_args
+        assert "appapi.cp.dyson.cn" in args[0]
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_regional_endpoint_default_fallback(self, mock_get: AsyncMock) -> None:
+        """Test that unknown countries fall back to .com endpoint."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = "1.0.0"
+        mock_get.return_value = mock_response
+
+        # Test with various countries that should fall back to .com
+        test_countries = ["US", "GB", "DE", "CA", "JP"]
+        
+        for country in test_countries:
+            mock_get.reset_mock()
+            client = AsyncDysonClient(country=country, email="test@example.com", password="password")
+            await client.provision()
+
+            # Verify the default .com endpoint was called
+            mock_get.assert_called_once()
+            args, kwargs = mock_get.call_args
+            assert "appapi.cp.dyson.com" in args[0], f"Failed for country {country}"
+            await client.close()
