@@ -63,16 +63,19 @@ def test_safe_json_loads() -> None:
 
 
 def test_get_api_hostname_regional_endpoints() -> None:
-    """Test that known regional country codes return correct endpoints."""
-    assert get_api_hostname("AU") == "https://appapi.cp.dyson.au"
-    assert get_api_hostname("NZ") == "https://appapi.cp.dyson.nz"
+    """Test that known working regional country codes return correct endpoints."""
+    # Only CN is confirmed working as of Sep 2025
     assert get_api_hostname("CN") == "https://appapi.cp.dyson.cn"
 
 
 def test_get_api_hostname_default_fallback() -> None:
-    """Test that unknown/default countries return the .com endpoint."""
+    """Test that countries without working regional endpoints return the .com endpoint."""
     # US (default)
     assert get_api_hostname("US") == "https://appapi.cp.dyson.com"
+
+    # AU and NZ use the default endpoint
+    assert get_api_hostname("AU") == "https://appapi.cp.dyson.com"
+    assert get_api_hostname("NZ") == "https://appapi.cp.dyson.com"
 
     # Other countries without dedicated endpoints
     test_countries = ["GB", "DE", "FR", "CA", "JP", "KR", "IT", "ES"]
@@ -100,9 +103,11 @@ def test_get_api_hostname_case_sensitivity() -> None:
     assert get_api_hostname("nz") == "https://appapi.cp.dyson.com"
     assert get_api_hostname("cn") == "https://appapi.cp.dyson.com"
 
-    # Only uppercase should match regional endpoints
-    assert get_api_hostname("AU") == "https://appapi.cp.dyson.au"
-    assert get_api_hostname("NZ") == "https://appapi.cp.dyson.nz"
+    # AU/NZ use the default .com endpoint
+    assert get_api_hostname("AU") == "https://appapi.cp.dyson.com"
+    assert get_api_hostname("NZ") == "https://appapi.cp.dyson.com"
+
+    # Only CN has working regional endpoint
     assert get_api_hostname("CN") == "https://appapi.cp.dyson.cn"
 
 

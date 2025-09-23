@@ -12,6 +12,7 @@ This async version uses AsyncDysonClient for better performance in async environ
 import asyncio
 import json
 import logging
+import sys
 from getpass import getpass
 from typing import Any, Dict, Optional, Tuple
 
@@ -22,10 +23,33 @@ from libdyson_rest import (
     DysonConnectionError,
 )
 
-# Configure detailed logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+
+# Configure comprehensive debug logging
+def setup_debug_logging() -> None:
+    """Setup comprehensive debug logging for troubleshooting."""
+    # Root logger to DEBUG level
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        stream=sys.stdout,
+    )
+
+    # Enable debug logging for our library
+    logging.getLogger("libdyson_rest").setLevel(logging.DEBUG)
+
+    print("🔍 DEBUG LOGGING ENABLED")
+    print("📡 HTTP request/response details will be shown when debug=True is used")
+
+    # Reduce noise from other libraries
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+
+    print("🔍 DEBUG LOGGING ENABLED")
+    print("📡 HTTP request/response details will be shown")
+    print("🌐 Regional endpoint selection will be logged")
+    print("=" * 60)
+
+
+setup_debug_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -401,10 +425,23 @@ async def run_troubleshooting() -> None:
     troubleshooting_data = _initialize_troubleshooting_data()
 
     try:
-        # Initialize client and authenticate
+        # Initialize client and authenticate (with debug logging enabled)
         async with AsyncDysonClient(
-            email=email, password=password, country=country, culture=culture
+            email=email, password=password, country=country, culture=culture, debug=True
         ) as client:
+
+            # Show regional endpoint information
+            from libdyson_rest.utils import get_api_hostname
+
+            selected_endpoint = get_api_hostname(country)
+            print("🌐 Regional Endpoint Selection:")
+            print(f"   Country Code: {country}")
+            print(f"   Selected API: {selected_endpoint}")
+            print(f"   Culture/Locale: {culture}")
+            print()
+            logger.info(
+                f"Using regional endpoint: {selected_endpoint} for country: {country}"
+            )
 
             # Authentication steps
             print("📡 Step 1: Provisioning API access...")

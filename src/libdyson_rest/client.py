@@ -64,6 +64,7 @@ class DysonClient:
         culture: str = "en-US",
         timeout: int = 30,
         user_agent: str = DEFAULT_USER_AGENT,
+        debug: bool = False,
     ) -> None:
         """
         Initialize the Dyson client.
@@ -76,6 +77,7 @@ class DysonClient:
             culture: Locale/language code (IETF language code, e.g., 'en-US')
             timeout: Request timeout in seconds
             user_agent: User agent string for requests
+            debug: Enable detailed debug logging (includes HTTP requests/responses)
 
         Raises:
             ValueError: If country or culture format is invalid
@@ -102,9 +104,14 @@ class DysonClient:
         self.culture = culture
         self.timeout = timeout
         self.user_agent = user_agent
+        self.debug = debug
 
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": user_agent})
+
+        # Configure debug logging if enabled
+        if debug:
+            self._configure_debug_logging()
 
         # Authentication state
         self._auth_token: str | None = auth_token
@@ -115,6 +122,21 @@ class DysonClient:
         # If auth_token provided, set up session headers immediately
         if auth_token:
             self.session.headers.update({"Authorization": f"Bearer {auth_token}"})
+
+    def _configure_debug_logging(self) -> None:
+        """Configure detailed HTTP debug logging."""
+        import logging
+
+        # Enable debug logging for requests
+        logging.getLogger("urllib3.connectionpool").setLevel(logging.DEBUG)
+
+        # Configure requests logging to show request/response details
+        try:
+            import http.client as http_client
+
+            http_client.HTTPConnection.debuglevel = 1
+        except ImportError:
+            pass
 
     def provision(self) -> str:
         """
@@ -135,17 +157,39 @@ class DysonClient:
             "/v1/provisioningservice/application/Android/version",
         )
 
+        logger.debug(f"Provisioning API access for country {self.country} at {url}")
+
         try:
             response = self.session.get(url, timeout=self.timeout)
+
+            # Enhanced debug logging when debug mode is enabled
+            if self.debug:
+                logger.debug(f"🌐 Country: {self.country}")
+                logger.debug(f"📡 Request URL: {url}")
+                logger.debug(f"⏱️  Timeout: {self.timeout}s")
+                logger.debug(f"🔤 User-Agent: {self.user_agent}")
+                logger.debug(f"📥 Response Status: {response.status_code}")
+                logger.debug(f"📥 Response Headers: {dict(response.headers)}")
+
             response.raise_for_status()
         except requests.RequestException as e:
+            if self.debug:
+                logger.error(f"❌ Provisioning failed: {e}")
+                logger.error(f"❌ Request URL: {url}")
+                if hasattr(e, "response") and e.response is not None:
+                    logger.error(f"❌ Response status: {e.response.status_code}")
+                    logger.error(f"❌ Response text: {e.response.text[:500]}")
+            else:
+                logger.error(f"Failed to provision API access: {e}")
             raise DysonConnectionError(f"Failed to provision API access: {e}") from e
 
         try:
             version_data = response.json()
+            if self.debug:
+                logger.debug(f"📋 Response data: {version_data}")
             self._provisioned = True
             version = str(version_data) if version_data is not None else ""
-            logger.info(f"API provisioned successfully, version: {version}")
+            logger.debug(f"API provisioned successfully, version: {version}")
             return version
         except json.JSONDecodeError as e:
             raise DysonAPIError(f"Invalid JSON response from provision: {e}") from e

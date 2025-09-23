@@ -142,6 +142,8 @@ class TestDysonClient:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {"version": "1.0.0"}
+        mock_response.headers = {"Content-Type": "application/json"}
+        mock_response.status_code = 200
         mock_get.return_value = mock_response
 
         client = DysonClient(email="test@example.com", password="password")
@@ -356,10 +358,12 @@ class TestDysonClient:
 
     @patch("requests.Session.get")
     def test_regional_endpoint_australia(self, mock_get: Mock) -> None:
-        """Test that Australian clients use AU endpoint."""
+        """Test that Australian clients use the default .com endpoint."""
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {"version": "1.0.0"}
+        mock_response.headers = {"Content-Type": "application/json"}
+        mock_response.status_code = 200
         mock_get.return_value = mock_response
 
         client = DysonClient(
@@ -367,17 +371,19 @@ class TestDysonClient:
         )
         client.provision()
 
-        # Verify the correct AU endpoint was called
+        # Verify AU uses the default .com endpoint
         mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
-        assert "appapi.cp.dyson.au" in args[0]
+        assert "appapi.cp.dyson.com" in args[0]
         client.close()
 
     @patch("requests.Session.get")
     def test_regional_endpoint_new_zealand(self, mock_get: Mock) -> None:
-        """Test that New Zealand clients use NZ endpoint."""
+        """Test that New Zealand clients use the default .com endpoint."""
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
+        mock_response.headers = {"Content-Type": "application/json"}
+        mock_response.status_code = 200
         mock_response.json.return_value = {"version": "1.0.0"}
         mock_get.return_value = mock_response
 
@@ -386,10 +392,10 @@ class TestDysonClient:
         )
         client.provision()
 
-        # Verify the correct NZ endpoint was called
+        # Verify NZ uses the default .com endpoint
         mock_get.assert_called_once()
         args, kwargs = mock_get.call_args
-        assert "appapi.cp.dyson.nz" in args[0]
+        assert "appapi.cp.dyson.com" in args[0]
         client.close()
 
     @patch("requests.Session.get")
@@ -398,6 +404,8 @@ class TestDysonClient:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {"version": "1.0.0"}
+        mock_response.headers = {"Content-Type": "application/json"}
+        mock_response.status_code = 200
         mock_get.return_value = mock_response
 
         client = DysonClient(

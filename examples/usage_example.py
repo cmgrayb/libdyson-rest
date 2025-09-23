@@ -23,10 +23,8 @@ def basic_example() -> None:
     """Basic synchronous usage example with two-step authentication."""
     # Initialize client with credentials
     # The country parameter automatically determines the correct regional API endpoint:
-    # - AU: uses appapi.cp.dyson.au
-    # - NZ: uses appapi.cp.dyson.nz
     # - CN: uses appapi.cp.dyson.cn
-    # - All others (including US): use appapi.cp.dyson.com
+    # - All others (including US, AU, NZ, etc.): use appapi.cp.dyson.com
     client = DysonClient(
         email=os.getenv("DYSON_EMAIL", "your_email@example.com"),
         password=os.getenv("DYSON_PASSWORD", "your_password"),
