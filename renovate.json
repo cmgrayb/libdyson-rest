@@ -20,7 +20,11 @@
 
   "platformAutomerge": false,
   "automerge": false,
-  "gitIgnoredAuthors": ["Renovate Bot <bot@renovateapp.com>"],
+  "gitIgnoredAuthors": [
+    "Renovate Bot <bot@renovateapp.com>",
+    "41898282+github-actions[bot]@users.noreply.github.com",
+    "renovate@libdyson-rest.local"
+  ],
 
   "packageRules": [
     {
