@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "libdyson-rest"
-version = "0.7.1"
+version = "0.8.0b4"
 description = "Python library for interacting with Dyson devices through their official REST API"
 readme = "README.md"
 license = "MIT"
@@ -50,7 +50,7 @@ dev = [
     "isort==6.0.1",
     "pytest==8.4.2",
     "pytest-cov==6.2.1",
-    "pytest-asyncio==0.21.1",
+    "pytest-asyncio==0.26.0",
     "mypy==1.18.2",
     "bandit[toml]==1.8.0",
     "safety==4.0.4",

@@ -76,3 +76,38 @@ def safe_json_loads(data: str) -> Dict[str, Any]:
         return result if isinstance(result, dict) else {}
     except json.JSONDecodeError:
         return {}
+
+
+def get_api_hostname(country: str) -> str:
+    """
+    Determine the appropriate Dyson API hostname based on country code.
+
+    This function maps country codes to their respective regional API endpoints.
+    Currently only China (CN) has a dedicated regional endpoint.
+
+    Args:
+        country: ISO 3166-1 alpha-2 country code (e.g., 'US', 'CN', 'GB')
+
+    Returns:
+        The appropriate API hostname URL for the given country
+
+    Examples:
+        >>> get_api_hostname('CN')
+        'https://appapi.cp.dyson.cn'
+        >>> get_api_hostname('US')
+        'https://appapi.cp.dyson.com'
+        >>> get_api_hostname('GB')
+        'https://appapi.cp.dyson.com'
+
+    Note:
+        This function provides automatic regional endpoint resolution. Countries with
+        dedicated regional endpoints use their specific servers, while all others
+        use the default global endpoint.
+    """
+    # Regional endpoint mappings for countries with dedicated API servers
+    regional_endpoints = {
+        "CN": "https://appapi.cp.dyson.cn",  # China
+    }
+
+    # Return regional endpoint if available, otherwise default to .com
+    return regional_endpoints.get(country, "https://appapi.cp.dyson.com")
