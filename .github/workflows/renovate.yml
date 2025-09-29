@@ -37,11 +37,23 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Debug token configuration
+      run: |
+        echo "🔍 Debugging Renovate token configuration..."
+        if [ -n "${{ secrets.RENOVATE_TOKEN }}" ]; then
+          echo "✅ RENOVATE_TOKEN secret is available"
+          echo "🔑 Token length: $(echo '${{ secrets.RENOVATE_TOKEN }}' | wc -c) characters"
+        else
+          echo "❌ RENOVATE_TOKEN secret is not set - will use GITHUB_TOKEN"
+        fi
+        echo "📝 Repository: ${{ github.repository }}"
+        echo "🌿 Branch: ${{ github.ref }}"
+
     - name: Self-hosted Renovate
       uses: renovatebot/github-action@v40.3.2
       with:
-        # Use local token for self-hosted operation
-        token: ${{ secrets.GITHUB_TOKEN }}
+        # Use PAT for enhanced permissions (vulnerability alerts, etc.)
+        token: ${{ secrets.RENOVATE_TOKEN || secrets.GITHUB_TOKEN }}
         # Renovate configuration
         configurationFile: renovate.json
       env:
@@ -57,8 +69,6 @@ jobs:
 
         # Disable external services and reporting
         RENOVATE_DEPENDENCY_DASHBOARD_APPROVAL: false
-        RENOVATE_PR_HOURLY_LIMIT: 2
-        RENOVATE_PR_CONCURRENT_LIMIT: 3
 
         # Local-only security scanning (no external services)
         RENOVATE_OSV_VULNERABILITY_ALERTS: false
