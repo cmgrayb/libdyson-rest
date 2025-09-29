@@ -9,8 +9,6 @@
   ],
 
   "timezone": "UTC",
-  "prConcurrentLimit": 3,
-  "prHourlyLimit": 2,
 
   "commitMessagePrefix": "⬆️",
   "commitMessageTopic": "{{depName}}",
