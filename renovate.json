@@ -20,6 +20,7 @@
 
   "platformAutomerge": false,
   "automerge": false,
+  "gitIgnoredAuthors": ["Renovate Bot <bot@renovateapp.com>"],
 
   "packageRules": [
     {
