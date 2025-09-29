@@ -411,6 +411,27 @@ devices = client.get_devices()
 - **Country**: 2-letter uppercase ISO 3166-1 alpha-2 codes (e.g., "US", "GB", "DE")
 - **Culture**: 5-character IETF language codes (e.g., "en-US", "en-GB", "de-DE")
 
+### Regional API Endpoints
+
+The library automatically selects the appropriate Dyson API endpoint based on your country code:
+
+| Country Code | Region | API Endpoint |
+|--------------|--------|--------------|
+| `CN` | China | `https://appapi.cp.dyson.cn` |
+| All others | Default | `https://appapi.cp.dyson.com` |
+
+**Examples:**
+```python
+# Chinese users
+client = DysonClient(country="CN")  # Uses appapi.cp.dyson.cn
+
+# All other users (US, UK, AU, NZ, etc.)
+client = DysonClient(country="US")  # Uses appapi.cp.dyson.com (default)
+client = DysonClient(country="GB")  # Uses appapi.cp.dyson.com (default)
+```
+
+**Note**: Regional endpoint selection is automatic and requires no code changes. Simply specify the correct country code for your region, and the library will route requests to the appropriate API server.
+
 ## API Compliance
 
 This library implements the complete Dyson App API as documented in their OpenAPI specification:
@@ -454,10 +475,10 @@ pip install libdyson-rest
 pip install --pre libdyson-rest
 
 # Install specific version
-pip install libdyson-rest==0.3.0b1
+pip install libdyson-rest==0.7.0b1
 
 # Install from TestPyPI (alpha/dev versions)
-pip install -i https://test.pypi.org/simple/ libdyson-rest==0.3.0a1
+pip install -i https://test.pypi.org/simple/ libdyson-rest==0.7.0a1
 ```
 
 ### For Beta Testers
