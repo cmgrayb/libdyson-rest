@@ -62,7 +62,6 @@ jobs:
         RENOVATE_AUTODISCOVER: false
         RENOVATE_REPOSITORIES: '["${{ github.repository }}"]'
         RENOVATE_BASE_BRANCHES: '["main"]'
-        RENOVATE_GIT_AUTHOR: 'Renovate Bot <renovate@libdyson-rest.local>'
 
         # Override settings for manual dispatch
         RENOVATE_DRY_RUN: ${{ inputs.dry_run || false }}
