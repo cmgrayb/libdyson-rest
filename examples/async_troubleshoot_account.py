@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """
-Dyson Account Troubleshooting Script
+Dyson Account Troubleshooting Script (Async Version)
 
 This script performs comprehensive testing of a Dyson account connection
 and outputs all available API information for troubleshooting purposes.
 Combines authentication testing with detailed device and MQTT analysis.
+
+This async version uses AsyncDysonClient for better performance in async environments.
 """
 
+import asyncio
 import json
 import logging
 import sys
@@ -14,9 +17,9 @@ from getpass import getpass
 from typing import Any, Dict, Optional, Tuple
 
 from libdyson_rest import (
+    AsyncDysonClient,
     DysonAPIError,
     DysonAuthError,
-    DysonClient,
     DysonConnectionError,
 )
 
@@ -36,6 +39,12 @@ def setup_debug_logging() -> None:
 
     print("🔍 DEBUG LOGGING ENABLED")
     print("📡 HTTP request/response details will be shown when debug=True is used")
+
+    # Reduce noise from other libraries
+    logging.getLogger("asyncio").setLevel(logging.WARNING)
+
+    print("🔍 DEBUG LOGGING ENABLED")
+    print("📡 HTTP request/response details will be shown")
     print("🌐 Regional endpoint selection will be logged")
     print("=" * 60)
 
@@ -46,7 +55,7 @@ logger = logging.getLogger(__name__)
 
 def get_user_credentials() -> Tuple[Optional[str], Optional[str], str, str]:
     """Get user credentials for testing."""
-    print("🔧 Dyson Account Troubleshooting Tool")
+    print("🔧 Dyson Account Troubleshooting Tool (Async)")
     print("=" * 50)
     print("This tool will authenticate with your Dyson account and output")
     print("comprehensive API information for troubleshooting connection issues.\n")
@@ -82,7 +91,7 @@ def print_subsection(title: str) -> None:
 
 
 def output_authentication_info(
-    client: DysonClient, login_info: Any, user_status: Any
+    client: AsyncDysonClient, login_info: Any, user_status: Any
 ) -> Dict[str, Any]:
     """Output comprehensive authentication information."""
     print_section("AUTHENTICATION INFORMATION")
@@ -111,7 +120,9 @@ def output_authentication_info(
     return auth_info
 
 
-def analyze_device_details(device: Any, client: DysonClient) -> Dict[str, Any]:
+async def analyze_device_details(
+    device: Any, client: AsyncDysonClient
+) -> Dict[str, Any]:
     """Analyze and output comprehensive device information."""
     device_info = _initialize_device_info(device)
 
@@ -126,12 +137,12 @@ def analyze_device_details(device: Any, client: DysonClient) -> Dict[str, Any]:
         print("\n   ⚠️  No connected configuration available")
 
     # Analyze pending firmware releases
-    pending_release_info = _analyze_pending_firmware(device, client)
+    pending_release_info = await _analyze_pending_firmware(device, client)
     device_info["pending_firmware"] = pending_release_info
 
     # Analyze IoT credentials
     if device.connection_category.value != "nonConnected":
-        iot_info = _analyze_iot_credentials(device, client)
+        iot_info = await _analyze_iot_credentials(device, client)
         device_info["iot_credentials"] = iot_info
 
         if (
@@ -185,7 +196,9 @@ def _print_basic_device_info(device: Any) -> None:
         print(f"      Variant: {device.variant}")
 
 
-def _analyze_device_configuration(device: Any, client: DysonClient) -> Dict[str, Any]:
+def _analyze_device_configuration(
+    device: Any, client: AsyncDysonClient
+) -> Dict[str, Any]:
     """Analyze device connected configuration."""
     print("\n   🌐 Connected Configuration:")
     config = device.connected_configuration
@@ -246,12 +259,14 @@ def _analyze_device_configuration(device: Any, client: DysonClient) -> Dict[str,
     return config_info
 
 
-def _analyze_pending_firmware(device: Any, client: DysonClient) -> Dict[str, Any]:
+async def _analyze_pending_firmware(
+    device: Any, client: AsyncDysonClient
+) -> Dict[str, Any]:
     """Analyze pending firmware releases for the device."""
     print("\n   🔄 Pending Firmware Information:")
 
     try:
-        pending_release = client.get_pending_release(device.serial_number)
+        pending_release = await client.get_pending_release(device.serial_number)
 
         pending_info = {
             "version": pending_release.version,
@@ -290,11 +305,11 @@ def _analyze_pending_firmware(device: Any, client: DysonClient) -> Dict[str, Any
         }
 
 
-def _analyze_iot_credentials(device: Any, client: DysonClient) -> Any:
+async def _analyze_iot_credentials(device: Any, client: AsyncDysonClient) -> Any:
     """Analyze IoT credentials for the device."""
     try:
         print("\n   ☁️  AWS IoT Credentials:")
-        iot_data = client.get_iot_credentials(device.serial_number)
+        iot_data = await client.get_iot_credentials(device.serial_number)
 
         iot_info = {
             "endpoint": iot_data.endpoint,
@@ -364,7 +379,7 @@ def _analyze_cloud_mqtt_config(iot_info: Dict[str, Any]) -> None:
 
 def _analyze_local_mqtt_config(device: Any, device_info: Dict[str, Any]) -> None:
     """Analyze local MQTT connection configuration."""
-    print("\n   � Local MQTT Connection Parameters:")
+    print("\n   🏠 Local MQTT Connection Parameters:")
     print(f"      Host: {device.name}.local (or device IP)")
     print("      MQTT Port: 1883")
     print("      MQTT+TLS Port: 8883")
@@ -398,7 +413,7 @@ def _analyze_local_mqtt_config(device: Any, device_info: Dict[str, Any]) -> None
     device_info["mqtt_analysis"]["local_mqtt"] = local_mqtt_info
 
 
-def run_troubleshooting() -> None:
+async def run_troubleshooting() -> None:
     """Run the complete troubleshooting analysis."""
     # Get credentials
     email, password, country, culture = get_user_credentials()
@@ -411,7 +426,7 @@ def run_troubleshooting() -> None:
 
     try:
         # Initialize client and authenticate (with debug logging enabled)
-        with DysonClient(
+        async with AsyncDysonClient(
             email=email, password=password, country=country, culture=culture, debug=True
         ) as client:
 
@@ -430,14 +445,14 @@ def run_troubleshooting() -> None:
 
             # Authentication steps
             print("📡 Step 1: Provisioning API access...")
-            version = client.provision()
+            version = await client.provision()
             print(f"✅ API provisioned successfully. Version: {version}")
 
-            user_status = _verify_account_status(client)
+            user_status = await _verify_account_status(client)
             if not user_status:
                 return
 
-            login_info = _complete_authentication(client, email)
+            login_info = await _complete_authentication(client, email)
             if not login_info:
                 return
 
@@ -448,7 +463,7 @@ def run_troubleshooting() -> None:
             troubleshooting_data["authentication"] = auth_info
 
             # Device analysis
-            _analyze_all_devices(client, troubleshooting_data)
+            await _analyze_all_devices(client, troubleshooting_data)
 
             # Output results
             _output_final_summary(troubleshooting_data)
@@ -486,10 +501,10 @@ def _initialize_troubleshooting_data() -> Dict[str, Any]:
     }
 
 
-def _verify_account_status(client: DysonClient) -> Any:
+async def _verify_account_status(client: AsyncDysonClient) -> Any:
     """Verify account status and return user status if active."""
     print("\n👤 Step 2: Checking account status...")
-    user_status = client.get_user_status()
+    user_status = await client.get_user_status()
     print(f"✅ Account status: {user_status.account_status.value}")
 
     if user_status.account_status.value != "ACTIVE":
@@ -499,10 +514,10 @@ def _verify_account_status(client: DysonClient) -> Any:
     return user_status
 
 
-def _complete_authentication(client: DysonClient, email: str) -> Any:
+async def _complete_authentication(client: AsyncDysonClient, email: str) -> Any:
     """Complete the authentication process with OTP."""
     print("\n🔐 Step 3: Beginning login process...")
-    challenge = client.begin_login()
+    challenge = await client.begin_login()
     print("✅ Login challenge received.")
 
     print(f"\n📧 Step 4: OTP sent to {email}")
@@ -511,17 +526,17 @@ def _complete_authentication(client: DysonClient, email: str) -> Any:
         print("❌ OTP code is required")
         return None
 
-    login_info = client.complete_login(str(challenge.challenge_id), otp_code)
+    login_info = await client.complete_login(str(challenge.challenge_id), otp_code)
     print("✅ Authentication completed successfully.")
     return login_info
 
 
-def _analyze_all_devices(
-    client: DysonClient, troubleshooting_data: Dict[str, Any]
+async def _analyze_all_devices(
+    client: AsyncDysonClient, troubleshooting_data: Dict[str, Any]
 ) -> None:
     """Analyze all devices on the account."""
     print_section("DEVICE ANALYSIS")
-    devices = client.get_devices()
+    devices = await client.get_devices()
     print(f"Found {len(devices)} device(s) on account\n")
 
     troubleshooting_data["summary"]["total_devices"] = len(devices)
@@ -531,7 +546,7 @@ def _analyze_all_devices(
         print(f"Device {i} of {len(devices)}")
         print("─" * 60)
 
-        device_info = analyze_device_details(device, client)
+        device_info = await analyze_device_details(device, client)
         troubleshooting_data["devices"].append(device_info)
 
         # Update summary counters
@@ -581,18 +596,18 @@ def _output_final_summary(troubleshooting_data: Dict[str, Any]) -> None:
 
     troubleshooting_data["timestamp"] = datetime.datetime.now().isoformat()
 
-    filename = f"dyson_troubleshooting_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    filename = f"dyson_async_troubleshooting_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(filename, "w") as f:
         json.dump(troubleshooting_data, f, indent=2, default=str)
 
     print(f"\n💾 Detailed troubleshooting data exported to: {filename}")
-    print("\n🎉 Troubleshooting analysis complete.")
+    print("\n🎉 Async troubleshooting analysis complete.")
 
 
-def main() -> None:
+async def main() -> None:
     """Main entry point."""
     try:
-        run_troubleshooting()
+        await run_troubleshooting()
     except KeyboardInterrupt:
         print("\n❌ Cancelled by user")
     except Exception as e:
@@ -600,4 +615,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
