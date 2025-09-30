@@ -22,6 +22,8 @@
   "automerge": false,
   "gitIgnoredAuthors": [
     "Renovate Bot <bot@renovateapp.com>",
+    "Renovate Bot <renovate@whitesourcesoftware.com>",
+    "renovate[bot] <29139614+renovate[bot]@users.noreply.github.com>",
     "41898282+github-actions[bot]@users.noreply.github.com",
     "renovate@libdyson-rest.local",
     "79777799+cmgrayb@users.noreply.github.com",
