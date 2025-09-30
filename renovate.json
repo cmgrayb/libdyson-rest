@@ -36,6 +36,18 @@
 
   "packageRules": [
     {
+      "matchDatasources": ["github-runners"],
+      "enabled": false,
+      "description": "Ignore GitHub runner version updates (ubuntu-latest, etc.)"
+    },
+    {
+      "matchDatasources": ["github-releases"],
+      "matchDepTypes": ["uses-with"],
+      "matchCurrentValue": "/^\\$\\{\\{.*\\}\\}$/",
+      "enabled": false,
+      "description": "Ignore GitHub Actions matrix variables"
+    },
+    {
       "matchManagers": ["pip_requirements", "pep621"],
       "matchFileNames": ["requirements-dev.txt", "pyproject.toml"],
       "groupName": "development dependencies",
