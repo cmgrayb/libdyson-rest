@@ -27,6 +27,7 @@ permissions:
   contents: write
   issues: write
   pull-requests: write
+  statuses: write
 
 jobs:
   renovate:
@@ -35,7 +36,9 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
+      with:
+        fetch-depth: 0  # Fetch full history for better Git state detection
 
     - name: Debug token configuration
       run: |
@@ -50,7 +53,7 @@ jobs:
         echo "🌿 Branch: ${{ github.ref }}"
 
     - name: Self-hosted Renovate
-      uses: renovatebot/github-action@v40.3.6
+      uses: renovatebot/github-action@v43.0.13
       with:
         # Use PAT for enhanced permissions (vulnerability alerts, etc.)
         token: ${{ secrets.RENOVATE_TOKEN || secrets.GITHUB_TOKEN }}
@@ -96,7 +99,7 @@ jobs:
 
     - name: Create summary comment
       if: github.event_name == 'workflow_dispatch'
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       with:
         script: |
           // Create a summary of the Renovate run for manual dispatches
@@ -140,7 +143,7 @@ jobs:
 
     steps:
     - name: Check for quality tool PRs
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       with:
         script: |
           // Look for recently created Renovate PRs that update quality tools
