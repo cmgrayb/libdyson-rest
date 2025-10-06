@@ -32,11 +32,9 @@ from .types import (
     PendingReleaseResponseDict,
     UserStatusResponseDict,
 )
+from .utils import get_api_hostname
 
 logger = logging.getLogger(__name__)
-
-# Dyson API hostname - this is an allowed static value
-DYSON_API_HOST = "https://appapi.cp.dyson.com"
 
 # Default headers required by the API
 DEFAULT_USER_AGENT = "android client"
@@ -68,6 +66,7 @@ class AsyncDysonClient:
         culture: str = "en-US",
         timeout: int = 30,
         user_agent: str = DEFAULT_USER_AGENT,
+        debug: bool = False,
     ) -> None:
         """
         Initialize the async Dyson client.
@@ -80,6 +79,7 @@ class AsyncDysonClient:
             culture: Locale/language code (IETF language code, e.g., 'en-US')
             timeout: Request timeout in seconds
             user_agent: User agent string for requests
+            debug: Enable detailed debug logging (includes HTTP requests/responses)
 
         Raises:
             ValueError: If country or culture format is invalid
@@ -106,9 +106,14 @@ class AsyncDysonClient:
         self.culture = culture
         self.timeout = timeout
         self.user_agent = user_agent
+        self.debug = debug
 
         # Build headers
         headers = {"User-Agent": user_agent}
+
+        # Configure debug logging if enabled
+        if debug:
+            self._configure_debug_logging()
 
         # Authentication state
         self._auth_token: str | None = auth_token
@@ -123,6 +128,13 @@ class AsyncDysonClient:
         # If auth_token provided, add it to headers
         if auth_token:
             self._base_headers["Authorization"] = f"Bearer {auth_token}"
+
+    def _configure_debug_logging(self) -> None:
+        """Configure detailed HTTP debug logging."""
+        import logging
+
+        # Enable debug logging for httpx
+        logging.getLogger("httpx").setLevel(logging.DEBUG)
 
     async def _get_client(self) -> httpx.AsyncClient:
         """
@@ -165,23 +177,50 @@ class AsyncDysonClient:
             DysonAPIError: If API request fails
         """
         url = urljoin(
-            DYSON_API_HOST, "/v1/provisioningservice/application/Android/version"
+            get_api_hostname(self.country),
+            "/v1/provisioningservice/application/Android/version",
         )
+
+        logger.debug(f"Provisioning API access for country {self.country} at {url}")
 
         try:
             client = await self._get_client()
             response = await client.get(url)
+
+            # Enhanced debug logging when debug mode is enabled
+            if self.debug:
+                logger.debug(f"🌐 Country: {self.country}")
+                logger.debug(f"📡 Request URL: {url}")
+                logger.debug(f"⏱️  Timeout: {self.timeout}s")
+                logger.debug(f"🔤 User-Agent: {self.user_agent}")
+                logger.debug(f"📥 Response Status: {response.status_code}")
+                logger.debug(f"📥 Response Headers: {dict(response.headers)}")
+
             response.raise_for_status()
         except httpx.RequestError as e:
+            if self.debug:
+                logger.error(f"❌ Provisioning failed (Request Error): {e}")
+                logger.error(f"❌ Request URL: {url}")
+            else:
+                logger.error(f"Failed to provision API access: {e}")
             raise DysonConnectionError(f"Failed to provision API access: {e}") from e
         except httpx.HTTPStatusError as e:
+            if self.debug:
+                logger.error(f"❌ Provisioning failed (HTTP Status Error): {e}")
+                logger.error(f"❌ Request URL: {url}")
+                logger.error(f"❌ Response status: {e.response.status_code}")
+                logger.error(f"❌ Response text: {e.response.text[:500]}")
+            else:
+                logger.error(f"Failed to provision API access: {e}")
             raise DysonConnectionError(f"Failed to provision API access: {e}") from e
 
         try:
             version_data = response.json()
+            if self.debug:
+                logger.debug(f"📋 Response data: {version_data}")
             self._provisioned = True
             version = str(version_data) if version_data is not None else ""
-            logger.info(f"API provisioned successfully, version: {version}")
+            logger.debug(f"API provisioned successfully, version: {version}")
             return version
         except (ValueError, TypeError) as e:
             raise DysonAPIError(f"Invalid JSON response from provision: {e}") from e
@@ -205,7 +244,9 @@ class AsyncDysonClient:
         if not target_email:
             raise DysonAuthError("Email required for user status check")
 
-        url = urljoin(DYSON_API_HOST, "/v3/userregistration/email/userstatus")
+        url = urljoin(
+            get_api_hostname(self.country), "/v3/userregistration/email/userstatus"
+        )
         params = {
             "country": self.country,
             "culture": self.culture,
@@ -252,7 +293,7 @@ class AsyncDysonClient:
         if not target_email:
             raise DysonAuthError("Email required for login")
 
-        url = urljoin(DYSON_API_HOST, "/v3/userregistration/email/auth")
+        url = urljoin(get_api_hostname(self.country), "/v3/userregistration/email/auth")
         params = {"country": self.country, "culture": self.culture}
         payload = {"email": target_email}
 
@@ -318,7 +359,9 @@ class AsyncDysonClient:
         if not target_email or not target_password:
             raise DysonAuthError("Email and password are required for authentication")
 
-        url = urljoin(DYSON_API_HOST, "/v3/userregistration/email/verify")
+        url = urljoin(
+            get_api_hostname(self.country), "/v3/userregistration/email/verify"
+        )
         params = {"country": self.country, "culture": self.culture}
         payload = {
             "challengeId": challenge_id,
@@ -455,7 +498,7 @@ class AsyncDysonClient:
         if not self._auth_token:
             raise DysonAuthError("Must authenticate before getting devices")
 
-        url = urljoin(DYSON_API_HOST, "/v3/manifest")
+        url = urljoin(get_api_hostname(self.country), "/v3/manifest")
 
         try:
             client = await self._get_client()
@@ -499,7 +542,7 @@ class AsyncDysonClient:
         if not self._auth_token:
             raise DysonAuthError("Must authenticate before getting IoT credentials")
 
-        url = urljoin(DYSON_API_HOST, "/v2/authorize/iot-credentials")
+        url = urljoin(get_api_hostname(self.country), "/v2/authorize/iot-credentials")
         payload = {"Serial": serial_number}
 
         try:
@@ -542,7 +585,8 @@ class AsyncDysonClient:
             )
 
         url = urljoin(
-            DYSON_API_HOST, f"/v1/assets/devices/{serial_number}/pendingrelease"
+            get_api_hostname(self.country),
+            f"/v1/assets/devices/{serial_number}/pendingrelease",
         )
 
         try:

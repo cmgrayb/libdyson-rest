@@ -110,6 +110,48 @@ python troubleshoot_account.py
 
 **Note**: This script requires real Dyson account credentials and outputs sensitive information for diagnostic purposes. See `TROUBLESHOOTING.md` for detailed usage guide.
 
+### 6. `async_troubleshoot_account.py`
+**Purpose**: Asynchronous version of the comprehensive diagnostic tool, designed for async environments.
+
+**What it demonstrates**:
+- All features from `troubleshoot_account.py` using async/await patterns
+- AsyncDysonClient usage for better performance in async environments
+- Proper async context management with `async with`
+- Concurrent device analysis capabilities
+- Home Assistant integration compatibility
+
+**Usage**:
+```bash
+cd examples
+python async_troubleshoot_account.py
+```
+
+**Key Features**:
+- Same comprehensive diagnostics as the synchronous version
+- Optimized for async frameworks like Home Assistant
+- Non-blocking I/O operations for better performance
+- Proper resource management with async context managers
+- Identical output format to `troubleshoot_account.py`
+
+**Note**: This script provides the same functionality as `troubleshoot_account.py` but using async patterns. Use this version when integrating with async applications or when you need better performance with multiple devices.
+
+### 7. `async_usage_example.py`
+**Purpose**: Basic async usage demonstration showing authentication and device listing.
+
+**What it demonstrates**:
+- AsyncDysonClient usage with async/await patterns
+- Async authentication flow with OTP
+- Getting user account information asynchronously
+- Async device enumeration
+- Proper async context management
+- Error handling in async environments
+
+**Usage**:
+```bash
+cd examples
+python async_usage_example.py
+```
+
 ## Prerequisites
 
 Before running these examples:
@@ -157,6 +199,36 @@ try:
 
 finally:
     client.close()
+```
+
+## Async Usage Pattern
+
+For async environments (like Home Assistant), use this pattern:
+
+```python
+import asyncio
+from libdyson_rest import AsyncDysonClient
+
+async def main():
+    # Use async context manager
+    async with AsyncDysonClient(
+        email="your.email@example.com",
+        password="your_password"
+    ) as client:
+        # Authenticate asynchronously
+        challenge = await client.begin_login()
+        otp_code = input("Enter OTP from email: ")
+        login_info = await client.complete_login(
+            str(challenge.challenge_id),
+            otp_code
+        )
+
+        # Use authenticated client
+        devices = await client.get_devices()
+        # ... do something with devices
+
+# Run async function
+asyncio.run(main())
 ```
 
 ## Environment Variables

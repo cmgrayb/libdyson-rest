@@ -22,10 +22,13 @@ logger = logging.getLogger(__name__)
 def basic_example() -> None:
     """Basic synchronous usage example with two-step authentication."""
     # Initialize client with credentials
+    # The country parameter automatically determines the correct regional API endpoint:
+    # - CN: uses appapi.cp.dyson.cn
+    # - All others (including US, AU, NZ, etc.): use appapi.cp.dyson.com
     client = DysonClient(
         email=os.getenv("DYSON_EMAIL", "your_email@example.com"),
         password=os.getenv("DYSON_PASSWORD", "your_password"),
-        country="US",  # 2-letter ISO country code
+        country="US",  # 2-letter ISO country code (determines API endpoint)
         culture="en-US",  # Language/locale code
         timeout=30,
     )
@@ -184,18 +187,95 @@ def main() -> None:
     # basic_example()
     logger.info("(Commented out - requires user input for OTP)")
 
-    logger.info("\\n2. Context Manager Example:")
+    logger.info("\n2. Context Manager Example:")
     context_manager_example()
 
-    logger.info("\\n3. Step-by-Step Authentication Demo:")
+    logger.info("\n3. Step-by-Step Authentication Demo:")
     step_by_step_auth_example()
 
-    logger.info("\\n=== Examples Complete ===")
-    logger.info("\\nNOTE: The Dyson API requires two-step authentication:")
+    logger.info("\n4. Regional Endpoint Example:")
+    regional_endpoint_example()
+
+    logger.info("\n=== Examples Complete ===")
+    logger.info("\nNOTE: The Dyson API requires two-step authentication:")
     logger.info("1. Call begin_login() to get a challenge ID")
     logger.info("2. Check your email for an OTP code")
     logger.info("3. Call complete_login() with the challenge ID and OTP code")
     logger.info("4. Use the returned bearer token for subsequent API calls")
+
+
+def regional_endpoint_example() -> None:
+    """Example demonstrating regional endpoint selection."""
+    logger.info("Regional Endpoint Selection Examples:")
+    logger.info("=" * 50)
+
+    # Examples of different regional endpoints
+    regional_examples = [
+        ("AU", "Australia", "appapi.cp.dyson.au"),
+        ("NZ", "New Zealand", "appapi.cp.dyson.nz"),
+        ("CN", "China", "appapi.cp.dyson.cn"),
+        ("US", "United States", "appapi.cp.dyson.com"),
+        ("GB", "United Kingdom", "appapi.cp.dyson.com (fallback)"),
+        ("DE", "Germany", "appapi.cp.dyson.com (fallback)"),
+    ]
+
+    for country_code, country_name, endpoint in regional_examples:
+        logger.info(f"{country_code} ({country_name}): {endpoint}")
+
+    logger.info("\nExample clients for different regions:")
+
+    # Australian client
+    logger.info("\n--- Australian Client ---")
+    aus_client = DysonClient(
+        email="user@example.com.au",
+        password="password",
+        country="AU",  # Will use appapi.cp.dyson.au
+        culture="en-AU",
+        timeout=30,
+    )
+    logger.info(f"AU client configured for region: {aus_client.country}")
+    aus_client.close()
+
+    # New Zealand client
+    logger.info("\n--- New Zealand Client ---")
+    nz_client = DysonClient(
+        email="user@example.co.nz",
+        password="password",
+        country="NZ",  # Will use appapi.cp.dyson.nz
+        culture="en-NZ",
+        timeout=30,
+    )
+    logger.info(f"NZ client configured for region: {nz_client.country}")
+    nz_client.close()
+
+    # Chinese client
+    logger.info("\n--- Chinese Client ---")
+    cn_client = DysonClient(
+        email="user@example.com.cn",
+        password="password",
+        country="CN",  # Will use appapi.cp.dyson.cn
+        culture="zh-CN",
+        timeout=30,
+    )
+    logger.info(f"CN client configured for region: {cn_client.country}")
+    cn_client.close()
+
+    # Default/fallback example
+    logger.info("\n--- Default (US/Other) Client ---")
+    default_client = DysonClient(
+        email="user@example.com",
+        password="password",
+        country="US",  # Will use appapi.cp.dyson.com (default)
+        culture="en-US",
+        timeout=30,
+    )
+    logger.info(f"Default client configured for region: {default_client.country}")
+    default_client.close()
+
+    logger.info(
+        "\nNOTE: Regional endpoint selection is automatic based on country code."
+    )
+    logger.info("No code changes needed - just specify the correct country parameter!")
 
 
 if __name__ == "__main__":
