@@ -182,13 +182,19 @@ class Device:
             )
             connected_config = ConnectedConfiguration.from_dict(config_dict)
 
+        # Handle null/missing names with fallback
+        device_name = safe_get_optional_str(validated_data, "name")
+        if not device_name:
+            serial_number = safe_get_str(validated_data, "serialNumber")
+            device_name = f"Dyson {serial_number}"
+
         return cls(
             category=DeviceCategory(safe_get_str(validated_data, "category")),
             connection_category=ConnectionCategory(
                 safe_get_str(validated_data, "connectionCategory")
             ),
             model=safe_get_optional_str(validated_data, "model"),
-            name=safe_get_str(validated_data, "name"),
+            name=device_name,
             serial_number=safe_get_str(validated_data, "serialNumber"),
             type=safe_get_str(validated_data, "type"),
             variant=safe_get_optional_str(validated_data, "variant"),
