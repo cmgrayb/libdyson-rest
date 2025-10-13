@@ -60,7 +60,7 @@ class DeviceResponseDict(TypedDict):
     """Type definition for device information in API response."""
 
     serialNumber: Required[str]
-    name: Required[str]
+    name: str | None  # Can be null in API responses
     model: Required[str]
     type: Required[str]
     category: Required[str]
