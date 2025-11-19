@@ -587,6 +587,67 @@ class DysonClient:
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid pending release response: {e}") from e
 
+    def trigger_firmware_update(self, serial_number: str) -> bool:
+        """
+        Trigger a firmware update for a specific device.
+
+        This method initiates a firmware update process for the device. The device
+        must have a pending firmware release available for the update to succeed.
+
+        Args:
+            serial_number: Device serial number
+
+        Returns:
+            True if firmware update was successfully triggered
+
+        Raises:
+            DysonAuthError: If not authenticated
+            DysonConnectionError: If connection fails
+            DysonAPIError: If API request fails
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before triggering firmware update")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/assets/devices/{serial_number}/pendingrelease",
+        )
+
+        # Add headers that match the API specification
+        headers = {
+            "cache-control": "no-cache",
+            "content-length": "0",
+        }
+
+        try:
+            response = self.session.post(url, headers=headers, timeout=self.timeout)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            elif (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 404
+            ):
+                raise DysonAPIError(
+                    f"Device {serial_number} not found or no pending firmware update available"
+                ) from e
+            raise DysonConnectionError(f"Failed to trigger firmware update: {e}") from e
+
+        # API returns 204 No Content on success
+        if response.status_code == 204:
+            logger.info(
+                f"Firmware update triggered successfully for device {serial_number}"
+            )
+            return True
+        else:
+            raise DysonAPIError(f"Unexpected response status: {response.status_code}")
+
     def decrypt_local_credentials(
         self, encrypted_password: str, serial_number: str
     ) -> str:
