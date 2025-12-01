@@ -399,7 +399,6 @@ class TestAsyncDysonClient:
             ) as mock_async_post,
             patch("libdyson_rest.client.requests.Session.post") as mock_sync_post,
         ):
-
             # Configure mock responses
             mock_response = Mock()
             mock_response.json.return_value = {
@@ -537,7 +536,7 @@ class TestAsyncDysonClient:
         padded_data = json_data.ljust((len(json_data) + 15) // 16 * 16, "\0")
 
         # Use the same encryption method as the real implementation
-        aes_key = bytes([i for i in range(1, 33)])  # 1,2,3,...,32
+        aes_key = bytes(range(1, 33))  # 1,2,3,...,32
         iv = bytes(16)  # Zero-filled IV
 
         # Encrypt the test data
@@ -575,7 +574,7 @@ class TestAsyncDysonClient:
         padded_data = json_data.ljust((len(json_data) + 15) // 16 * 16, "\0")
 
         # Use the same encryption method as the real implementation
-        aes_key = bytes([i for i in range(1, 33)])  # 1,2,3,...,32
+        aes_key = bytes(range(1, 33))  # 1,2,3,...,32
         iv = bytes(16)  # Zero-filled IV
 
         # Encrypt the test data
@@ -614,7 +613,8 @@ class TestAsyncDysonClient:
             client.decrypt_local_credentials("invalid_base64!", "TEST-SERIAL-123")
 
     def test_decrypt_local_credentials_invalid_encrypted_data(self) -> None:
-        """Test decrypt_local_credentials with valid base64 but invalid encrypted data."""
+        """Test decrypt_local_credentials with valid base64 but invalid
+        encrypted data."""
         client = AsyncDysonClient()
 
         # Valid base64 but not valid encrypted data
@@ -713,3 +713,136 @@ class TestAsyncDysonClient:
             args, kwargs = mock_get.call_args
             assert "appapi.cp.dyson.com" in args[0], f"Failed for country {country}"
             await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.post")
+    @pytest.mark.asyncio
+    async def test_trigger_firmware_update_success(self, mock_post: AsyncMock) -> None:
+        """Test successful firmware update trigger."""
+        # Mock 204 No Content response
+        mock_response = Mock()
+        mock_response.status_code = 204
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="test_token")
+
+        result = await client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        assert result is True
+
+        # Verify correct URL was called
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        assert "/v1/assets/devices/MOCK-TEST-SN12345/pendingrelease" in args[0]
+
+        # Verify headers include required cache-control and content-length
+        assert "headers" in kwargs
+        headers = kwargs["headers"]
+        assert headers["cache-control"] == "no-cache"
+        assert headers["content-length"] == "0"
+
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_trigger_firmware_update_not_authenticated(self) -> None:
+        """Test firmware update trigger fails without authentication."""
+        client = AsyncDysonClient()
+
+        with pytest.raises(
+            DysonAuthError,
+            match="Must authenticate before triggering firmware update",
+        ):
+            await client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.post")
+    @pytest.mark.asyncio
+    async def test_trigger_firmware_update_401_error(
+        self, mock_post: AsyncMock
+    ) -> None:
+        """Test firmware update trigger handles 401 authentication errors."""
+        import httpx
+
+        # Mock 401 response
+        mock_response = Mock()
+        mock_response.status_code = 401
+        mock_error = httpx.HTTPStatusError(
+            "Unauthorized", request=Mock(), response=mock_response
+        )
+        mock_post.side_effect = mock_error
+
+        client = AsyncDysonClient(auth_token="expired_token")
+
+        with pytest.raises(
+            DysonAuthError, match="Authentication token expired or invalid"
+        ):
+            await client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.post")
+    @pytest.mark.asyncio
+    async def test_trigger_firmware_update_404_error(
+        self, mock_post: AsyncMock
+    ) -> None:
+        """Test firmware update trigger handles 404 device not found errors."""
+        import httpx
+
+        # Mock 404 response
+        mock_response = Mock()
+        mock_response.status_code = 404
+        mock_error = httpx.HTTPStatusError(
+            "Not Found", request=Mock(), response=mock_response
+        )
+        mock_post.side_effect = mock_error
+
+        client = AsyncDysonClient(auth_token="test_token")
+
+        with pytest.raises(
+            DysonAPIError,
+            match=(
+                "Device MOCK-TEST-SN12345 not found or no pending firmware update "
+                "available"
+            ),
+        ):
+            await client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.post")
+    @pytest.mark.asyncio
+    async def test_trigger_firmware_update_connection_error(
+        self, mock_post: AsyncMock
+    ) -> None:
+        """Test firmware update trigger handles connection errors."""
+        import httpx
+
+        mock_post.side_effect = httpx.RequestError("Connection failed")
+
+        client = AsyncDysonClient(auth_token="test_token")
+
+        with pytest.raises(
+            DysonConnectionError, match="Failed to trigger firmware update"
+        ):
+            await client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.post")
+    @pytest.mark.asyncio
+    async def test_trigger_firmware_update_unexpected_status(
+        self, mock_post: AsyncMock
+    ) -> None:
+        """Test firmware update trigger handles unexpected response status."""
+        mock_response = Mock()
+        mock_response.status_code = 200  # Unexpected, should be 204
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="test_token")
+
+        with pytest.raises(DysonAPIError, match="Unexpected response status: 200"):
+            await client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        await client.close()

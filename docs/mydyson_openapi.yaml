@@ -305,6 +305,49 @@ paths:
               example:
                 version: 438MPF.00.01.007.0002
                 pushed: false
+    post:
+      summary: POST pendingrelease
+      description: Trigger a firmware update for the device
+      parameters:
+        - name: authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            format: bearer
+          description: Bearer token for authentication
+        - name: cache-control
+          in: header
+          required: false
+          schema:
+            type: string
+            default: no-cache
+        - name: user-agent
+          in: header
+          required: false
+          schema:
+            type: string
+            default: DysonLink/205298 CFNetwork/3826.600.41 Darwin/24.6.0
+      responses:
+        '204':
+          description: Firmware update triggered successfully
+          headers:
+            x-amzn-requestid:
+              schema:
+                type: string
+              description: Amazon request ID
+            x-amz-apigw-id:
+              schema:
+                type: string
+              description: API Gateway ID
+            x-amzn-trace-id:
+              schema:
+                type: string
+              description: Amazon trace ID
+            cf-ray:
+              schema:
+                type: string
+              description: Cloudflare ray ID
   /v1/sfmc/details:
     get:
       summary: GET details

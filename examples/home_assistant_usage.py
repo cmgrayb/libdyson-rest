@@ -54,7 +54,6 @@ class DysonDeviceManager:
                 country=self.country,
                 debug=self.debug,  # Enable detailed HTTP logging when debugging
             ) as client:
-
                 _LOGGER.info(
                     "Setting up Dyson integration for country: %s", self.country
                 )
@@ -96,7 +95,6 @@ class DysonDeviceManager:
                 country=self.country,
                 debug=self.debug,
             ) as client:
-
                 _LOGGER.info(
                     "Setting up Dyson integration (sync) for country: %s", self.country
                 )

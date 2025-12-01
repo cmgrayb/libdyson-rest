@@ -8,7 +8,7 @@ on the account, outputting key device information for analysis.
 
 import logging
 from getpass import getpass
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 from libdyson_rest import (
     DysonAPIError,
@@ -24,7 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def get_user_credentials() -> Tuple[Optional[str], Optional[str], str, str]:
+def get_user_credentials() -> tuple[str | None, str | None, str, str]:
     """Get user credentials for API authentication."""
     print("🔍 Dyson API Device Scanner")
     print("=" * 40)
@@ -85,14 +85,14 @@ def authenticate_client(client: DysonClient, email: str) -> bool:
         return False
 
 
-def get_mqtt_root_topic(device: Any) -> Optional[str]:
+def get_mqtt_root_topic(device: Any) -> str | None:
     """Extract MQTT root topic from device configuration."""
     if device.connected_configuration and device.connected_configuration.mqtt:
         return str(device.connected_configuration.mqtt.mqtt_root_topic_level)
     return None
 
 
-def get_device_capabilities(device: Any) -> List[str]:
+def get_device_capabilities(device: Any) -> list[str]:
     """Extract device capabilities from firmware configuration."""
     if (
         device.connected_configuration

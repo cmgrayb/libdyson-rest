@@ -6,15 +6,15 @@ This is a Python 3 library for interacting with the Dyson REST API. The library 
 ## Development Standards
 
 ### Code Quality Tools
-- **Black**: Code formatting (line length: 120 characters)
-- **Flake8**: Linting and style checking
-- **isort**: Import sorting and organization
+- **Ruff**: Fast Python linter and formatter (combines Black, Flake8, isort functionality)
+- **mypy**: Static type checking
 - **Pytest**: Unit and integration testing
 
 ### Code Quality Requirements
-- All code must pass black formatting
-- All code must pass flake8 linting (PEP 8 compliance)
-- All imports must be sorted with isort
+- All code must pass ruff formatting (`ruff format`)
+- All code must pass ruff linting (`ruff check`)
+- All imports must be sorted with ruff
+- All code must pass mypy type checking
 - All tests must pass before commits
 - Minimum test coverage should be maintained
 
@@ -35,7 +35,6 @@ libdyson-rest/
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── pyproject.toml
-├── .flake8
 ├── .pre-commit-config.yaml
 └── .vscode/
     └── tasks.json
@@ -44,29 +43,26 @@ libdyson-rest/
 ## Configuration Files
 
 ### pyproject.toml
-- Black configuration
-- isort configuration
+- Ruff configuration (linting and formatting rules)
+- mypy configuration  
 - Project metadata
 - Build system configuration
-
-### .flake8
-- Flake8 configuration
-- Ignore rules if necessary
-- Max line length: 120 (to match Black)
 
 ### requirements.txt
 - Production dependencies only
 - Pinned versions for reproducibility
 
 ### requirements-dev.txt
-- Development dependencies (black, flake8, isort, pytest, etc.)
+- Development dependencies (ruff, mypy, pytest, etc.)
 - Pre-commit hooks
 
 ## VSCode Tasks
 The following tasks should be available:
-- **Format Code**: Run black on the entire codebase
-- **Lint Code**: Run flake8 on the entire codebase
-- **Sort Imports**: Run isort on the entire codebase
+- **Format Code**: Run ruff formatting on the entire codebase
+- **Lint Code**: Run ruff linting on the entire codebase
+- **Sort Imports**: Run ruff import sorting on the entire codebase
+- **Ruff Check**: Run comprehensive ruff check with auto-fix
+- **Type Check**: Run mypy type checking
 - **Run Tests**: Execute pytest with coverage
 - **Check All**: Run all quality checks in sequence
 - **Setup Dev Environment**: Create venv and install dependencies
@@ -109,15 +105,13 @@ The following tasks should be available:
 ## Version Synchronization Process
 When updating development tool versions, ensure consistency across all configuration files:
 
-### Current Tool Versions (as of Aug 16, 2025)
-- Black: 25.1.0
-- Flake8: 7.3.0
-- isort: 6.0.1
-- pytest: 8.4.1
-- pytest-cov: 6.2.1
-- mypy: 1.17.1
+### Current Tool Versions (as of Dec 1, 2025)
+- Ruff: 0.8.4
+- pytest: 9.0.1
+- pytest-cov: 7.0.0
+- mypy: 1.18.2
 - pre-commit: 4.3.0
-- types-requests: 2.32.4.20250809
+- types-requests: 2.32.4.20250913
 - types-cryptography: 3.3.23.2
 
 ### Step-by-Step Version Update Process
@@ -174,9 +168,8 @@ The automated script performs all steps: pre-commit autoupdate, requirements-dev
    pip install -r requirements-dev.txt
 
    # Verify all tools work locally
-   python -m black --check .
-   python -m flake8 .
-   python -m isort --check-only .
+   python -m ruff check .
+   python -m ruff format --check .
    python -m mypy src/
    python -m pytest
 
@@ -217,9 +210,8 @@ pip install -r requirements-dev.txt
 pip install -e .  # Install package in development mode for testing
 
 # Code quality checks
-python -m black --check .
-python -m flake8 .
-python -m isort --check-only .
+python -m ruff check .
+python -m ruff format --check .
 python -m mypy src/
 python -m pytest
 
@@ -244,9 +236,10 @@ The project includes comprehensive VSCode tasks accessible via Ctrl+Shift+P → 
 ### Development Tasks
 - **Setup Dev Environment**: Create virtual environment
 - **Install Dev Dependencies**: Install development packages
-- **Format Code**: Run Black code formatting
-- **Lint Code**: Run Flake8 linting with problem matchers
-- **Sort Imports**: Run isort import sorting
+- **Format Code**: Run Ruff code formatting
+- **Lint Code**: Run Ruff linting with problem matchers
+- **Sort Imports**: Run Ruff import sorting
+- **Ruff Check**: Run comprehensive Ruff check with auto-fix
 - **Type Check**: Run mypy type checking with problem matchers
 - **Check All**: Run complete quality check sequence
 

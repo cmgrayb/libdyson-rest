@@ -32,11 +32,15 @@ Basic Usage (Asynchronous):
     from libdyson_rest import AsyncDysonClient
 
     async def main():
-        async with AsyncDysonClient(email="your@email.com", password="password") as client:
+        async with AsyncDysonClient(
+            email="your@email.com", password="password"
+        ) as client:
             # Two-step authentication
             challenge = await client.begin_login()
             # Check email for OTP code
-            login_info = await client.complete_login(str(challenge.challenge_id), "123456")
+            login_info = await client.complete_login(
+                str(challenge.challenge_id), "123456"
+            )
 
             # Get devices
             devices = await client.get_devices()
@@ -44,17 +48,17 @@ Basic Usage (Asynchronous):
                 print(f"Device: {device.name} ({device.serial_number})")
 """
 
-__version__ = "0.8.2"
+__version__ = "0.9.0"
 __author__ = "Christopher Gray"
 __email__ = "79777799+cmgrayb@users.noreply.github.com"
+
+from contextlib import suppress
 
 from .client import DysonClient
 
 # Conditionally import async client (requires httpx)
-try:
+with suppress(ImportError):
     from .async_client import AsyncDysonClient
-except ImportError:
-    pass
 from .exceptions import (
     DysonAPIError,
     DysonAuthError,

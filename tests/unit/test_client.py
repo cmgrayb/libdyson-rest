@@ -350,7 +350,8 @@ class TestDysonClient:
 
         client = DysonClient("test@example.com", "password")
 
-        # The validation layer raises JSONValidationError, which gets caught and re-raised as DysonAPIError
+        # The validation layer raises JSONValidationError, which gets caught and
+        # re-raised as DysonAPIError
         with pytest.raises(DysonAPIError, match="Invalid login response"):
             client.complete_login("challenge123", "123456")
 
@@ -442,3 +443,112 @@ class TestDysonClient:
             args, kwargs = mock_get.call_args
             assert "appapi.cp.dyson.com" in args[0], f"Failed for country {country}"
             client.close()
+
+    @patch("libdyson_rest.client.requests.Session.post")
+    def test_trigger_firmware_update_success(self, mock_post: Mock) -> None:
+        """Test successful firmware update trigger."""
+        # Mock 204 No Content response
+        mock_response = Mock()
+        mock_response.status_code = 204
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = DysonClient(auth_token="test_token")
+
+        result = client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        assert result is True
+
+        # Verify correct URL was called
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        assert "/v1/assets/devices/MOCK-TEST-SN12345/pendingrelease" in args[0]
+
+        # Verify headers include required cache-control and content-length
+        assert "headers" in kwargs
+        headers = kwargs["headers"]
+        assert headers["cache-control"] == "no-cache"
+        assert headers["content-length"] == "0"
+
+        client.close()
+
+    def test_trigger_firmware_update_not_authenticated(self) -> None:
+        """Test firmware update trigger fails without authentication."""
+        client = DysonClient()
+
+        with pytest.raises(
+            DysonAuthError,
+            match="Must authenticate before triggering firmware update",
+        ):
+            client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        client.close()
+
+    @patch("libdyson_rest.client.requests.Session.post")
+    def test_trigger_firmware_update_401_error(self, mock_post: Mock) -> None:
+        """Test firmware update trigger handles 401 authentication errors."""
+        mock_response = Mock()
+        mock_response.status_code = 401
+        mock_error = requests.RequestException("Unauthorized")
+        mock_error.response = mock_response
+        mock_post.side_effect = mock_error
+
+        client = DysonClient(auth_token="expired_token")
+
+        with pytest.raises(
+            DysonAuthError, match="Authentication token expired or invalid"
+        ):
+            client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        client.close()
+
+    @patch("libdyson_rest.client.requests.Session.post")
+    def test_trigger_firmware_update_404_error(self, mock_post: Mock) -> None:
+        """Test firmware update trigger handles 404 device not found errors."""
+        mock_response = Mock()
+        mock_response.status_code = 404
+        mock_error = requests.RequestException("Not Found")
+        mock_error.response = mock_response
+        mock_post.side_effect = mock_error
+
+        client = DysonClient(auth_token="test_token")
+
+        with pytest.raises(
+            DysonAPIError,
+            match=(
+                "Device MOCK-TEST-SN12345 not found or no pending firmware update "
+                "available"
+            ),
+        ):
+            client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        client.close()
+
+    @patch("libdyson_rest.client.requests.Session.post")
+    def test_trigger_firmware_update_connection_error(self, mock_post: Mock) -> None:
+        """Test firmware update trigger handles connection errors."""
+        mock_post.side_effect = requests.RequestException("Connection failed")
+
+        client = DysonClient(auth_token="test_token")
+
+        with pytest.raises(
+            DysonConnectionError, match="Failed to trigger firmware update"
+        ):
+            client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        client.close()
+
+    @patch("libdyson_rest.client.requests.Session.post")
+    def test_trigger_firmware_update_unexpected_status(self, mock_post: Mock) -> None:
+        """Test firmware update trigger handles unexpected response status."""
+        mock_response = Mock()
+        mock_response.status_code = 200  # Unexpected, should be 204
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        client = DysonClient(auth_token="test_token")
+
+        with pytest.raises(DysonAPIError, match="Unexpected response status: 200"):
+            client.trigger_firmware_update("MOCK-TEST-SN12345")
+
+        client.close()

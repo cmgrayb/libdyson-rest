@@ -1,7 +1,8 @@
 """
 Main client for interacting with the Dyson REST API.
 
-This client implements the official Dyson App API as documented in the OpenAPI specification.
+This client implements the official Dyson App API as documented in the OpenAPI
+specification.
 Authentication uses a two-step process with OTP codes.
 """
 
@@ -37,6 +38,9 @@ from .utils import get_api_hostname
 logger = logging.getLogger(__name__)
 
 # Default headers required by the API
+# Noted from recent traces: DysonLink/205298 CFNetwork/3826.600.41 Darwin/24.6.0
+# Where 205298 is the app build for Dyson Link on iOS, CFNetwork is CloudFlare's
+# added header, and Darwin is the iOS version as of 18.6.2
 DEFAULT_USER_AGENT = "android client"
 
 
@@ -44,8 +48,9 @@ class DysonClient:
     """
     Client for interacting with the Dyson REST API.
 
-    This client handles the complete authentication flow, device discovery, and IoT credential
-    retrieval for Dyson devices through their REST API according to the OpenAPI specification.
+    This client handles the complete authentication flow, device discovery, and IoT
+    credential retrieval for Dyson devices through their REST API according to the
+    OpenAPI specification.
 
     Authentication Flow:
     1. provision() - Required initial call
@@ -353,7 +358,8 @@ class DysonClient:
                     logger.error(f"400 Bad Request - Request URL: {e.response.url}")
                     if hasattr(e, "request") and e.request is not None:
                         logger.error(
-                            f"400 Bad Request - Request headers: {dict(e.request.headers)}"
+                            f"400 Bad Request - Request headers: "
+                            f"{dict(e.request.headers)}"
                         )
                 except (AttributeError, ValueError, TypeError) as log_error:
                     # Only catch specific exceptions that might occur during logging
@@ -398,10 +404,12 @@ class DysonClient:
         4. Complete login with OTP (if provided)
 
         Args:
-            otp_code: One-time password code. If None, only completes up to begin_login()
+            otp_code: One-time password code. If None, only completes up to
+                begin_login()
 
         Returns:
-            True if authentication completed successfully, False if OTP code still needed
+            True if authentication completed successfully, False if OTP code still
+            needed
 
         Raises:
             DysonAuthError: If authentication fails
@@ -586,6 +594,68 @@ class DysonClient:
             return PendingRelease.from_dict(typed_data)
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid pending release response: {e}") from e
+
+    def trigger_firmware_update(self, serial_number: str) -> bool:
+        """
+        Trigger a firmware update for a specific device.
+
+        This method initiates a firmware update process for the device. The device
+        must have a pending firmware release available for the update to succeed.
+
+        Args:
+            serial_number: Device serial number
+
+        Returns:
+            True if firmware update was successfully triggered
+
+        Raises:
+            DysonAuthError: If not authenticated
+            DysonConnectionError: If connection fails
+            DysonAPIError: If API request fails
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before triggering firmware update")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/assets/devices/{serial_number}/pendingrelease",
+        )
+
+        # Add headers that match the API specification
+        headers = {
+            "cache-control": "no-cache",
+            "content-length": "0",
+        }
+
+        try:
+            response = self.session.post(url, headers=headers, timeout=self.timeout)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            elif (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 404
+            ):
+                raise DysonAPIError(
+                    f"Device {serial_number} not found or no pending firmware "
+                    f"update available"
+                ) from e
+            raise DysonConnectionError(f"Failed to trigger firmware update: {e}") from e
+
+        # API returns 204 No Content on success
+        if response.status_code == 204:
+            logger.info(
+                f"Firmware update triggered successfully for device {serial_number}"
+            )
+            return True
+        else:
+            raise DysonAPIError(f"Unexpected response status: {response.status_code}")
 
     def decrypt_local_credentials(
         self, encrypted_password: str, serial_number: str

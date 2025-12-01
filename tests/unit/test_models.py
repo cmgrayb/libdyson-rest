@@ -326,3 +326,118 @@ def test_device_to_dict_with_config_no_capabilities() -> None:
     firmware_dict = result["connectedConfiguration"]["firmware"]
     assert "capabilities" not in firmware_dict
     assert "minimumAppVersion" not in firmware_dict
+
+
+def test_device_from_dict_with_null_name() -> None:
+    """Test Device.from_dict with null name uses fallback."""
+    from typing import cast
+
+    from libdyson_rest.types import DeviceResponseDict
+
+    device_data = cast(
+        DeviceResponseDict,
+        {
+            "serialNumber": "SN123456789",
+            "name": None,  # Null name from API
+            "model": "AM07",
+            "type": "520",
+            "category": "ec",
+            "connectionCategory": "wifiOnly",
+        },
+    )
+
+    device = Device.from_dict(device_data)
+
+    # Should generate fallback name using serial number
+    assert device.name == "Dyson SN123456789"
+    assert device.serial_number == "SN123456789"
+    assert device.model == "AM07"
+    assert device.type == "520"
+    assert device.category == DeviceCategory.ENVIRONMENT_CLEANER
+    assert device.connection_category == ConnectionCategory.WIFI_ONLY
+
+
+def test_device_from_dict_with_missing_name() -> None:
+    """Test Device.from_dict with missing name field uses fallback."""
+    from typing import cast
+
+    from libdyson_rest.types import DeviceResponseDict
+
+    # Create a dict without name field and cast to DeviceResponseDict
+    device_data_raw = {
+        "serialNumber": "SN987654321",
+        # name field completely missing
+        "model": "TP02",
+        "type": "527",
+        "category": "ec",
+        "connectionCategory": "wifiOnly",
+    }
+    device_data = cast(DeviceResponseDict, device_data_raw)
+
+    device = Device.from_dict(device_data)
+
+    # Should generate fallback name using serial number
+    assert device.name == "Dyson SN987654321"
+    assert device.serial_number == "SN987654321"
+    assert device.model == "TP02"
+    assert device.type == "527"
+    assert device.category == DeviceCategory.ENVIRONMENT_CLEANER
+    assert device.connection_category == ConnectionCategory.WIFI_ONLY
+
+
+def test_device_from_dict_with_empty_name() -> None:
+    """Test Device.from_dict with empty string name uses fallback."""
+    from typing import cast
+
+    from libdyson_rest.types import DeviceResponseDict
+
+    device_data = cast(
+        DeviceResponseDict,
+        {
+            "serialNumber": "SN456789123",
+            "name": "",  # Empty string name
+            "model": "HP01",
+            "type": "469",
+            "category": "ec",
+            "connectionCategory": "wifiOnly",
+        },
+    )
+
+    device = Device.from_dict(device_data)
+
+    # Should generate fallback name using serial number
+    assert device.name == "Dyson SN456789123"
+    assert device.serial_number == "SN456789123"
+    assert device.model == "HP01"
+    assert device.type == "469"
+    assert device.category == DeviceCategory.ENVIRONMENT_CLEANER
+    assert device.connection_category == ConnectionCategory.WIFI_ONLY
+
+
+def test_device_from_dict_with_valid_name() -> None:
+    """Test Device.from_dict with valid name preserves original name."""
+    from typing import cast
+
+    from libdyson_rest.types import DeviceResponseDict
+
+    device_data = cast(
+        DeviceResponseDict,
+        {
+            "serialNumber": "SN111222333",
+            "name": "Living Room Purifier",
+            "model": "TP07",
+            "type": "438",
+            "category": "ec",
+            "connectionCategory": "wifiOnly",
+        },
+    )
+
+    device = Device.from_dict(device_data)
+
+    # Should keep the original name
+    assert device.name == "Living Room Purifier"
+    assert device.serial_number == "SN111222333"
+    assert device.model == "TP07"
+    assert device.type == "438"
+    assert device.category == DeviceCategory.ENVIRONMENT_CLEANER
+    assert device.connection_category == ConnectionCategory.WIFI_ONLY

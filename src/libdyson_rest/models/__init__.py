@@ -47,7 +47,7 @@ __all__ = [
 ]
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 
 @dataclass
@@ -70,9 +70,9 @@ class DysonDeviceState:
     power: bool
     speed: int
     mode: str
-    temperature: Optional[float] = None
-    humidity: Optional[float] = None
-    air_quality: Optional[int] = None
+    temperature: float | None = None
+    humidity: float | None = None
+    air_quality: int | None = None
 
 
 @dataclass
@@ -85,7 +85,7 @@ class DysonCredentials:
     port: int = 1883
 
 
-def device_from_dict(data: Dict[str, Any]) -> DysonDevice:
+def device_from_dict(data: dict[str, Any]) -> DysonDevice:
     """
     Create a DysonDevice from dictionary data.
 
@@ -106,7 +106,7 @@ def device_from_dict(data: Dict[str, Any]) -> DysonDevice:
     )
 
 
-def credentials_from_dict(data: Dict[str, Any]) -> DysonCredentials:
+def credentials_from_dict(data: dict[str, Any]) -> DysonCredentials:
     """
     Create DysonCredentials from dictionary data.
 

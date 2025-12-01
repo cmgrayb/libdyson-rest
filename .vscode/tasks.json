@@ -36,7 +36,7 @@
             "label": "Format Code",
             "type": "shell",
             "command": ".venv/Scripts/python.exe",
-            "args": ["-m", "black", "."],
+            "args": ["-m", "ruff", "format", "."],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -45,13 +45,13 @@
                 "panel": "shared"
             },
             "problemMatcher": [],
-            "detail": "Format code using Black"
+            "detail": "Format code using Ruff"
         },
         {
             "label": "Lint Code",
             "type": "shell",
             "command": ".venv/Scripts/python.exe",
-            "args": ["-m", "flake8", "."],
+            "args": ["-m", "ruff", "check", "."],
             "group": "test",
             "presentation": {
                 "echo": true,
@@ -61,13 +61,13 @@
             },
             "problemMatcher": [
                 {
-                    "owner": "flake8",
+                    "owner": "ruff",
                     "fileLocation": [
                         "relative",
                         "${workspaceFolder}"
                     ],
                     "pattern": {
-                        "regexp": "^(.*):(\\d+):(\\d+):\\s+(\\w\\d+)\\s+(.*)$",
+                        "regexp": "^(.*):(\\d+):(\\d+):\\s+([A-Z]\\d+)\\s+(.*)$",
                         "file": 1,
                         "line": 2,
                         "column": 3,
@@ -76,13 +76,13 @@
                     }
                 }
             ],
-            "detail": "Lint code using Flake8"
+            "detail": "Lint code using Ruff"
         },
         {
             "label": "Sort Imports",
             "type": "shell",
             "command": ".venv/Scripts/python.exe",
-            "args": ["-m", "isort", "."],
+            "args": ["-m", "ruff", "check", "--select", "I", "--fix", "."],
             "group": "build",
             "presentation": {
                 "echo": true,
@@ -91,7 +91,7 @@
                 "panel": "shared"
             },
             "problemMatcher": [],
-            "detail": "Sort imports using isort"
+            "detail": "Sort imports using Ruff"
         },
         {
             "label": "Type Check",
@@ -123,6 +123,37 @@
                 }
             ],
             "detail": "Type check using mypy"
+        },
+        {
+            "label": "Ruff Check",
+            "type": "shell",
+            "command": ".venv/Scripts/python.exe",
+            "args": ["-m", "ruff", "check", ".", "--fix"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": [
+                {
+                    "owner": "ruff",
+                    "fileLocation": [
+                        "relative",
+                        "${workspaceFolder}"
+                    ],
+                    "pattern": {
+                        "regexp": "^(.*):(\\d+):(\\d+):\\s+([A-Z]\\d+)\\s+(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "code": 4,
+                        "message": 5
+                    }
+                }
+            ],
+            "detail": "Run comprehensive Ruff check with auto-fix"
         },
         {
             "label": "Run Tests",

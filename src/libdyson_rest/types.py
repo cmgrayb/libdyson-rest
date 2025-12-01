@@ -5,7 +5,7 @@ These definitions provide compile-time type safety for JSON API responses
 and enable better IDE support and error detection.
 """
 
-from typing import List, TypedDict
+from typing import TypedDict
 
 from typing_extensions import NotRequired, Required
 
@@ -37,7 +37,7 @@ class FirmwareResponseDict(TypedDict):
     autoUpdateEnabled: Required[bool]
     newVersionAvailable: Required[bool]
     version: Required[str]
-    capabilities: NotRequired[List[str]]
+    capabilities: NotRequired[list[str]]
     minimumAppVersion: NotRequired[str]
 
 
@@ -60,7 +60,7 @@ class DeviceResponseDict(TypedDict):
     """Type definition for device information in API response."""
 
     serialNumber: Required[str]
-    name: Required[str]
+    name: str | None  # Can be null in API responses
     model: Required[str]
     type: Required[str]
     category: Required[str]

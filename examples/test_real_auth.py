@@ -9,7 +9,6 @@ including all steps from provisioning to device enumeration.
 import logging
 import sys
 from getpass import getpass
-from typing import Optional, Tuple
 
 from libdyson_rest import (
     DysonAPIError,
@@ -24,7 +23,7 @@ logging.basicConfig(
 )
 
 
-def get_user_credentials() -> Tuple[Optional[str], Optional[str], str, str]:
+def get_user_credentials() -> tuple[str | None, str | None, str, str]:
     """Get user credentials for testing."""
     email = input("Enter your Dyson account email: ").strip()
     if not email:

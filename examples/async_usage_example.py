@@ -1,15 +1,9 @@
 """
 Example usage of libdyson-rest async client library.
 
-            # Uncomment the following lines and provide real OTP when testing:
-            # otp_code = input("Enter OTP code from email: ")
-            # login_info = await client.complete_login(str(challenge.challenge_id), otp_code)
-            # logger.info(f"✅ Authentication successful!")
-            # logger.info(f"   Account ID: {login_info.account}")
-            # logger.info(f"   Token Type: {login_info.token_type.value}")
-
-            # # Step 4: Get devicesmple demonstrates how to use the async client to interact with Dyson devices.
-This is particularly useful for Home Assistant integrations and other async environments.
+This example demonstrates how to use the async client to interact with Dyson devices.
+This is particularly useful for Home Assistant integrations and other async
+environments.
 
 The Dyson API uses a two-step authentication process:
 1. Begin login to get a challenge ID
@@ -70,7 +64,9 @@ async def basic_async_example() -> None:
 
             # Uncomment the following lines and provide real OTP when testing:
             # otp_code = input("Enter OTP code from email: ")
-            # login_info = await client.complete_login(str(challenge.challenge_id), otp_code)
+            # login_info = await client.complete_login(
+            #     str(challenge.challenge_id), otp_code
+            # )
             # logger.info(f"✅ Authentication successful!")
             # logger.info(f"   Account ID: {login_info.account}")
             # logger.info(f"   Token Type: {login_info.token_type.value}")
@@ -123,7 +119,8 @@ async def step_by_step_async_auth_example() -> None:
 
     if not email or not password:
         logger.warning(
-            "⚠️  Set DYSON_EMAIL and DYSON_PASSWORD environment variables to test authentication"
+            "⚠️  Set DYSON_EMAIL and DYSON_PASSWORD environment variables to test "
+            "authentication"
         )
         return
 
@@ -146,7 +143,9 @@ async def step_by_step_async_auth_example() -> None:
 
             # Example of how to complete (commented out):
             # otp_code = await get_otp_from_user()  # Your async input method
-            # login_info = await client.complete_login(str(challenge.challenge_id), otp_code)
+            # login_info = await client.complete_login(
+            #     str(challenge.challenge_id), otp_code
+            # )
             # logger.info("4️⃣  Authentication completed!")
 
         except Exception as e:
@@ -192,7 +191,8 @@ async def token_reuse_example() -> None:
                 logger.info("   💡 Would need to re-authenticate in real usage")
     else:
         logger.info(
-            "   💡 No saved token found. Set DYSON_SAVED_TOKEN environment variable to test"
+            "   💡 No saved token found. Set DYSON_SAVED_TOKEN environment "
+            "variable to test"
         )
 
 

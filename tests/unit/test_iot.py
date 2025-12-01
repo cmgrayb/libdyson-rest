@@ -4,7 +4,7 @@ Tests for IoT model classes.
 These tests cover the IoT credentials and data models.
 """
 
-from typing import Any, Dict
+from typing import Any
 from uuid import UUID
 
 import pytest
@@ -55,7 +55,7 @@ class TestIoTCredentials:
 
     def test_iot_credentials_from_dict_missing_field(self) -> None:
         """Test IoTCredentials from dictionary with missing field."""
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "ClientId": "12345678-1234-5678-9abc-123456789abc",
             "CustomAuthorizerName": "TestAuthorizer",
             "TokenKey": "test_key",
@@ -152,7 +152,7 @@ class TestIoTData:
 
     def test_iot_data_from_dict_missing_endpoint(self) -> None:
         """Test IoTData from dictionary with missing endpoint."""
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "IoTCredentials": {
                 "ClientId": "12345678-1234-5678-9abc-123456789abc",
                 "CustomAuthorizerName": "TestAuthorizer",
@@ -169,7 +169,7 @@ class TestIoTData:
 
     def test_iot_data_from_dict_missing_credentials(self) -> None:
         """Test IoTData from dictionary with missing credentials."""
-        data: Dict[str, Any] = {
+        data: dict[str, Any] = {
             "Endpoint": "https://example.amazonaws.com",
         }
 

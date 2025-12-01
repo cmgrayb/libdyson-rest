@@ -84,10 +84,12 @@ def main() -> None:
                 firmware = device.connected_configuration.firmware
                 print(f"  Current Firmware: {firmware.version}")
                 print(
-                    f"  Auto-update: {'Enabled' if firmware.auto_update_enabled else 'Disabled'}"
+                    f"  Auto-update: "
+                    f"{'Enabled' if firmware.auto_update_enabled else 'Disabled'}"
                 )
                 print(
-                    f"  New Version Available: {'Yes' if firmware.new_version_available else 'No'}"
+                    f"  New Version Available: "
+                    f"{'Yes' if firmware.new_version_available else 'No'}"
                 )
 
                 if firmware.minimum_app_version:
@@ -95,7 +97,8 @@ def main() -> None:
 
                 if firmware.capabilities:
                     print(
-                        f"  Capabilities: {', '.join(cap.value for cap in firmware.capabilities)}"
+                        f"  Capabilities: "
+                        f"{', '.join(cap.value for cap in firmware.capabilities)}"
                     )
 
             # Check pending releases

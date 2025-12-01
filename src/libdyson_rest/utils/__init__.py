@@ -3,7 +3,7 @@
 import base64
 import hashlib
 import json
-from typing import Any, Dict
+from typing import Any
 
 
 def validate_email(email: str) -> bool:
@@ -61,7 +61,7 @@ def decode_base64(data: str) -> str:
     return base64.b64decode(data.encode()).decode()
 
 
-def safe_json_loads(data: str) -> Dict[str, Any]:
+def safe_json_loads(data: str) -> dict[str, Any]:
     """
     Safely load JSON data with error handling.
 

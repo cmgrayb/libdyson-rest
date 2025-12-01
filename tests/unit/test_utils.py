@@ -69,7 +69,8 @@ def test_get_api_hostname_regional_endpoints() -> None:
 
 
 def test_get_api_hostname_default_fallback() -> None:
-    """Test that countries without working regional endpoints return the .com endpoint."""
+    """Test that countries without working regional endpoints return the .com
+    endpoint."""
     # US (default)
     assert get_api_hostname("US") == "https://appapi.cp.dyson.com"
 

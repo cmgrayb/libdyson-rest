@@ -11,7 +11,7 @@ import json
 import logging
 import sys
 from getpass import getpass
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from libdyson_rest import (
     DysonAPIError,
@@ -44,7 +44,7 @@ setup_debug_logging()
 logger = logging.getLogger(__name__)
 
 
-def get_user_credentials() -> Tuple[Optional[str], Optional[str], str, str]:
+def get_user_credentials() -> tuple[str | None, str | None, str, str]:
     """Get user credentials for testing."""
     print("🔧 Dyson Account Troubleshooting Tool")
     print("=" * 50)
@@ -83,7 +83,7 @@ def print_subsection(title: str) -> None:
 
 def output_authentication_info(
     client: DysonClient, login_info: Any, user_status: Any
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Output comprehensive authentication information."""
     print_section("AUTHENTICATION INFORMATION")
 
@@ -111,7 +111,7 @@ def output_authentication_info(
     return auth_info
 
 
-def analyze_device_details(device: Any, client: DysonClient) -> Dict[str, Any]:
+def analyze_device_details(device: Any, client: DysonClient) -> dict[str, Any]:
     """Analyze and output comprehensive device information."""
     device_info = _initialize_device_info(device)
 
@@ -149,7 +149,7 @@ def analyze_device_details(device: Any, client: DysonClient) -> Dict[str, Any]:
     return device_info
 
 
-def _initialize_device_info(device: Any) -> Dict[str, Any]:
+def _initialize_device_info(device: Any) -> dict[str, Any]:
     """Initialize device information structure."""
     return {
         "basic_info": {
@@ -185,7 +185,7 @@ def _print_basic_device_info(device: Any) -> None:
         print(f"      Variant: {device.variant}")
 
 
-def _analyze_device_configuration(device: Any, client: DysonClient) -> Dict[str, Any]:
+def _analyze_device_configuration(device: Any, client: DysonClient) -> dict[str, Any]:
     """Analyze device connected configuration."""
     print("\n   🌐 Connected Configuration:")
     config = device.connected_configuration
@@ -224,20 +224,22 @@ def _analyze_device_configuration(device: Any, client: DysonClient) -> Dict[str,
         print(f"      ✅ Decrypted Local Password: {decrypted_password}")
     except Exception as e:
         error_msg = f"Failed to decrypt: {e}"
-        config_info["mqtt"][
-            "local_broker_credentials_decrypted"
-        ] = f"ERROR: {error_msg}"
+        config_info["mqtt"]["local_broker_credentials_decrypted"] = (
+            f"ERROR: {error_msg}"
+        )
         print(f"      ❌ Local Password Decryption: {error_msg}")
 
     print("\n      💾 Firmware Information:")
     print(f"         Version: {config_info['firmware']['version']}")
     print(f"         Auto Update: {config_info['firmware']['auto_update_enabled']}")
     print(
-        f"         New Version Available: {config_info['firmware']['new_version_available']}"
+        f"         New Version Available: "
+        f"{config_info['firmware']['new_version_available']}"
     )
     if config_info["firmware"]["minimum_app_version"]:
         print(
-            f"         Min App Version: {config_info['firmware']['minimum_app_version']}"
+            f"         Min App Version: "
+            f"{config_info['firmware']['minimum_app_version']}"
         )
     if config_info["firmware"]["capabilities"]:
         capabilities_str = ", ".join(config_info["firmware"]["capabilities"])
@@ -246,7 +248,7 @@ def _analyze_device_configuration(device: Any, client: DysonClient) -> Dict[str,
     return config_info
 
 
-def _analyze_pending_firmware(device: Any, client: DysonClient) -> Dict[str, Any]:
+def _analyze_pending_firmware(device: Any, client: DysonClient) -> dict[str, Any]:
     """Analyze pending firmware releases for the device."""
     print("\n   🔄 Pending Firmware Information:")
 
@@ -300,7 +302,9 @@ def _analyze_iot_credentials(device: Any, client: DysonClient) -> Any:
             "endpoint": iot_data.endpoint,
             "credentials": {
                 "client_id": str(iot_data.iot_credentials.client_id),
-                "custom_authorizer_name": iot_data.iot_credentials.custom_authorizer_name,
+                "custom_authorizer_name": (
+                    iot_data.iot_credentials.custom_authorizer_name
+                ),
                 "token_key": iot_data.iot_credentials.token_key,
                 "token_value": str(iot_data.iot_credentials.token_value),
                 "token_signature": iot_data.iot_credentials.token_signature,
@@ -310,7 +314,8 @@ def _analyze_iot_credentials(device: Any, client: DysonClient) -> Any:
         print(f"      AWS IoT Endpoint: {iot_info['endpoint']}")
         print(f"      Client ID: {iot_info['credentials']['client_id']}")
         print(
-            f"      Custom Authorizer: {iot_info['credentials']['custom_authorizer_name']}"
+            f"      Custom Authorizer: "
+            f"{iot_info['credentials']['custom_authorizer_name']}"
         )
         print(f"      Token Key: {iot_info['credentials']['token_key']}")
         print(f"      Token Value: {iot_info['credentials']['token_value']}")
@@ -351,7 +356,7 @@ def _analyze_mqtt_topics(device: Any) -> None:
     print(f"         - {base_topic}/command")
 
 
-def _analyze_cloud_mqtt_config(iot_info: Dict[str, Any]) -> None:
+def _analyze_cloud_mqtt_config(iot_info: dict[str, Any]) -> None:
     """Analyze cloud MQTT connection configuration."""
     print("\n   🌐 Cloud MQTT Connection Parameters:")
     print(f"      Host: {iot_info['endpoint']}")
@@ -362,7 +367,7 @@ def _analyze_cloud_mqtt_config(iot_info: Dict[str, Any]) -> None:
     print(f"      Authorizer: {iot_info['credentials']['custom_authorizer_name']}")
 
 
-def _analyze_local_mqtt_config(device: Any, device_info: Dict[str, Any]) -> None:
+def _analyze_local_mqtt_config(device: Any, device_info: dict[str, Any]) -> None:
     """Analyze local MQTT connection configuration."""
     print("\n   � Local MQTT Connection Parameters:")
     print(f"      Host: {device.name}.local (or device IP)")
@@ -414,7 +419,6 @@ def run_troubleshooting() -> None:
         with DysonClient(
             email=email, password=password, country=country, culture=culture, debug=True
         ) as client:
-
             # Show regional endpoint information
             from libdyson_rest.utils import get_api_hostname
 
@@ -468,7 +472,7 @@ def run_troubleshooting() -> None:
         traceback.print_exc()
 
 
-def _initialize_troubleshooting_data() -> Dict[str, Any]:
+def _initialize_troubleshooting_data() -> dict[str, Any]:
     """Initialize the troubleshooting data structure."""
     return {
         "timestamp": None,
@@ -517,7 +521,7 @@ def _complete_authentication(client: DysonClient, email: str) -> Any:
 
 
 def _analyze_all_devices(
-    client: DysonClient, troubleshooting_data: Dict[str, Any]
+    client: DysonClient, troubleshooting_data: dict[str, Any]
 ) -> None:
     """Analyze all devices on the account."""
     print_section("DEVICE ANALYSIS")
@@ -539,7 +543,7 @@ def _analyze_all_devices(
 
 
 def _update_device_summary(
-    device: Any, device_info: Dict[str, Any], summary: Dict[str, Any]
+    device: Any, device_info: dict[str, Any], summary: dict[str, Any]
 ) -> None:
     """Update device summary counters."""
     if device.connection_category.value != "nonConnected":
@@ -560,12 +564,13 @@ def _update_device_summary(
             summary["devices_with_pushed_firmware"] += 1
 
 
-def _output_final_summary(troubleshooting_data: Dict[str, Any]) -> None:
+def _output_final_summary(troubleshooting_data: dict[str, Any]) -> None:
     """Output the final troubleshooting summary and export data."""
     print_section("TROUBLESHOOTING SUMMARY")
     summary = troubleshooting_data["summary"]
     print(
-        f"   Authentication: {'✅ SUCCESS' if summary['authentication_successful'] else '❌ FAILED'}"
+        f"   Authentication: "
+        f"{'✅ SUCCESS' if summary['authentication_successful'] else '❌ FAILED'}"
     )
     print(f"   Total Devices: {summary['total_devices']}")
     print(f"   Connected Devices: {summary['connected_devices']}")
@@ -581,7 +586,10 @@ def _output_final_summary(troubleshooting_data: Dict[str, Any]) -> None:
 
     troubleshooting_data["timestamp"] = datetime.datetime.now().isoformat()
 
-    filename = f"dyson_troubleshooting_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    filename = (
+        f"dyson_troubleshooting_"
+        f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    )
     with open(filename, "w") as f:
         json.dump(troubleshooting_data, f, indent=2, default=str)
 

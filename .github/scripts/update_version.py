@@ -24,7 +24,7 @@ def get_current_version() -> str:
     """Extract current version from pyproject.toml"""
     pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
 
-    with open(pyproject_path, "r", encoding="utf-8") as f:
+    with open(pyproject_path, encoding="utf-8") as f:
         content = f.read()
 
     match = re.search(r'^version = "([^"]+)"', content, re.MULTILINE)
@@ -38,7 +38,7 @@ def set_version(new_version: str) -> None:
     """Update version in pyproject.toml"""
     pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
 
-    with open(pyproject_path, "r", encoding="utf-8") as f:
+    with open(pyproject_path, encoding="utf-8") as f:
         content = f.read()
 
     # Replace version line
