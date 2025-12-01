@@ -149,7 +149,8 @@ class TestAsyncDysonClientIntegration:
         }
         release_response.raise_for_status.return_value = None
 
-        # Configure mocks: devices and pending release use GET, IoT credentials uses POST
+        # Configure mocks: devices and pending release use GET, IoT credentials
+        # uses POST
         mock_get.side_effect = [devices_response, release_response]
         mock_post.return_value = iot_response
 

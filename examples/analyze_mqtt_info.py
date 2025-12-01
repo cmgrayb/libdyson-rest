@@ -9,7 +9,7 @@ from the Dyson API without creating actual MQTT connections.
 import json
 import logging
 from getpass import getpass
-from typing import Any, Dict
+from typing import Any
 
 from libdyson_rest import (
     DysonAPIError,
@@ -180,10 +180,12 @@ def main() -> None:  # noqa: C901
 
             # Analyze each device
             for device in devices:
-                # Skip non-connected devices - this library is for REST/WebSocket API connected devices only
+                # Skip non-connected devices - this library is for REST/WebSocket API
+                # connected devices only
                 if not device.connected_configuration:
                     print(
-                        f"⚠️  Skipping {device.name} - no connected configuration available"
+                        f"⚠️  Skipping {device.name} - no connected configuration "
+                        f"available"
                     )
                     continue
 
@@ -218,12 +220,16 @@ def main() -> None:  # noqa: C901
                             "client_id": str(iot_data.iot_credentials.client_id),
                             "auth": {
                                 "type": "custom_authorizer",
-                                "authorizer_name": iot_data.iot_credentials.custom_authorizer_name,
+                                "authorizer_name": (
+                                    iot_data.iot_credentials.custom_authorizer_name
+                                ),
                                 "token_key": iot_data.iot_credentials.token_key,
                                 "token_value": str(
                                     iot_data.iot_credentials.token_value
                                 ),
-                                "token_signature": iot_data.iot_credentials.token_signature,
+                                "token_signature": (
+                                    iot_data.iot_credentials.token_signature
+                                ),
                             },
                         },
                         "topics": {
@@ -241,12 +247,16 @@ def main() -> None:  # noqa: C901
 
                     # Add connected configuration if available
                     if device.connected_configuration:
-                        mqtt_config: Dict[str, Any] = {
+                        mqtt_config: dict[str, Any] = {
                             "local_broker_credentials_encrypted": (
                                 device.connected_configuration.mqtt.local_broker_credentials
                             ),
-                            "mqtt_root_topic_level": device.connected_configuration.mqtt.mqtt_root_topic_level,
-                            "remote_broker_type": device.connected_configuration.mqtt.remote_broker_type.value,
+                            "mqtt_root_topic_level": (
+                                device.connected_configuration.mqtt.mqtt_root_topic_level
+                            ),
+                            "remote_broker_type": (
+                                device.connected_configuration.mqtt.remote_broker_type.value
+                            ),
                         }
 
                         # Try to decrypt local credentials
@@ -263,7 +273,9 @@ def main() -> None:  # noqa: C901
                                 "password": decrypted_password,
                                 "protocol": "mqtt",
                                 "tls_available": True,
-                                "root_topic": device.connected_configuration.mqtt.mqtt_root_topic_level,
+                                "root_topic": (
+                                    device.connected_configuration.mqtt.mqtt_root_topic_level
+                                ),
                             }
                         except Exception as e:
                             mqtt_config["local_mqtt_error"] = (
@@ -283,7 +295,8 @@ def main() -> None:  # noqa: C901
                     print(f"❌ Error analyzing device {device.name}: {e}")
 
             print(
-                f"\n✅ Analysis complete! Found MQTT information for {len(devices)} device(s)"
+                f"\n✅ Analysis complete! Found MQTT information for "
+                f"{len(devices)} device(s)"
             )
             print("\nThe JSON files contain all the connection parameters needed")
             print("for an external MQTT client to connect to your Dyson devices.")

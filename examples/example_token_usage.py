@@ -93,7 +93,8 @@ def use_token_for_device_operations(token: str) -> None:
                         )
                         print(f"      Local MQTT Password: {decrypted_password}")
                         print(
-                            f"      Root Topic: {device.connected_configuration.mqtt.mqtt_root_topic_level}"
+                            f"      Root Topic: "
+                            f"{device.connected_configuration.mqtt.mqtt_root_topic_level}"
                         )
                     except Exception as e:
                         print(f"      ⚠️  Could not decrypt local password: {e}")

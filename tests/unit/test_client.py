@@ -350,7 +350,8 @@ class TestDysonClient:
 
         client = DysonClient("test@example.com", "password")
 
-        # The validation layer raises JSONValidationError, which gets caught and re-raised as DysonAPIError
+        # The validation layer raises JSONValidationError, which gets caught and
+        # re-raised as DysonAPIError
         with pytest.raises(DysonAPIError, match="Invalid login response"):
             client.complete_login("challenge123", "123456")
 
@@ -514,7 +515,10 @@ class TestDysonClient:
 
         with pytest.raises(
             DysonAPIError,
-            match="Device MOCK-TEST-SN12345 not found or no pending firmware update available",
+            match=(
+                "Device MOCK-TEST-SN12345 not found or no pending firmware update "
+                "available"
+            ),
         ):
             client.trigger_firmware_update("MOCK-TEST-SN12345")
 

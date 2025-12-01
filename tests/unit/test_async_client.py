@@ -399,7 +399,6 @@ class TestAsyncDysonClient:
             ) as mock_async_post,
             patch("libdyson_rest.client.requests.Session.post") as mock_sync_post,
         ):
-
             # Configure mock responses
             mock_response = Mock()
             mock_response.json.return_value = {
@@ -537,7 +536,7 @@ class TestAsyncDysonClient:
         padded_data = json_data.ljust((len(json_data) + 15) // 16 * 16, "\0")
 
         # Use the same encryption method as the real implementation
-        aes_key = bytes([i for i in range(1, 33)])  # 1,2,3,...,32
+        aes_key = bytes(range(1, 33))  # 1,2,3,...,32
         iv = bytes(16)  # Zero-filled IV
 
         # Encrypt the test data
@@ -575,7 +574,7 @@ class TestAsyncDysonClient:
         padded_data = json_data.ljust((len(json_data) + 15) // 16 * 16, "\0")
 
         # Use the same encryption method as the real implementation
-        aes_key = bytes([i for i in range(1, 33)])  # 1,2,3,...,32
+        aes_key = bytes(range(1, 33))  # 1,2,3,...,32
         iv = bytes(16)  # Zero-filled IV
 
         # Encrypt the test data
@@ -614,7 +613,8 @@ class TestAsyncDysonClient:
             client.decrypt_local_credentials("invalid_base64!", "TEST-SERIAL-123")
 
     def test_decrypt_local_credentials_invalid_encrypted_data(self) -> None:
-        """Test decrypt_local_credentials with valid base64 but invalid encrypted data."""
+        """Test decrypt_local_credentials with valid base64 but invalid
+        encrypted data."""
         client = AsyncDysonClient()
 
         # Valid base64 but not valid encrypted data
@@ -801,7 +801,10 @@ class TestAsyncDysonClient:
 
         with pytest.raises(
             DysonAPIError,
-            match="Device MOCK-TEST-SN12345 not found or no pending firmware update available",
+            match=(
+                "Device MOCK-TEST-SN12345 not found or no pending firmware update "
+                "available"
+            ),
         ):
             await client.trigger_firmware_update("MOCK-TEST-SN12345")
 

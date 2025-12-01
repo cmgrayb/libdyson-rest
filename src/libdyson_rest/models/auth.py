@@ -6,7 +6,6 @@ These models represent the authentication data structures from the Dyson API.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict
 from uuid import UUID
 
 from ..types import (
@@ -27,9 +26,7 @@ class AccountStatus(Enum):
 class AuthenticationMethod(Enum):
     """Authentication method enumeration."""
 
-    EMAIL_PWD_2FA = (
-        "EMAIL_PWD_2FA"  # nosec B105 - This is an enum identifier, not a password
-    )
+    EMAIL_PWD_2FA = "EMAIL_PWD_2FA"  # nosec B105 - This is an enum identifier, not a password
 
 
 class TokenType(Enum):
@@ -56,7 +53,7 @@ class UserStatus:
             ),
         )
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         """Convert UserStatus instance to dictionary."""
         return {
             "accountStatus": self.account_status.value,
@@ -77,7 +74,7 @@ class LoginChallenge:
         challenge_id_str = safe_get_str(validated_data, "challengeId")
         return cls(challenge_id=safe_parse_uuid(challenge_id_str, "challengeId"))
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         """Convert LoginChallenge instance to dictionary."""
         return {"challengeId": str(self.challenge_id)}
 
@@ -101,7 +98,7 @@ class LoginInformation:
             token_type=TokenType(safe_get_str(validated_data, "tokenType")),
         )
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         """Convert LoginInformation instance to dictionary."""
         return {
             "account": str(self.account),

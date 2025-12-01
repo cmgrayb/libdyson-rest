@@ -6,7 +6,7 @@ they match expected TypedDict schemas.
 """
 
 import logging
-from typing import Any, Dict, TypeVar
+from typing import Any, TypeVar
 from uuid import UUID
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class JSONValidationError(Exception):
     pass
 
 
-def safe_get_str(data: Dict[str, Any], key: str, field_path: str = "") -> str:
+def safe_get_str(data: dict[str, Any], key: str, field_path: str = "") -> str:
     """
     Safely extract string from dict with runtime validation.
 
@@ -50,7 +50,7 @@ def safe_get_str(data: Dict[str, Any], key: str, field_path: str = "") -> str:
 
 
 def safe_get_optional_str(
-    data: Dict[str, Any], key: str, field_path: str = ""
+    data: dict[str, Any], key: str, field_path: str = ""
 ) -> str | None:
     """
     Safely extract optional string from dict.
@@ -83,7 +83,7 @@ def safe_get_optional_str(
     return value
 
 
-def safe_get_bool(data: Dict[str, Any], key: str, field_path: str = "") -> bool:
+def safe_get_bool(data: dict[str, Any], key: str, field_path: str = "") -> bool:
     """
     Safely extract boolean from dict with runtime validation.
 
@@ -112,7 +112,7 @@ def safe_get_bool(data: Dict[str, Any], key: str, field_path: str = "") -> bool:
     return value
 
 
-def safe_get_list(data: Dict[str, Any], key: str, field_path: str = "") -> list[Any]:
+def safe_get_list(data: dict[str, Any], key: str, field_path: str = "") -> list[Any]:
     """
     Safely extract list from dict with runtime validation.
 
@@ -142,7 +142,7 @@ def safe_get_list(data: Dict[str, Any], key: str, field_path: str = "") -> list[
 
 
 def safe_get_optional_list(
-    data: Dict[str, Any], key: str, field_path: str = ""
+    data: dict[str, Any], key: str, field_path: str = ""
 ) -> list[Any] | None:
     """
     Safely extract optional list from dict.
@@ -176,8 +176,8 @@ def safe_get_optional_list(
 
 
 def safe_get_dict(
-    data: Dict[str, Any], key: str, field_path: str = ""
-) -> Dict[str, Any]:
+    data: dict[str, Any], key: str, field_path: str = ""
+) -> dict[str, Any]:
     """
     Safely extract nested dict from dict with runtime validation.
 
@@ -207,8 +207,8 @@ def safe_get_dict(
 
 
 def safe_get_optional_dict(
-    data: Dict[str, Any], key: str, field_path: str = ""
-) -> Dict[str, Any] | None:
+    data: dict[str, Any], key: str, field_path: str = ""
+) -> dict[str, Any] | None:
     """
     Safely extract optional nested dict from dict.
 
@@ -264,7 +264,7 @@ def safe_parse_uuid(value: str, field_path: str = "") -> UUID:
 
 def validate_json_response(
     response_data: Any, field_path: str = "response"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Validate that response data is a dictionary.
 

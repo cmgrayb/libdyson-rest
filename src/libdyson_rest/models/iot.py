@@ -5,7 +5,7 @@ These models represent the IoT connection data structures from the Dyson API.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, cast
+from typing import Any, cast
 from uuid import UUID
 
 from ..types import IoTCredentialsResponseDict, IoTDataResponseDict
@@ -50,7 +50,7 @@ class IoTCredentials:
             token_value=token_value,
         )
 
-    def to_dict(self) -> Dict[str, str]:
+    def to_dict(self) -> dict[str, str]:
         """Convert IoTCredentials instance to dictionary."""
         return {
             "ClientId": str(self.client_id),
@@ -83,7 +83,7 @@ class IoTData:
             iot_credentials=IoTCredentials.from_dict(iot_creds_data),
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert IoTData instance to dictionary."""
         return {
             "Endpoint": self.endpoint,

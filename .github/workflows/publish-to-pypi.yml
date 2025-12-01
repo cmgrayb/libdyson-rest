@@ -125,9 +125,8 @@ jobs:
 
     - name: Run quality checks
       run: |
-        python -m black --check .
-        python -m flake8 .
-        python -m isort --check-only .
+        python -m ruff check .
+        python -m ruff format --check .
 
     - name: Build package
       run: python -m build

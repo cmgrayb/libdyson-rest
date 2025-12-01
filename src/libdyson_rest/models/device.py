@@ -6,7 +6,7 @@ These models represent the device data structures from the Dyson API.
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 from ..types import (
     ConnectedConfigurationResponseDict,
@@ -69,8 +69,8 @@ class Firmware:
     auto_update_enabled: bool
     new_version_available: bool
     version: str
-    capabilities: Optional[List[CapabilityString]] = None
-    minimum_app_version: Optional[str] = None
+    capabilities: list[CapabilityString] | None = None
+    minimum_app_version: str | None = None
 
     @classmethod
     def from_dict(cls, data: FirmwareResponseDict) -> "Firmware":
@@ -160,12 +160,12 @@ class Device:
 
     category: DeviceCategory
     connection_category: ConnectionCategory
-    model: Optional[str]
+    model: str | None
     name: str
     serial_number: str
     type: str
-    variant: Optional[str] = None
-    connected_configuration: Optional[ConnectedConfiguration] = None
+    variant: str | None = None
+    connected_configuration: ConnectedConfiguration | None = None
 
     @classmethod
     def from_dict(cls, data: DeviceResponseDict) -> "Device":
@@ -201,9 +201,9 @@ class Device:
             connected_configuration=connected_config,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert Device instance to dictionary."""
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "category": self.category.value,
             "connectionCategory": self.connection_category.value,
             "model": self.model,
@@ -217,8 +217,12 @@ class Device:
 
         if self.connected_configuration:
             firmware_dict = {
-                "autoUpdateEnabled": self.connected_configuration.firmware.auto_update_enabled,
-                "newVersionAvailable": self.connected_configuration.firmware.new_version_available,
+                "autoUpdateEnabled": (
+                    self.connected_configuration.firmware.auto_update_enabled
+                ),
+                "newVersionAvailable": (
+                    self.connected_configuration.firmware.new_version_available
+                ),
                 "version": self.connected_configuration.firmware.version,
             }
 
@@ -236,9 +240,15 @@ class Device:
             result["connectedConfiguration"] = {
                 "firmware": firmware_dict,
                 "mqtt": {
-                    "localBrokerCredentials": self.connected_configuration.mqtt.local_broker_credentials,
-                    "mqttRootTopicLevel": self.connected_configuration.mqtt.mqtt_root_topic_level,
-                    "remoteBrokerType": self.connected_configuration.mqtt.remote_broker_type.value,
+                    "localBrokerCredentials": (
+                        self.connected_configuration.mqtt.local_broker_credentials
+                    ),
+                    "mqttRootTopicLevel": (
+                        self.connected_configuration.mqtt.mqtt_root_topic_level
+                    ),
+                    "remoteBrokerType": (
+                        self.connected_configuration.mqtt.remote_broker_type.value
+                    ),
                 },
             }
 

@@ -38,7 +38,8 @@ logger = logging.getLogger(__name__)
 
 # Default headers required by the API
 # Noted from recent traces: DysonLink/205298 CFNetwork/3826.600.41 Darwin/24.6.0
-# Where 205298 is the app build for Dyson Link on iOS, CFNetwork is CloudFlare's added header, and Darwin is the iOS version as of 18.6.2
+# Where 205298 is the app build for Dyson Link on iOS, CFNetwork is CloudFlare's
+# added header, and Darwin is the iOS version as of 18.6.2
 DEFAULT_USER_AGENT = "android client"
 
 
@@ -46,8 +47,9 @@ class AsyncDysonClient:
     """
     Asynchronous client for interacting with the Dyson REST API.
 
-    This client handles the complete authentication flow, device discovery, and IoT credential
-    retrieval for Dyson devices through their REST API according to the OpenAPI specification.
+    This client handles the complete authentication flow, device discovery, and IoT
+    credential retrieval for Dyson devices through their REST API according to the
+    OpenAPI specification.
 
     All methods are async and should be awaited.
 
@@ -232,7 +234,8 @@ class AsyncDysonClient:
         Check the status of a user account.
 
         Args:
-            email: Email address to check status for. Uses instance email if not provided.
+            email: Email address to check status for. Uses instance email if not
+                provided.
 
         Returns:
             UserStatus object containing account information
@@ -387,7 +390,8 @@ class AsyncDysonClient:
                     logger.error(f"400 Bad Request - Request URL: {e.response.url}")
                     if hasattr(e, "request") and e.request is not None:
                         logger.error(
-                            f"400 Bad Request - Request headers: {dict(e.request.headers)}"
+                            f"400 Bad Request - Request headers: "
+                            f"{dict(e.request.headers)}"
                         )
                 except (AttributeError, ValueError, TypeError) as log_error:
                     # Only catch specific exceptions that might occur during logging
@@ -428,7 +432,8 @@ class AsyncDysonClient:
         Convenience method for full authentication flow.
 
         If OTP code is provided, completes the full authentication process.
-        If not provided, begins the login process and stores challenge ID for later completion.
+        If not provided, begins the login process and stores challenge ID for later
+        completion.
 
         Args:
             otp_code: OTP code from email (optional)
@@ -651,7 +656,8 @@ class AsyncDysonClient:
                 raise DysonAuthError("Authentication token expired or invalid") from e
             elif e.response.status_code == 404:
                 raise DysonAPIError(
-                    f"Device {serial_number} not found or no pending firmware update available"
+                    f"Device {serial_number} not found or no pending firmware "
+                    f"update available"
                 ) from e
             raise DysonConnectionError(f"Failed to trigger firmware update: {e}") from e
         except httpx.RequestError as e:

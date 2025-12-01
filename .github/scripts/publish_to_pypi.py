@@ -12,10 +12,9 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
 
 
-def run_command(cmd: str, description: str) -> Optional[subprocess.CompletedProcess]:
+def run_command(cmd: str, description: str) -> subprocess.CompletedProcess | None:
     """Run a command and handle errors."""
     print(f"🔧 {description}...")
     try:

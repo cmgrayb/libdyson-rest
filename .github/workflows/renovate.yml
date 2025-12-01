@@ -158,9 +158,7 @@ jobs:
           const qualityToolPRs = pulls.filter(pr =>
             pr.user.login.includes('renovate') &&
             (pr.labels.some(label => label.name === 'quality-tools') ||
-             pr.title.toLowerCase().includes('black') ||
-             pr.title.toLowerCase().includes('flake8') ||
-             pr.title.toLowerCase().includes('isort') ||
+             pr.title.toLowerCase().includes('ruff') ||
              pr.title.toLowerCase().includes('mypy') ||
              pr.title.toLowerCase().includes('pytest') ||
              pr.title.toLowerCase().includes('pre-commit'))
@@ -180,9 +178,8 @@ jobs:
               1. **Verify quality checks pass**:
                  \`\`\`bash
                  python -m pytest
-                 python -m black --check .
-                 python -m flake8 .
-                 python -m isort --check-only .
+                 python -m ruff check .
+                 python -m ruff format --check .
                  python -m mypy src/
                  \`\`\`
 

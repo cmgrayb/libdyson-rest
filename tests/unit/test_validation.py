@@ -5,7 +5,7 @@ These tests cover the runtime validation functions used throughout the library
 for safe JSON parsing and data extraction.
 """
 
-from typing import Any, Dict
+from typing import Any
 from uuid import UUID
 
 import pytest
@@ -51,13 +51,13 @@ class TestSafeGetStr:
 
     def test_safe_get_str_missing_key(self) -> None:
         """Test string extraction with missing key."""
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         with pytest.raises(JSONValidationError, match="Missing required field: name"):
             safe_get_str(data, "name")
 
     def test_safe_get_str_missing_key_with_path(self) -> None:
         """Test string extraction with missing key and field path."""
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         with pytest.raises(
             JSONValidationError, match="Missing required field: user.name"
         ):
@@ -89,7 +89,7 @@ class TestSafeGetOptionalStr:
 
     def test_safe_get_optional_str_missing_key(self) -> None:
         """Test optional string extraction with missing key."""
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         result = safe_get_optional_str(data, "name")
         assert result is None
 
@@ -125,7 +125,7 @@ class TestSafeGetBool:
 
     def test_safe_get_bool_missing_key(self) -> None:
         """Test bool extraction with missing key."""
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         with pytest.raises(JSONValidationError, match="Missing required field: active"):
             safe_get_bool(data, "active")
 
@@ -149,13 +149,13 @@ class TestSafeGetList:
 
     def test_safe_get_list_empty(self) -> None:
         """Test list extraction with empty list."""
-        data: Dict[str, Any] = {"items": []}
+        data: dict[str, Any] = {"items": []}
         result = safe_get_list(data, "items")
         assert result == []
 
     def test_safe_get_list_missing_key(self) -> None:
         """Test list extraction with missing key."""
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         with pytest.raises(JSONValidationError, match="Missing required field: items"):
             safe_get_list(data, "items")
 
@@ -179,7 +179,7 @@ class TestSafeGetOptionalList:
 
     def test_safe_get_optional_list_missing_key(self) -> None:
         """Test optional list extraction with missing key."""
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         result = safe_get_optional_list(data, "items")
         assert result is None
 
@@ -209,13 +209,13 @@ class TestSafeGetDict:
 
     def test_safe_get_dict_empty(self) -> None:
         """Test dict extraction with empty dict."""
-        data: Dict[str, Any] = {"config": {}}
+        data: dict[str, Any] = {"config": {}}
         result = safe_get_dict(data, "config")
         assert result == {}
 
     def test_safe_get_dict_missing_key(self) -> None:
         """Test dict extraction with missing key."""
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         with pytest.raises(JSONValidationError, match="Missing required field: config"):
             safe_get_dict(data, "config")
 
@@ -239,7 +239,7 @@ class TestSafeGetOptionalDict:
 
     def test_safe_get_optional_dict_missing_key(self) -> None:
         """Test optional dict extraction with missing key."""
-        data: Dict[str, Any] = {}
+        data: dict[str, Any] = {}
         result = safe_get_optional_dict(data, "config")
         assert result is None
 
