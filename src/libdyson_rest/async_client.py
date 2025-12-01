@@ -37,6 +37,8 @@ from .utils import get_api_hostname
 logger = logging.getLogger(__name__)
 
 # Default headers required by the API
+# Noted from recent traces: DysonLink/205298 CFNetwork/3826.600.41 Darwin/24.6.0
+# Where 205298 is the app build for Dyson Link on iOS, CFNetwork is CloudFlare's added header, and Darwin is the iOS version as of 18.6.2
 DEFAULT_USER_AGENT = "android client"
 
 
