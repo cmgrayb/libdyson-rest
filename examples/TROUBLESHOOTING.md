@@ -186,7 +186,7 @@ The script generates a timestamped JSON file containing all collected data:
           "version": "438MPF.00.01.003.0011",
           "auto_update_enabled": false,
           "new_version_available": false,
-          "capabilities": ["AdvanceOscillationDay1", "Scheduling", "EnvironmentalData"]
+          "capabilities": ["AdvanceOscillationDay0", "AdvanceOscillationDay1", "Scheduling", "EnvironmentalData"]
         }
       },
       "iot_credentials": {

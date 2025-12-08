@@ -55,6 +55,7 @@ class RemoteBrokerType(Enum):
 class CapabilityString(Enum):
     """Device capability enumeration."""
 
+    ADVANCE_OSCILLATION_DAY0 = "AdvanceOscillationDay0"
     ADVANCE_OSCILLATION_DAY1 = "AdvanceOscillationDay1"
     SCHEDULING = "Scheduling"
     ENVIRONMENTAL_DATA = "EnvironmentalData"

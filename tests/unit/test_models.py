@@ -441,3 +441,30 @@ def test_device_from_dict_with_valid_name() -> None:
     assert device.type == "438"
     assert device.category == DeviceCategory.ENVIRONMENT_CLEANER
     assert device.connection_category == ConnectionCategory.WIFI_ONLY
+
+
+def test_capability_string_advance_oscillation_day0() -> None:
+    """Test that AdvanceOscillationDay0 capability is supported."""
+    # Test the enum value directly
+    capability = CapabilityString.ADVANCE_OSCILLATION_DAY0
+    assert capability.value == "AdvanceOscillationDay0"
+
+    # Test it can be created from string (as would happen during API response parsing)
+    capability_from_str = CapabilityString("AdvanceOscillationDay0")
+    assert capability_from_str == CapabilityString.ADVANCE_OSCILLATION_DAY0
+
+    # Test it works in firmware capabilities list
+    firmware = Firmware(
+        auto_update_enabled=True,
+        new_version_available=False,
+        version="1.0.0",
+        capabilities=[
+            CapabilityString.ADVANCE_OSCILLATION_DAY0,
+            CapabilityString.SCHEDULING,
+        ],
+        minimum_app_version=None,
+    )
+
+    assert len(firmware.capabilities) == 2
+    assert CapabilityString.ADVANCE_OSCILLATION_DAY0 in firmware.capabilities
+    assert CapabilityString.SCHEDULING in firmware.capabilities
