@@ -13,7 +13,6 @@ from .auth import (
 )
 from .device import (
     MQTT,
-    CapabilityString,
     ConnectedConfiguration,
     ConnectionCategory,
     Device,
@@ -32,7 +31,6 @@ __all__ = [
     "TokenType",
     "UserStatus",
     # Device models
-    "CapabilityString",
     "ConnectedConfiguration",
     "ConnectionCategory",
     "Device",

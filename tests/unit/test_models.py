@@ -2,7 +2,6 @@
 
 from libdyson_rest.models import (
     MQTT,
-    CapabilityString,
     ConnectedConfiguration,
     ConnectionCategory,
     Device,
@@ -250,7 +249,7 @@ def test_device_to_dict_with_connected_config() -> None:
         auto_update_enabled=True,
         new_version_available=False,
         version="1.0.0",
-        capabilities=[CapabilityString.SCHEDULING],
+        capabilities=["Scheduling"],
         minimum_app_version="2.0.0",
     )
 
@@ -441,3 +440,26 @@ def test_device_from_dict_with_valid_name() -> None:
     assert device.type == "438"
     assert device.category == DeviceCategory.ENVIRONMENT_CLEANER
     assert device.connection_category == ConnectionCategory.WIFI_ONLY
+
+
+def test_capability_string_unknown_capabilities() -> None:
+    """Test that unknown capabilities are supported without breaking."""
+    # Test that unknown capabilities work (like AdvanceOscillationDay0)
+    firmware = Firmware(
+        auto_update_enabled=True,
+        new_version_available=False,
+        version="1.0.0",
+        capabilities=[
+            "AdvanceOscillationDay0",  # Previously unknown capability
+            "AdvanceOscillationDay1",
+            "Scheduling",
+            "SomeNewCapability",  # Future unknown capability
+        ],
+        minimum_app_version=None,
+    )
+
+    assert len(firmware.capabilities) == 4
+    assert "AdvanceOscillationDay0" in firmware.capabilities
+    assert "AdvanceOscillationDay1" in firmware.capabilities
+    assert "Scheduling" in firmware.capabilities
+    assert "SomeNewCapability" in firmware.capabilities

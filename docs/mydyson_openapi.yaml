@@ -618,6 +618,7 @@ paths:
                     autoUpdateEnabled: false
                     newVersionAvailable: false
                     capabilities:
+                    - AdvanceOscillationDay0
                     - AdvanceOscillationDay1
                     - Scheduling
                     - EnvironmentalData

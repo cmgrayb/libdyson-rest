@@ -52,16 +52,6 @@ class RemoteBrokerType(Enum):
     WSS = "wss"
 
 
-class CapabilityString(Enum):
-    """Device capability enumeration."""
-
-    ADVANCE_OSCILLATION_DAY1 = "AdvanceOscillationDay1"
-    SCHEDULING = "Scheduling"
-    ENVIRONMENTAL_DATA = "EnvironmentalData"
-    EXTENDED_AQ = "ExtendedAQ"
-    CHANGE_WIFI = "ChangeWifi"
-
-
 @dataclass
 class Firmware:
     """Device firmware information."""
@@ -69,7 +59,7 @@ class Firmware:
     auto_update_enabled: bool
     new_version_available: bool
     version: str
-    capabilities: list[CapabilityString] | None = None
+    capabilities: list[str] | None = None
     minimum_app_version: str | None = None
 
     @classmethod
@@ -80,7 +70,7 @@ class Firmware:
         capabilities = None
         capabilities_list = safe_get_optional_list(validated_data, "capabilities")
         if capabilities_list is not None:
-            capabilities = [CapabilityString(cap) for cap in capabilities_list]
+            capabilities = [str(cap) for cap in capabilities_list]
 
         return cls(
             auto_update_enabled=safe_get_bool(validated_data, "autoUpdateEnabled"),
@@ -227,10 +217,9 @@ class Device:
             }
 
             if self.connected_configuration.firmware.capabilities:
-                firmware_dict["capabilities"] = [
-                    cap.value
-                    for cap in self.connected_configuration.firmware.capabilities
-                ]
+                firmware_dict["capabilities"] = list(
+                    self.connected_configuration.firmware.capabilities
+                )
 
             if self.connected_configuration.firmware.minimum_app_version:
                 firmware_dict["minimumAppVersion"] = (
