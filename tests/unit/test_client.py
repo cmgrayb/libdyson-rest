@@ -196,6 +196,19 @@ class TestDysonClient:
 
         client.close()
 
+    def test_decrypt_local_credentials_no_mqtt_device(self) -> None:
+        """Test decrypt_local_credentials handles devices without MQTT (LEC_ONLY)."""
+        client = DysonClient()
+
+        # LEC_ONLY devices don't have MQTT credentials - should raise ValueError
+        with pytest.raises(ValueError, match="Device has no MQTT credentials"):
+            client.decrypt_local_credentials("", "BT-DEVICE-123")
+
+        with pytest.raises(ValueError, match="Device has no MQTT credentials"):
+            client.decrypt_local_credentials(None, "BT-DEVICE-123")
+
+        client.close()
+
     def test_context_manager(self) -> None:
         """Test client works as context manager."""
         with DysonClient(email="test@example.com") as client:

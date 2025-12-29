@@ -621,6 +621,17 @@ class TestAsyncDysonClient:
         with pytest.raises(DysonAPIError, match="Failed to decrypt local credentials"):
             client.decrypt_local_credentials("dGVzdA==", "TEST-SERIAL-456")
 
+    def test_decrypt_local_credentials_no_mqtt_device(self) -> None:
+        """Test decrypt_local_credentials handles devices without MQTT (LEC_ONLY)."""
+        client = AsyncDysonClient()
+
+        # LEC_ONLY devices don't have MQTT credentials - should raise ValueError
+        with pytest.raises(ValueError, match="Device has no MQTT credentials"):
+            client.decrypt_local_credentials("", "BT-DEVICE-123")
+
+        with pytest.raises(ValueError, match="Device has no MQTT credentials"):
+            client.decrypt_local_credentials(None, "BT-DEVICE-123")
+
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
     @pytest.mark.asyncio
     async def test_regional_endpoint_australia(self, mock_get: AsyncMock) -> None:

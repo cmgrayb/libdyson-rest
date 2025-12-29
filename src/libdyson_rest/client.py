@@ -676,7 +676,13 @@ class DysonClient:
 
         Raises:
             DysonAPIError: If decryption fails
+            ValueError: If encrypted_password is empty/None (device has no MQTT)
         """
+        if not encrypted_password:
+            raise ValueError(
+                "Device has no MQTT credentials (likely LEC_ONLY or NON_CONNECTED)"
+            )
+
         try:
             # Fixed AES key used by Dyson (from Go implementation)
             aes_key = bytes(

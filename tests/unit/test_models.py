@@ -254,7 +254,7 @@ def test_device_to_dict_with_connected_config() -> None:
     )
 
     mqtt = MQTT(
-        local_broker_credentials={"user": "test", "pass": "secret"},
+        local_broker_credentials="base64_encrypted_credentials_here",
         mqtt_root_topic_level="root/topic",
         remote_broker_type=RemoteBrokerType.WSS,
     )
@@ -286,7 +286,7 @@ def test_device_to_dict_with_connected_config() -> None:
     assert firmware_dict["minimumAppVersion"] == "2.0.0"
 
     mqtt_dict = result["connectedConfiguration"]["mqtt"]
-    assert mqtt_dict["localBrokerCredentials"] == {"user": "test", "pass": "secret"}
+    assert mqtt_dict["localBrokerCredentials"] == "base64_encrypted_credentials_here"
     assert mqtt_dict["mqttRootTopicLevel"] == "root/topic"
     assert mqtt_dict["remoteBrokerType"] == "wss"
 
@@ -302,7 +302,7 @@ def test_device_to_dict_with_config_no_capabilities() -> None:
     )
 
     mqtt = MQTT(
-        local_broker_credentials={"user": "test"},
+        local_broker_credentials="encrypted_test_credentials",
         mqtt_root_topic_level="root/topic",
         remote_broker_type=RemoteBrokerType.WSS,
     )
@@ -463,3 +463,83 @@ def test_capability_string_unknown_capabilities() -> None:
     assert "AdvanceOscillationDay1" in firmware.capabilities
     assert "Scheduling" in firmware.capabilities
     assert "SomeNewCapability" in firmware.capabilities
+
+
+def test_wifi_device_with_mqtt_credentials() -> None:
+    """Test WiFi device creation with proper MQTT configuration."""
+    firmware = Firmware(
+        auto_update_enabled=True,
+        new_version_available=False,
+        version="1.0.0",
+        capabilities=None,
+        minimum_app_version=None,
+    )
+
+    # WiFi devices have full MQTT configuration with required credentials
+    mqtt = MQTT(
+        local_broker_credentials="encrypted_credentials_here",
+        mqtt_root_topic_level="438M",
+        remote_broker_type=RemoteBrokerType.WSS,
+    )
+
+    config = ConnectedConfiguration(firmware=firmware, mqtt=mqtt)
+
+    device = Device(
+        category=DeviceCategory.ENVIRONMENT_CLEANER,
+        connection_category=ConnectionCategory.WIFI_ONLY,
+        model="ABC123",
+        name="WiFi Device",
+        serial_number="SN123456",
+        type="438",
+        variant=None,
+        connected_configuration=config,
+    )
+
+    # WiFi devices have MQTT configuration with credentials
+    assert device.connected_configuration.mqtt is not None
+    assert (
+        device.connected_configuration.mqtt.local_broker_credentials
+        == "encrypted_credentials_here"
+    )
+
+    # Verify serialization includes MQTT section
+    result = device.to_dict()
+    assert "mqtt" in result["connectedConfiguration"]
+    mqtt_dict = result["connectedConfiguration"]["mqtt"]
+    assert mqtt_dict["localBrokerCredentials"] == "encrypted_credentials_here"
+
+
+def test_lec_only_device_with_no_mqtt_config() -> None:
+    """Test LEC_ONLY device creation with no MQTT configuration."""
+    # LEC_ONLY devices (Bluetooth only) don't connect via Wi-Fi/MQTT
+    # so they don't have MQTT configuration at all
+    firmware = Firmware(
+        auto_update_enabled=True,
+        new_version_available=False,
+        version="1.0.0",
+        capabilities=None,
+        minimum_app_version=None,
+    )
+
+    # No MQTT config for Bluetooth-only devices
+    config = ConnectedConfiguration(firmware=firmware, mqtt=None)
+
+    device = Device(
+        category=DeviceCategory.ENVIRONMENT_CLEANER,
+        connection_category=ConnectionCategory.LEC_ONLY,  # Bluetooth only
+        model="ABC123",
+        name="Bluetooth Device",
+        serial_number="BT123456",
+        type="438",
+        variant=None,
+        connected_configuration=config,
+    )
+
+    # Should not throw an exception - this is the correct approach
+    assert device.connected_configuration.mqtt is None
+    assert device.connection_category == ConnectionCategory.LEC_ONLY
+
+    # Verify serialization works - no MQTT section should be present
+    result = device.to_dict()
+    assert result["connectionCategory"] == "lecOnly"
+    assert "mqtt" not in result["connectedConfiguration"]
