@@ -53,7 +53,7 @@ class ConnectedConfigurationResponseDict(TypedDict):
     """Type definition for connected configuration in API response."""
 
     firmware: Required[FirmwareResponseDict]
-    mqtt: Required[MQTTResponseDict]
+    mqtt: NotRequired[MQTTResponseDict]  # Optional for non-WiFi devices
 
 
 class DeviceResponseDict(TypedDict):

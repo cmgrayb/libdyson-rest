@@ -128,7 +128,7 @@ class ConnectedConfiguration:
     """Connected device configuration."""
 
     firmware: Firmware
-    mqtt: MQTT
+    mqtt: MQTT | None  # Optional - only present for WiFi-enabled devices
 
     @classmethod
     def from_dict(
@@ -137,10 +137,19 @@ class ConnectedConfiguration:
         """Create ConnectedConfiguration instance from dictionary."""
         validated_data = validate_json_response(data, "ConnectedConfiguration")
         firmware_data = safe_get_dict(validated_data, "firmware")
-        mqtt_data = safe_get_dict(validated_data, "mqtt")
+
+        # MQTT config is optional - some devices don't use WiFi/MQTT
+        mqtt = None
+        mqtt_data = safe_get_optional_dict(validated_data, "mqtt")
+        if mqtt_data is not None:
+            # Only create MQTT config if credentials are present
+            local_creds = mqtt_data.get("localBrokerCredentials")
+            if local_creds is not None:
+                mqtt = MQTT.from_dict(cast(MQTTResponseDict, mqtt_data))
+
         return cls(
             firmware=Firmware.from_dict(cast(FirmwareResponseDict, firmware_data)),
-            mqtt=MQTT.from_dict(cast(MQTTResponseDict, mqtt_data)),
+            mqtt=mqtt,
         )
 
 
@@ -228,7 +237,11 @@ class Device:
 
             result["connectedConfiguration"] = {
                 "firmware": firmware_dict,
-                "mqtt": {
+            }
+
+            # Only include MQTT config if device has WiFi connectivity
+            if self.connected_configuration.mqtt is not None:
+                result["connectedConfiguration"]["mqtt"] = {
                     "localBrokerCredentials": (
                         self.connected_configuration.mqtt.local_broker_credentials
                     ),
@@ -238,7 +251,6 @@ class Device:
                     "remoteBrokerType": (
                         self.connected_configuration.mqtt.remote_broker_type.value
                     ),
-                },
-            }
+                }
 
         return result
