@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed "Extra data" JSON parsing error at character position 145
   - Method now uses `JSONDecoder.raw_decode()` to handle multiple JSON objects or extra metadata in decrypted credentials
   - Added comprehensive test coverage for robot vacuum credential scenarios
+  - Enhanced debug logging to output full decrypted credentials on parsing failures for troubleshooting
 
 ## [0.2.0] - 2025-08-17
 
