@@ -756,7 +756,10 @@ class AsyncDysonClient:
             decrypted_text = decrypted_bytes.decode("utf-8").rstrip("\b").rstrip("\x00")
 
             # Parse JSON to extract password
-            password_data = json.loads(decrypted_text)
+            # Use raw_decode to handle robot vacuum devices that have multiple JSON
+            # objects or extra data after the first JSON (lecAndWifi devices)
+            decoder = json.JSONDecoder()
+            password_data, _ = decoder.raw_decode(decrypted_text)
             return str(password_data["apPasswordHash"])
 
         except Exception as e:
