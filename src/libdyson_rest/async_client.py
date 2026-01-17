@@ -762,8 +762,7 @@ class AsyncDysonClient:
             )
             logger.debug(f"Decrypted text: {decrypted_text}")
             logger.debug(
-                f"Decrypted text (hex, first 200 bytes): "
-                f"{decrypted_bytes[:200].hex()}"
+                f"Decrypted text (hex, first 200 bytes): {decrypted_bytes[:200].hex()}"
             )
 
             # Parse JSON to extract password
