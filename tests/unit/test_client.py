@@ -209,6 +209,100 @@ class TestDysonClient:
 
         client.close()
 
+    def test_decrypt_local_credentials_robot_vacuum_extra_data(self) -> None:
+        """Test decrypt_local_credentials with robot vacuum devices that have
+        extra data after the first JSON object (lecAndWifi devices).
+
+        Robot vacuum devices with lecAndWifi connectivity may have multiple JSON
+        objects or extra data in the decrypted credentials. The method should
+        parse the first valid JSON object and ignore extra data.
+        """
+        import base64
+        import json
+
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+        client = DysonClient()
+
+        # Create test password data for robot vacuum (first JSON object)
+        test_password = "robot_vacuum_password_789"
+        password_data = {"apPasswordHash": test_password}
+
+        # Simulate robot vacuum credentials with multiple JSON objects
+        json_data = json.dumps(password_data)
+        lec_data = json.dumps({"lecCredentials": "extra_data_for_lec"})
+        combined_data = json_data + lec_data
+
+        # Pad to multiple of 16 bytes
+        padded_data = combined_data.ljust((len(combined_data) + 15) // 16 * 16, "\0")
+
+        # Use the same encryption method
+        aes_key = bytes(range(1, 33))
+        iv = bytes(16)
+
+        # Encrypt the test data
+        cipher = Cipher(
+            algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend()
+        )
+        encryptor = cipher.encryptor()
+        encrypted_bytes = (
+            encryptor.update(padded_data.encode("utf-8")) + encryptor.finalize()
+        )
+
+        # Base64 encode
+        encrypted_b64 = base64.b64encode(encrypted_bytes).decode("ascii")
+
+        # Test decryption - should extract password from first JSON object
+        result = client.decrypt_local_credentials(encrypted_b64, "RB03-SERIAL-456")
+        assert result == test_password
+
+        client.close()
+
+    def test_decrypt_local_credentials_robot_vacuum_extra_text(self) -> None:
+        """Test decrypt_local_credentials with robot vacuum devices that have
+        non-JSON extra data after the first JSON object.
+        """
+        import base64
+        import json
+
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+        client = DysonClient()
+
+        # Create test password data
+        test_password = "robot_password_sync_test"
+        password_data = {"apPasswordHash": test_password}
+
+        # Simulate credentials with extra non-JSON data
+        json_data = json.dumps(password_data)
+        combined_data = json_data + "EXTRA_METADATA"
+
+        # Pad to multiple of 16 bytes
+        padded_data = combined_data.ljust((len(combined_data) + 15) // 16 * 16, "\0")
+
+        # Encrypt
+        aes_key = bytes(range(1, 33))
+        iv = bytes(16)
+
+        cipher = Cipher(
+            algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend()
+        )
+        encryptor = cipher.encryptor()
+        encrypted_bytes = (
+            encryptor.update(padded_data.encode("utf-8")) + encryptor.finalize()
+        )
+
+        # Base64 encode
+        encrypted_b64 = base64.b64encode(encrypted_bytes).decode("ascii")
+
+        # Test decryption
+        result = client.decrypt_local_credentials(encrypted_b64, "277-ROBOT-SYNC")
+        assert result == test_password
+
+        client.close()
+
     def test_context_manager(self) -> None:
         """Test client works as context manager."""
         with DysonClient(email="test@example.com") as client:
