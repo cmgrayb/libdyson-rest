@@ -632,6 +632,101 @@ class TestAsyncDysonClient:
         with pytest.raises(ValueError, match="Device has no MQTT credentials"):
             client.decrypt_local_credentials(None, "BT-DEVICE-123")
 
+    def test_decrypt_local_credentials_robot_vacuum_extra_data(self) -> None:
+        """Test decrypt_local_credentials with robot vacuum devices that have
+        extra data after the first JSON object (lecAndWifi devices).
+
+        Robot vacuum devices with lecAndWifi connectivity may have multiple JSON
+        objects or extra data in the decrypted credentials. The method should
+        parse the first valid JSON object and ignore extra data.
+        """
+        import base64
+        import json
+
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+        client = AsyncDysonClient()
+
+        # Create test password data for robot vacuum (first JSON object)
+        test_password = "robot_vacuum_password_123"
+        password_data = {"apPasswordHash": test_password}
+
+        # Simulate robot vacuum credentials with multiple JSON objects
+        # First JSON is the MQTT credentials, followed by LEC credentials
+        json_data = json.dumps(password_data)
+        lec_data = json.dumps({"lecCredentials": "extra_data_for_lec"})
+        combined_data = json_data + lec_data
+
+        # Pad to multiple of 16 bytes
+        padded_data = combined_data.ljust((len(combined_data) + 15) // 16 * 16, "\0")
+
+        # Use the same encryption method as the real implementation
+        aes_key = bytes(range(1, 33))  # 1,2,3,...,32
+        iv = bytes(16)  # Zero-filled IV
+
+        # Encrypt the test data
+        cipher = Cipher(
+            algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend()
+        )
+        encryptor = cipher.encryptor()
+        encrypted_bytes = (
+            encryptor.update(padded_data.encode("utf-8")) + encryptor.finalize()
+        )
+
+        # Base64 encode
+        encrypted_b64 = base64.b64encode(encrypted_bytes).decode("ascii")
+
+        # Test decryption - should extract password from first JSON object
+        result = client.decrypt_local_credentials(encrypted_b64, "RB03-SERIAL-123")
+        assert result == test_password
+
+    def test_decrypt_local_credentials_robot_vacuum_extra_text(self) -> None:
+        """Test decrypt_local_credentials with robot vacuum devices that have
+        non-JSON extra data after the first JSON object.
+
+        Some robot vacuum devices may have additional metadata or padding after
+        the first JSON object that isn't valid JSON.
+        """
+        import base64
+        import json
+
+        from cryptography.hazmat.backends import default_backend
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+        client = AsyncDysonClient()
+
+        # Create test password data
+        test_password = "robot_password_456"
+        password_data = {"apPasswordHash": test_password}
+
+        # Simulate robot vacuum credentials with extra non-JSON data
+        json_data = json.dumps(password_data)
+        combined_data = json_data + "EXTRA_METADATA_NOT_JSON"
+
+        # Pad to multiple of 16 bytes
+        padded_data = combined_data.ljust((len(combined_data) + 15) // 16 * 16, "\0")
+
+        # Use the same encryption method
+        aes_key = bytes(range(1, 33))
+        iv = bytes(16)
+
+        # Encrypt the test data
+        cipher = Cipher(
+            algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend()
+        )
+        encryptor = cipher.encryptor()
+        encrypted_bytes = (
+            encryptor.update(padded_data.encode("utf-8")) + encryptor.finalize()
+        )
+
+        # Base64 encode
+        encrypted_b64 = base64.b64encode(encrypted_bytes).decode("ascii")
+
+        # Test decryption - should extract password from first JSON object
+        result = client.decrypt_local_credentials(encrypted_b64, "277-ROBOT-SERIAL")
+        assert result == test_password
+
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
     @pytest.mark.asyncio
     async def test_regional_endpoint_australia(self, mock_get: AsyncMock) -> None:

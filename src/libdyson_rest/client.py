@@ -740,9 +740,36 @@ class DysonClient:
             # Remove padding (trim backspace characters)
             decrypted_text = decrypted_bytes.decode("utf-8").rstrip("\b").rstrip("\x00")
 
+            # Debug logging for troubleshooting robot vacuum credentials
+            logger.debug(
+                f"Decrypted credentials for device {serial_number}: "
+                f"length={len(decrypted_text)} chars"
+            )
+            logger.debug(f"Decrypted text: {decrypted_text}")
+            logger.debug(
+                f"Decrypted text (hex, first 200 bytes): {decrypted_bytes[:200].hex()}"
+            )
+
             # Parse JSON to extract password
-            password_data = json.loads(decrypted_text)
-            return str(password_data["apPasswordHash"])
+            # Use raw_decode to handle robot vacuum devices that have multiple JSON
+            # objects or extra data after the first JSON (lecAndWifi devices)
+            try:
+                decoder = json.JSONDecoder()
+                password_data, end_pos = decoder.raw_decode(decrypted_text)
+                logger.debug(
+                    f"Successfully parsed JSON, ended at position {end_pos} "
+                    f"of {len(decrypted_text)} total chars"
+                )
+                if end_pos < len(decrypted_text):
+                    remaining = decrypted_text[end_pos:]
+                    logger.debug(f"Extra data after JSON: {remaining}")
+                return str(password_data["apPasswordHash"])
+            except json.JSONDecodeError as json_err:
+                logger.error(
+                    f"JSON parsing failed for device {serial_number}: {json_err}"
+                )
+                logger.error(f"Full decrypted text: {decrypted_text}")
+                raise
 
         except Exception as e:
             raise DysonAPIError(f"Failed to decrypt local credentials: {e}") from e
