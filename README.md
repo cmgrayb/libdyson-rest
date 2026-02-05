@@ -9,7 +9,8 @@ A Python library for interacting with Dyson devices through their official REST 
 ## Features
 
 - **Official API Compliance**: Implements the complete Dyson App API as documented in their OpenAPI specification
-- **Two-Step Authentication**: Secure login process with OTP codes
+- **Two-Step Authentication**: Secure login process with OTP codes via email or SMS (mobile)
+- **Mobile Authentication**: Support for SMS OTP authentication for China (CN) region users
 - **Complete Device Management**: List devices, get device details, and retrieve IoT credentials
 - **MQTT Connection Support**: Extract both cloud (AWS IoT) and local MQTT connection parameters
 - **Password Decryption**: Decrypt local MQTT broker credentials for direct device communication
@@ -403,6 +404,7 @@ devices = client.get_devices()
 ### Environment Variables
 - `DYSON_EMAIL`: Default email address
 - `DYSON_PASSWORD`: Default password
+- `DYSON_MOBILE`: Mobile number with country code (for CN region mobile authentication, e.g., `+8613800000000`)
 - `DYSON_COUNTRY`: Default country code (default: "US")
 - `DYSON_CULTURE`: Default culture/locale (default: "en-US")
 - `DYSON_TIMEOUT`: Request timeout in seconds (default: "30")
@@ -415,20 +417,39 @@ devices = client.get_devices()
 
 The library automatically selects the appropriate Dyson API endpoint based on your country code:
 
-| Country Code | Region | API Endpoint |
-|--------------|--------|--------------|
-| `CN` | China | `https://appapi.cp.dyson.cn` |
-| All others | Default | `https://appapi.cp.dyson.com` |
+| Country Code | Region | API Endpoint | Authentication Methods |
+|--------------|--------|--------------|------------------------|
+| `CN` | China | `https://appapi.cp.dyson.cn` | Email OTP, **Mobile SMS OTP** |
+| All others | Default | `https://appapi.cp.dyson.com` | Email OTP |
 
 **Examples:**
 ```python
-# Chinese users
+# Chinese users - Email authentication
 client = DysonClient(country="CN")  # Uses appapi.cp.dyson.cn
+
+# Chinese users - Mobile authentication (SMS OTP)
+client = DysonClient(
+    email="+8613800000000",  # Mobile number with country code
+    password="your_password",
+    country="CN",
+    culture="zh-CN"
+)
+# Call provision() first, then use mobile auth methods:
+# client.provision()
+# challenge = client.begin_login_mobile("+8613800000000")
+# login_info = client.complete_login_mobile(challenge.challenge_id, otp_code, "+8613800000000")
 
 # All other users (US, UK, AU, NZ, etc.)
 client = DysonClient(country="US")  # Uses appapi.cp.dyson.com (default)
 client = DysonClient(country="GB")  # Uses appapi.cp.dyson.com (default)
 ```
+
+**Mobile Authentication (CN Region Only)**:
+- Available only on China (CN) region server (`appapi.cp.dyson.cn`)
+- Uses SMS OTP codes instead of email OTP codes
+- Requires mobile number with country code prefix (e.g., `+8613800000000`)
+- Use dedicated mobile methods: `get_user_status_mobile()`, `begin_login_mobile()`, `complete_login_mobile()`
+- See [examples/mobile_auth_example.py](examples/mobile_auth_example.py) for complete usage
 
 **Note**: Regional endpoint selection is automatic and requires no code changes. Simply specify the correct country code for your region, and the library will route requests to the appropriate API server.
 
@@ -436,6 +457,7 @@ client = DysonClient(country="GB")  # Uses appapi.cp.dyson.com (default)
 
 This library implements the complete Dyson App API as documented in their OpenAPI specification:
 - Authentication endpoints (`/v3/userregistration/email/*`)
+- Mobile authentication endpoints (`/v3/userregistration/mobile/*` - CN region only)
 - Device management (`/v3/manifest`)
 - IoT credentials (`/v2/authorize/iot-credentials`)
 - Provisioning (`/v1/provisioningservice/application/Android/version`)

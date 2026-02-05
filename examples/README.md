@@ -152,6 +152,61 @@ cd examples
 python async_usage_example.py
 ```
 
+### 8. `mobile_auth_example.py`
+**Purpose**: Demonstrates mobile phone authentication for China (CN) region users.
+
+**What it demonstrates**:
+- Mobile number authentication with SMS OTP
+- CN region API server usage (appapi.cp.dyson.cn)
+- Complete mobile authentication flow
+- Mobile number format requirements (country code prefix)
+- Device listing and IoT credential retrieval with mobile auth
+- Error handling specific to mobile authentication
+
+**Usage**:
+```bash
+cd examples
+export DYSON_MOBILE='+8613800000000'
+export DYSON_PASSWORD='your_password'
+python mobile_auth_example.py
+```
+
+**Key Features**:
+- Works exclusively with China (CN) region server
+- Uses SMS OTP instead of email OTP
+- Requires mobile number with country code (e.g., `+8613800000000`)
+- Demonstrates full device discovery and IoT credential flow
+- Comprehensive error messages for mobile-specific issues
+
+**Note**: Mobile authentication is only available on the China (CN) region server and requires a Dyson account registered with a mobile phone number.
+
+### 9. `async_mobile_auth_example.py`
+**Purpose**: Asynchronous version of mobile phone authentication for CN region users.
+
+**What it demonstrates**:
+- All features from `mobile_auth_example.py` using async/await patterns
+- AsyncDysonClient usage with mobile authentication
+- Async SMS OTP verification flow
+- Proper async resource management
+- Optimized for async environments like Home Assistant
+
+**Usage**:
+```bash
+cd examples
+export DYSON_MOBILE='+8613800000000'
+export DYSON_PASSWORD='your_password'
+python async_mobile_auth_example.py
+```
+
+**Key Features**:
+- Same mobile authentication functionality as synchronous version
+- Non-blocking async operations for better performance
+- Proper async context management with cleanup
+- Identical API usage pattern to email authentication but with mobile methods
+- Designed for integration with async frameworks
+
+**Note**: Use this version when integrating mobile authentication with async applications or frameworks like Home Assistant.
+
 ## Prerequisites
 
 Before running these examples:
@@ -175,6 +230,7 @@ Before running these examples:
 
 Most examples follow this pattern:
 
+### Email Authentication (Global/CN)
 ```python
 from libdyson_rest import DysonClient
 
@@ -201,10 +257,44 @@ finally:
     client.close()
 ```
 
+### Mobile Authentication (CN Only)
+```python
+from libdyson_rest import DysonClient
+
+# Initialize client for CN region with mobile
+client = DysonClient(
+    email="+8613800000000",  # Mobile with country code
+    password="your_password",
+    country="CN",
+    culture="zh-CN"
+)
+
+try:
+    # Provision (required)
+    client.provision()
+    
+    # Authenticate with mobile
+    challenge = client.begin_login_mobile("+8613800000000")
+    otp_code = input("Enter OTP from SMS: ")
+    login_info = client.complete_login_mobile(
+        challenge_id=challenge.challenge_id,
+        otp_code=otp_code,
+        mobile="+8613800000000"
+    )
+
+    # Use authenticated client
+    devices = client.get_devices()
+    # ... do something with devices
+
+finally:
+    client.close()
+```
+
 ## Async Usage Pattern
 
 For async environments (like Home Assistant), use this pattern:
 
+### Async Email Authentication (Global/CN)
 ```python
 import asyncio
 from libdyson_rest import AsyncDysonClient
@@ -231,12 +321,46 @@ async def main():
 asyncio.run(main())
 ```
 
+### Async Mobile Authentication (CN Only)
+```python
+import asyncio
+from libdyson_rest import AsyncDysonClient
+
+async def main():
+    # Use async context manager for CN region with mobile
+    async with AsyncDysonClient(
+        email="+8613800000000",  # Mobile with country code
+        password="your_password",
+        country="CN",
+        culture="zh-CN"
+    ) as client:
+        # Provision (required)
+        await client.provision()
+        
+        # Authenticate with mobile asynchronously
+        challenge = await client.begin_login_mobile("+8613800000000")
+        otp_code = input("Enter OTP from SMS: ")
+        login_info = await client.complete_login_mobile(
+            challenge_id=challenge.challenge_id,
+            otp_code=otp_code,
+            mobile="+8613800000000"
+        )
+
+        # Use authenticated client
+        devices = await client.get_devices()
+        # ... do something with devices
+
+# Run async function
+asyncio.run(main())
+```
+
 ## Environment Variables
 
 Some examples support environment variables for convenience:
 
 - `DYSON_EMAIL`: Your Dyson account email
 - `DYSON_PASSWORD`: Your Dyson account password
+- `DYSON_MOBILE`: Your mobile number with country code (for CN region mobile auth)
 
 Set these to avoid entering credentials repeatedly during development.
 
