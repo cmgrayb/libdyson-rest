@@ -989,7 +989,7 @@ class TestAsyncDysonClientMobileAuth:
     async def test_get_user_status_mobile_with_instance_mobile(
         self, mock_post: AsyncMock
     ) -> None:
-        """Test mobile user status check using instance email as mobile."""
+        """Test mobile user status check with explicit mobile parameter."""
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {
@@ -999,10 +999,10 @@ class TestAsyncDysonClientMobileAuth:
         mock_post.return_value = mock_response
 
         client = AsyncDysonClient(
-            email="+8613800000000", password="password", country="CN"
+            email="test@example.com", password="password", country="CN"
         )
-        # Call without explicit mobile parameter - should use instance email
-        user_status = await client.get_user_status_mobile()
+        # Call with explicit mobile parameter
+        user_status = await client.get_user_status_mobile(mobile="+8613800000000")
 
         assert user_status.account_status.value == "ACTIVE"
 

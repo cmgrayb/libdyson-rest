@@ -412,7 +412,6 @@ class DysonClient:
 
         Args:
             mobile: Mobile number with country code (e.g., '+8613800000000').
-                If None, uses client's email (for backwards compatibility).
 
         Returns:
             UserStatus object with account status and authentication method
@@ -424,7 +423,7 @@ class DysonClient:
         if not self._provisioned:
             self.provision()
 
-        target_mobile = mobile or self.email
+        target_mobile = mobile
         if not target_mobile:
             raise DysonAPIError("Mobile number is required")
 
@@ -458,7 +457,6 @@ class DysonClient:
 
         Args:
             mobile: Mobile number with country code (e.g., '+8613800000000').
-                If None, uses client's email (for backwards compatibility).
 
         Returns:
             LoginChallenge object with challenge ID for completing login
@@ -470,7 +468,7 @@ class DysonClient:
         if not self._provisioned:
             self.provision()
 
-        target_mobile = mobile or self.email
+        target_mobile = mobile
         if not target_mobile:
             raise DysonAPIError("Mobile number is required")
 
@@ -532,7 +530,6 @@ class DysonClient:
             challenge_id: Challenge ID from begin_login_mobile()
             otp_code: One-time password code (usually from SMS)
             mobile: Mobile number with country code (e.g., '+8613800000000').
-                If None, uses client's email (for backwards compatibility).
             password: Password for login. If None, uses client's password.
 
         Returns:
@@ -546,7 +543,7 @@ class DysonClient:
         if not self._provisioned:
             self.provision()
 
-        target_mobile = mobile or self.email
+        target_mobile = mobile
         target_password = password or self.password
 
         if not target_mobile or not target_password:

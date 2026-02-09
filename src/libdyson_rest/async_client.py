@@ -446,17 +446,16 @@ class AsyncDysonClient:
 
         Args:
             mobile: Mobile number with country code (e.g., '+8613800000000').
-                If None, uses instance email (for backwards compatibility).
 
         Returns:
             UserStatus object containing account information
 
         Raises:
-            DysonAuthError: If no mobile number is available
+            DysonAuthError: If no mobile number is provided
             DysonConnectionError: If connection fails
             DysonAPIError: If API request fails
         """
-        target_mobile = mobile or self.email
+        target_mobile = mobile
         if not target_mobile:
             raise DysonAuthError("Mobile number required for user status check")
 
@@ -497,17 +496,16 @@ class AsyncDysonClient:
 
         Args:
             mobile: Mobile number with country code (e.g., '+8613800000000').
-                If None, uses instance email (for backwards compatibility).
 
         Returns:
             LoginChallenge containing challenge ID for completing login
 
         Raises:
-            DysonAuthError: If no mobile number is available
+            DysonAuthError: If no mobile number is provided
             DysonConnectionError: If connection fails
             DysonAPIError: If API request fails
         """
-        target_mobile = mobile or self.email
+        target_mobile = mobile
         if not target_mobile:
             raise DysonAuthError("Mobile number required for login")
 
@@ -565,7 +563,6 @@ class AsyncDysonClient:
             challenge_id: Challenge ID from begin_login_mobile()
             otp_code: OTP code received via SMS
             mobile: Mobile number with country code (e.g., '+8613800000000').
-                If None, uses instance email (for backwards compatibility).
             password: Password for login. Uses instance password if not provided.
 
         Returns:
@@ -576,7 +573,7 @@ class AsyncDysonClient:
             DysonConnectionError: If connection fails
             DysonAPIError: If API request fails
         """
-        target_mobile = mobile or self.email
+        target_mobile = mobile
         target_password = password or self.password
 
         if not target_mobile or not target_password:

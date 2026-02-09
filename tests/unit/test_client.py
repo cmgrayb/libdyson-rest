@@ -690,7 +690,7 @@ class TestDysonClientMobileAuth:
 
     @patch("requests.Session.post")
     def test_get_user_status_mobile_with_instance_mobile(self, mock_post: Mock) -> None:
-        """Test mobile user status check using instance email as mobile."""
+        """Test mobile user status check with explicit mobile parameter."""
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {
@@ -699,9 +699,11 @@ class TestDysonClientMobileAuth:
         }
         mock_post.return_value = mock_response
 
-        client = DysonClient(email="+8613800000000", password="password", country="CN")
-        # Call without explicit mobile parameter - should use instance email
-        user_status = client.get_user_status_mobile()
+        client = DysonClient(
+            email="test@example.com", password="password", country="CN"
+        )
+        # Call with explicit mobile parameter
+        user_status = client.get_user_status_mobile(mobile="+8613800000000")
 
         assert user_status.account_status.value == "ACTIVE"
 
