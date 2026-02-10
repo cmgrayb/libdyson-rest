@@ -519,7 +519,6 @@ class DysonClient:
         challenge_id: str,
         otp_code: str,
         mobile: str | None = None,
-        password: str | None = None,
     ) -> LoginInformation:
         """
         Complete the login process with the challenge response using mobile number.
@@ -528,15 +527,14 @@ class DysonClient:
 
         Args:
             challenge_id: Challenge ID from begin_login_mobile()
-            otp_code: One-time password code (usually from SMS)
+            otp_code: One-time password code received via SMS
             mobile: Mobile number with country code (e.g., '+8613800000000').
-            password: Password for login. If None, uses client's password.
 
         Returns:
             LoginInformation: Contains account and token information
 
         Raises:
-            DysonAuthError: If authentication fails
+            DysonAuthError: If mobile number is missing or OTP is invalid
             DysonConnectionError: If connection fails
             DysonAPIError: If API request fails
         """
@@ -544,12 +542,9 @@ class DysonClient:
             self.provision()
 
         target_mobile = mobile
-        target_password = password or self.password
 
-        if not target_mobile or not target_password:
-            raise DysonAuthError(
-                "Mobile number and password are required for authentication"
-            )
+        if not target_mobile:
+            raise DysonAuthError("Mobile number is required for authentication")
 
         url = urljoin(
             get_api_hostname(self.country), "/v3/userregistration/mobile/verify"
@@ -559,7 +554,6 @@ class DysonClient:
             "challengeId": challenge_id,
             "mobile": target_mobile,
             "otpCode": otp_code,
-            "password": target_password,
         }
 
         # Debug logging for troubleshooting

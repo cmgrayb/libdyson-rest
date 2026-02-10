@@ -1172,7 +1172,7 @@ class TestAsyncDysonClientMobileAuth:
         assert payload["challengeId"] == "12345678-1234-5678-9abc-123456789abc"
         assert payload["mobile"] == "+8613800000000"
         assert payload["otpCode"] == "123456"
-        assert payload["password"] == "password"
+        assert "password" not in payload
 
         await client.close()
 
@@ -1186,22 +1186,7 @@ class TestAsyncDysonClientMobileAuth:
                 challenge_id="test-challenge", otp_code="123456"
             )
 
-        assert "Mobile number and password are required" in str(exc_info.value)
-        await client.close()
-
-    @pytest.mark.asyncio
-    async def test_complete_login_mobile_no_password(self) -> None:
-        """Test mobile login completion fails without password."""
-        client = AsyncDysonClient(email="+8613800000000", country="CN")
-
-        with pytest.raises(DysonAuthError) as exc_info:
-            await client.complete_login_mobile(
-                challenge_id="test-challenge",
-                otp_code="123456",
-                mobile="+8613800000000",
-            )
-
-        assert "Mobile number and password are required" in str(exc_info.value)
+        assert "Mobile number is required" in str(exc_info.value)
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.post")

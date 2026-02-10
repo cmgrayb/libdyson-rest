@@ -185,7 +185,7 @@ Begin the login process by requesting an OTP challenge via SMS.
 **Side Effects:**
 - Sends SMS OTP code to the mobile number
 
-### `complete_login_mobile(challenge_id: str, otp_code: str, mobile: str | None = None, password: str | None = None) -> LoginInformation`
+### `complete_login_mobile(challenge_id: str, otp_code: str, mobile: str | None = None) -> LoginInformation`
 
 Complete the login process using the OTP code received via SMS.
 
@@ -193,13 +193,12 @@ Complete the login process using the OTP code received via SMS.
 - `challenge_id` (str): Challenge ID from `begin_login_mobile()`
 - `otp_code` (str): OTP code received via SMS
 - `mobile` (str, optional): Mobile number with country code. If None, uses instance email.
-- `password` (str, optional): Account password. If None, uses instance password.
 
 **Returns:**
 - `LoginInformation`: Object containing authentication token and account details
 
 **Raises:**
-- `DysonAuthError`: If credentials are missing or invalid
+- `DysonAuthError`: If mobile number is missing or OTP is invalid
 - `DysonAuthError`: If OTP code is invalid (401)
 - `DysonAuthError`: If bad request parameters (400)
 - `DysonConnectionError`: If connection fails
@@ -239,7 +238,7 @@ except DysonAuthError as e:
     # Authentication errors: invalid credentials, wrong OTP, etc.
     print(f"Authentication failed: {e}")
     print("Common causes:")
-    print("  - Incorrect mobile number or password")
+    print("  - Incorrect mobile number")
     print("  - Invalid or expired OTP code")
     print("  - Mobile number not registered on CN server")
     print("  - Mobile number format missing country code")
@@ -295,10 +294,9 @@ client.begin_login_mobile("+8613800000000")  # With +86 country code
 
 ### Issue: "Invalid credentials or OTP code"
 **Solution:**
-1. Verify password is correct
-2. Check OTP code was entered correctly (no spaces)
-3. OTP codes expire quickly - request a new one if needed
-4. Ensure you're using the latest OTP (not an old one)
+1. Check OTP code was entered correctly (no spaces)
+2. OTP codes expire quickly - request a new one if needed
+3. Ensure you're using the latest OTP (not an old one)
 
 ## Migration from Email to Mobile Authentication (CN Users)
 
