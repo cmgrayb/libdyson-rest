@@ -659,3 +659,274 @@ class TestDysonClient:
             client.trigger_firmware_update("MOCK-TEST-SN12345")
 
         client.close()
+
+
+class TestDysonClientMobileAuth:
+    """Unit tests for DysonClient mobile authentication methods."""
+
+    @patch("requests.Session.post")
+    def test_get_user_status_mobile_success(self, mock_post: Mock) -> None:
+        """Test successful mobile user status check."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {
+            "accountStatus": "ACTIVE",
+            "authenticationMethod": "EMAIL_PWD_2FA",
+        }
+        mock_post.return_value = mock_response
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+        user_status = client.get_user_status_mobile("+8613800000000")
+
+        assert user_status.account_status.value == "ACTIVE"
+        assert user_status.authentication_method.value == "EMAIL_PWD_2FA"
+
+        # Verify correct endpoint and payload were used
+        call_args = mock_post.call_args
+        assert "/v3/userregistration/mobile/userstatus" in str(call_args)
+        assert call_args[1]["json"] == {"mobile": "+8613800000000"}
+
+        client.close()
+
+    @patch("requests.Session.post")
+    def test_get_user_status_mobile_with_instance_mobile(self, mock_post: Mock) -> None:
+        """Test mobile user status check with explicit mobile parameter."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {
+            "accountStatus": "ACTIVE",
+            "authenticationMethod": "EMAIL_PWD_2FA",
+        }
+        mock_post.return_value = mock_response
+
+        client = DysonClient(
+            email="test@example.com", password="password", country="CN"
+        )
+        # Call with explicit mobile parameter
+        user_status = client.get_user_status_mobile(mobile="+8613800000000")
+
+        assert user_status.account_status.value == "ACTIVE"
+
+        client.close()
+
+    def test_get_user_status_mobile_no_mobile(self) -> None:
+        """Test mobile user status check fails without mobile number."""
+        client = DysonClient(password="password", country="CN")
+
+        with pytest.raises(DysonAPIError) as exc_info:
+            client.get_user_status_mobile()
+
+        assert "Mobile number is required" in str(exc_info.value)
+        client.close()
+
+    @patch("requests.Session.post")
+    def test_get_user_status_mobile_connection_error(self, mock_post: Mock) -> None:
+        """Test mobile user status handles connection errors."""
+        mock_post.side_effect = requests.RequestException("Network error")
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+
+        with pytest.raises(DysonConnectionError) as exc_info:
+            client.get_user_status_mobile("+8613800000000")
+
+        assert "Failed to get user status" in str(exc_info.value)
+        client.close()
+
+    @patch("requests.Session.post")
+    def test_get_user_status_mobile_invalid_response(self, mock_post: Mock) -> None:
+        """Test mobile user status handles invalid JSON response."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.side_effect = ValueError("Invalid JSON")
+        mock_post.return_value = mock_response
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+
+        with pytest.raises(DysonAPIError) as exc_info:
+            client.get_user_status_mobile("+8613800000000")
+
+        assert "Invalid user status response" in str(exc_info.value)
+        client.close()
+
+    @patch("requests.Session.post")
+    def test_begin_login_mobile_success(self, mock_post: Mock) -> None:
+        """Test successful mobile login initiation."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {
+            "challengeId": "12345678-1234-5678-9abc-123456789abc",
+        }
+        mock_post.return_value = mock_response
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+        challenge = client.begin_login_mobile("+8613800000000")
+
+        assert str(challenge.challenge_id) == "12345678-1234-5678-9abc-123456789abc"
+
+        # Verify correct endpoint and payload were used
+        call_args = mock_post.call_args
+        assert "/v3/userregistration/mobile/auth" in str(call_args)
+        assert call_args[1]["json"] == {"mobile": "+8613800000000"}
+
+        client.close()
+
+    def test_begin_login_mobile_no_mobile(self) -> None:
+        """Test mobile login initiation fails without mobile number."""
+        client = DysonClient(password="password", country="CN")
+
+        with pytest.raises(DysonAPIError) as exc_info:
+            client.begin_login_mobile()
+
+        assert "Mobile number is required" in str(exc_info.value)
+        client.close()
+
+    @patch("requests.Session.post")
+    def test_begin_login_mobile_401_error(self, mock_post: Mock) -> None:
+        """Test mobile login initiation handles 401 unauthorized."""
+        mock_response = Mock()
+        mock_response.status_code = 401
+        http_error = requests.HTTPError()
+        http_error.response = mock_response
+        mock_post.side_effect = http_error
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+
+        with pytest.raises(DysonAuthError) as exc_info:
+            client.begin_login_mobile("+8613800000000")
+
+        assert "Invalid mobile number or not authorized" in str(exc_info.value)
+        client.close()
+
+    @patch("requests.Session.post")
+    def test_begin_login_mobile_400_error(self, mock_post: Mock) -> None:
+        """Test mobile login initiation handles 400 bad request."""
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.text = "Invalid mobile format"
+        mock_response.url = "https://appapi.cp.dyson.cn/v3/userregistration/mobile/auth"
+        http_error = requests.HTTPError()
+        http_error.response = mock_response
+        mock_post.side_effect = http_error
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+
+        with pytest.raises(DysonAuthError) as exc_info:
+            client.begin_login_mobile("+8613800000000")
+
+        assert "Bad request to Dyson API (400)" in str(exc_info.value)
+        assert "Check mobile format" in str(exc_info.value)
+        client.close()
+
+    @patch("requests.Session.post")
+    def test_complete_login_mobile_success(self, mock_post: Mock) -> None:
+        """Test successful mobile login completion."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {
+            "account": "12345678-1234-5678-9abc-123456789abc",
+            "token": "test_bearer_token_mobile",
+            "tokenType": "Bearer",
+        }
+        mock_post.return_value = mock_response
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+        login_info = client.complete_login_mobile(
+            challenge_id="12345678-1234-5678-9abc-123456789abc",
+            otp_code="123456",
+            mobile="+8613800000000",
+        )
+
+        assert str(login_info.account) == "12345678-1234-5678-9abc-123456789abc"
+        assert login_info.token == "test_bearer_token_mobile"
+        assert client.auth_token == "test_bearer_token_mobile"
+        assert "Authorization" in client.session.headers
+
+        # Verify correct endpoint and payload were used
+        call_args = mock_post.call_args
+        assert "/v3/userregistration/mobile/verify" in str(call_args)
+        payload = call_args[1]["json"]
+        assert payload["challengeId"] == "12345678-1234-5678-9abc-123456789abc"
+        assert payload["mobile"] == "+8613800000000"
+        assert payload["otpCode"] == "123456"
+        assert "password" not in payload
+
+        client.close()
+
+    def test_complete_login_mobile_no_mobile(self) -> None:
+        """Test mobile login completion fails without mobile number."""
+        client = DysonClient(password="password", country="CN")
+
+        with pytest.raises(DysonAuthError) as exc_info:
+            client.complete_login_mobile(
+                challenge_id="test-challenge", otp_code="123456"
+            )
+
+        assert "Mobile number is required" in str(exc_info.value)
+        client.close()
+
+    @patch("requests.Session.post")
+    def test_complete_login_mobile_401_error(self, mock_post: Mock) -> None:
+        """Test mobile login completion handles 401 invalid credentials."""
+        mock_response = Mock()
+        mock_response.status_code = 401
+        http_error = requests.HTTPError()
+        http_error.response = mock_response
+        mock_post.side_effect = http_error
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+
+        with pytest.raises(DysonAuthError) as exc_info:
+            client.complete_login_mobile(
+                challenge_id="test-challenge",
+                otp_code="wrong",
+                mobile="+8613800000000",
+            )
+
+        assert "Invalid credentials or OTP code" in str(exc_info.value)
+        client.close()
+
+    @patch("requests.Session.post")
+    def test_complete_login_mobile_400_error(self, mock_post: Mock) -> None:
+        """Test mobile login completion handles 400 bad request."""
+        mock_response = Mock()
+        mock_response.status_code = 400
+        mock_response.text = "Invalid parameters"
+        mock_response.url = (
+            "https://appapi.cp.dyson.cn/v3/userregistration/mobile/verify"
+        )
+        http_error = requests.HTTPError()
+        http_error.response = mock_response
+        mock_post.side_effect = http_error
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+
+        with pytest.raises(DysonAuthError) as exc_info:
+            client.complete_login_mobile(
+                challenge_id="test-challenge",
+                otp_code="123456",
+                mobile="+8613800000000",
+            )
+
+        assert "Bad request to Dyson API (400)" in str(exc_info.value)
+        assert "Check API parameters" in str(exc_info.value)
+        client.close()
+
+    @patch("requests.Session.post")
+    def test_complete_login_mobile_invalid_response(self, mock_post: Mock) -> None:
+        """Test mobile login completion handles invalid JSON response."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.side_effect = ValueError("Invalid JSON")
+        mock_post.return_value = mock_response
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+
+        with pytest.raises(DysonAPIError) as exc_info:
+            client.complete_login_mobile(
+                challenge_id="test-challenge",
+                otp_code="123456",
+                mobile="+8613800000000",
+            )
+
+        assert "Invalid login response" in str(exc_info.value)
+        client.close()

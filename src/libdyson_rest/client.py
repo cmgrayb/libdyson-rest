@@ -52,12 +52,23 @@ class DysonClient:
     credential retrieval for Dyson devices through their REST API according to the
     OpenAPI specification.
 
-    Authentication Flow:
+    Authentication Flow (Email - Global/CN):
     1. provision() - Required initial call
     2. get_user_status() - Check user account status
     3. begin_login() - Start authentication process
     4. complete_login() - Complete authentication with OTP code
     5. API calls with Bearer token
+
+    Authentication Flow (Mobile - CN Region Only):
+    1. provision() - Required initial call
+    2. get_user_status_mobile() - Check user account status with mobile number
+    3. begin_login_mobile() - Start authentication process with mobile number
+    4. complete_login_mobile() - Complete authentication with OTP SMS code
+    5. API calls with Bearer token
+
+    Note: Mobile authentication requires mobile number with country code
+    (e.g., '+8613800000000') and is only available on the China (CN)
+    region server.
     """
 
     def __init__(
@@ -333,6 +344,224 @@ class DysonClient:
         logger.debug(f"complete_login - Payload keys: {list(payload.keys())}")
         logger.debug(f"complete_login - Challenge ID: {challenge_id}")
         logger.debug(f"complete_login - OTP Code: {otp_code}")
+
+        try:
+            response = self.session.post(
+                url, params=params, json=payload, timeout=self.timeout
+            )
+            response.raise_for_status()
+        except requests.RequestException as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Invalid credentials or OTP code") from e
+            elif (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 400
+            ):
+                # Enhanced error details for 400 Bad Request
+                try:
+                    error_body = e.response.text
+                    logger.error(f"400 Bad Request - Response body: {error_body}")
+                    logger.error(f"400 Bad Request - Request URL: {e.response.url}")
+                    if hasattr(e, "request") and e.request is not None:
+                        logger.error(
+                            f"400 Bad Request - Request headers: "
+                            f"{dict(e.request.headers)}"
+                        )
+                except (AttributeError, ValueError, TypeError) as log_error:
+                    # Only catch specific exceptions that might occur during logging
+                    logger.debug(
+                        f"Could not extract detailed error information: {log_error}"
+                    )
+                raise DysonAuthError(
+                    f"Bad request to Dyson API (400): {e}. Check API parameters."
+                ) from e
+            raise DysonConnectionError(f"Failed to complete login: {e}") from e
+
+        try:
+            data = response.json()
+            # Type safety: cast to LoginInformationResponseDict
+            typed_data = cast(LoginInformationResponseDict, data)
+            login_info = LoginInformation.from_dict(typed_data)
+
+            # Store authentication details
+            self._auth_token = login_info.token
+            self.account_id = str(login_info.account)
+
+            # Set authorization header for future requests
+            self.session.headers.update({"Authorization": f"Bearer {self._auth_token}"})
+
+            logger.info(f"Authentication successful for account: {self.account_id}")
+            return login_info
+
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid login response: {e}") from e
+        except Exception as e:
+            # Catch any other errors from model validation
+            raise DysonAPIError(f"Invalid login response: {e}") from e
+
+    def get_user_status_mobile(self, mobile: str | None = None) -> UserStatus:
+        """
+        Get the status of a user account using mobile number.
+
+        Available on China region (CN) server. Mobile number must include country code.
+
+        Args:
+            mobile: Mobile number with country code (e.g., '+8613800000000').
+
+        Returns:
+            UserStatus object with account status and authentication method
+
+        Raises:
+            DysonConnectionError: If connection fails
+            DysonAPIError: If API request fails
+        """
+        if not self._provisioned:
+            self.provision()
+
+        target_mobile = mobile
+        if not target_mobile:
+            raise DysonAPIError("Mobile number is required")
+
+        url = urljoin(
+            get_api_hostname(self.country), "/v3/userregistration/mobile/userstatus"
+        )
+        params = {"country": self.country}
+        payload = {"mobile": target_mobile}
+
+        try:
+            response = self.session.post(
+                url, params=params, json=payload, timeout=self.timeout
+            )
+            response.raise_for_status()
+        except requests.RequestException as e:
+            raise DysonConnectionError(f"Failed to get user status: {e}") from e
+
+        try:
+            data = response.json()
+            # Type safety: cast to UserStatusResponseDict
+            typed_data = cast(UserStatusResponseDict, data)
+            return UserStatus.from_dict(typed_data)
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid user status response: {e}") from e
+
+    def begin_login_mobile(self, mobile: str | None = None) -> LoginChallenge:
+        """
+        Begin the login process by requesting a challenge ID using mobile number.
+
+        Available on China region (CN) server. Mobile number must include country code.
+
+        Args:
+            mobile: Mobile number with country code (e.g., '+8613800000000').
+
+        Returns:
+            LoginChallenge object with challenge ID for completing login
+
+        Raises:
+            DysonConnectionError: If connection fails
+            DysonAPIError: If API request fails
+        """
+        if not self._provisioned:
+            self.provision()
+
+        target_mobile = mobile
+        if not target_mobile:
+            raise DysonAPIError("Mobile number is required")
+
+        url = urljoin(
+            get_api_hostname(self.country), "/v3/userregistration/mobile/auth"
+        )
+        params = {"country": self.country, "culture": self.culture}
+        payload = {"mobile": target_mobile}
+
+        try:
+            response = self.session.post(
+                url, params=params, json=payload, timeout=self.timeout
+            )
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            if e.response is not None:
+                if e.response.status_code == 401:
+                    raise DysonAuthError(
+                        "Invalid mobile number or not authorized"
+                    ) from e
+                elif e.response.status_code == 400:
+                    # Enhanced error details for 400 Bad Request
+                    try:
+                        error_body = e.response.text
+                        logger.error(f"400 Bad Request - Response body: {error_body}")
+                        logger.error(f"400 Bad Request - Request URL: {e.response.url}")
+                    except (AttributeError, ValueError, TypeError) as log_error:
+                        logger.debug(
+                            f"Could not extract detailed error information: {log_error}"
+                        )
+                    raise DysonAuthError(
+                        f"Bad request to Dyson API (400): {e}. Check mobile format."
+                    ) from e
+            raise DysonConnectionError(f"Failed to begin login: {e}") from e
+        except requests.RequestException as e:
+            raise DysonConnectionError(f"Failed to begin login: {e}") from e
+
+        try:
+            data = response.json()
+            # Type safety: cast to LoginChallengeResponseDict
+            typed_data = cast(LoginChallengeResponseDict, data)
+            return LoginChallenge.from_dict(typed_data)
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid login challenge response: {e}") from e
+
+    def complete_login_mobile(  # noqa: C901
+        self,
+        challenge_id: str,
+        otp_code: str,
+        mobile: str | None = None,
+    ) -> LoginInformation:
+        """
+        Complete the login process with the challenge response using mobile number.
+
+        Available on China region (CN) server. Mobile number must include country code.
+
+        Args:
+            challenge_id: Challenge ID from begin_login_mobile()
+            otp_code: One-time password code received via SMS
+            mobile: Mobile number with country code (e.g., '+8613800000000').
+
+        Returns:
+            LoginInformation: Contains account and token information
+
+        Raises:
+            DysonAuthError: If mobile number is missing or OTP is invalid
+            DysonConnectionError: If connection fails
+            DysonAPIError: If API request fails
+        """
+        if not self._provisioned:
+            self.provision()
+
+        target_mobile = mobile
+
+        if not target_mobile:
+            raise DysonAuthError("Mobile number is required for authentication")
+
+        url = urljoin(
+            get_api_hostname(self.country), "/v3/userregistration/mobile/verify"
+        )
+        params = {"country": self.country, "culture": self.culture}
+        payload = {
+            "challengeId": challenge_id,
+            "mobile": target_mobile,
+            "otpCode": otp_code,
+        }
+
+        # Debug logging for troubleshooting
+        logger.debug(f"complete_login_mobile - URL: {url}")
+        logger.debug(f"complete_login_mobile - Params: {params}")
+        logger.debug(f"complete_login_mobile - Payload keys: {list(payload.keys())}")
+        logger.debug(f"complete_login_mobile - Challenge ID: {challenge_id}")
+        logger.debug(f"complete_login_mobile - OTP Code: {otp_code}")
 
         try:
             response = self.session.post(

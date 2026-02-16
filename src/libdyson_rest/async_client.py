@@ -53,12 +53,23 @@ class AsyncDysonClient:
 
     All methods are async and should be awaited.
 
-    Authentication Flow:
+    Authentication Flow (Email - Global/CN):
     1. await provision() - Required initial call
     2. await get_user_status() - Check user account status
     3. await begin_login() - Start authentication process
     4. await complete_login() - Complete authentication with OTP code
     5. Async API calls with Bearer token
+
+    Authentication Flow (Mobile - CN Region Only):
+    1. await provision() - Required initial call
+    2. await get_user_status_mobile() - Check user account status with mobile number
+    3. await begin_login_mobile() - Start authentication process with mobile number
+    4. await complete_login_mobile() - Complete authentication with OTP SMS code
+    5. Async API calls with Bearer token
+
+    Note: Mobile authentication requires mobile number with country code
+    (e.g., '+8613800000000') and is only available on the China (CN)
+    region server.
     """
 
     def __init__(
@@ -373,6 +384,206 @@ class AsyncDysonClient:
             "email": target_email,
             "otpCode": otp_code,
             "password": target_password,
+        }
+
+        try:
+            client = await self._get_client()
+            response = await client.post(url, params=params, json=payload)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Invalid credentials or OTP code") from e
+            elif e.response.status_code == 400:
+                # Enhanced error details for 400 Bad Request
+                try:
+                    error_body = e.response.text
+                    logger.error(f"400 Bad Request - Response body: {error_body}")
+                    logger.error(f"400 Bad Request - Request URL: {e.response.url}")
+                    if hasattr(e, "request") and e.request is not None:
+                        logger.error(
+                            f"400 Bad Request - Request headers: "
+                            f"{dict(e.request.headers)}"
+                        )
+                except (AttributeError, ValueError, TypeError) as log_error:
+                    # Only catch specific exceptions that might occur during logging
+                    logger.debug(
+                        f"Could not extract detailed error information: {log_error}"
+                    )
+                raise DysonAuthError(
+                    f"Bad request to Dyson API (400): {e}. Check API parameters."
+                ) from e
+            raise DysonConnectionError(f"Failed to complete login: {e}") from e
+        except httpx.RequestError as e:
+            raise DysonConnectionError(f"Failed to complete login: {e}") from e
+
+        try:
+            data = response.json()
+            # Type safety: cast to LoginInformationResponseDict
+            typed_data = cast(LoginInformationResponseDict, data)
+            login_info = LoginInformation.from_dict(typed_data)
+
+            # Store authentication details
+            self._auth_token = login_info.token
+            self.account_id = str(login_info.account)
+
+            # Set authorization header for future requests
+            self._base_headers["Authorization"] = f"Bearer {self._auth_token}"
+            if self._client is not None:
+                client = await self._get_client()
+                client.headers.update({"Authorization": f"Bearer {self._auth_token}"})
+
+            logger.info(f"Authentication successful for account: {self.account_id}")
+            return login_info
+
+        except (ValueError, TypeError, KeyError) as e:
+            raise DysonAPIError(f"Invalid login response: {e}") from e
+
+    async def get_user_status_mobile(self, mobile: str | None = None) -> UserStatus:
+        """
+        Check the status of a user account using mobile number.
+
+        Available on China region (CN) server. Mobile number must include country code.
+
+        Args:
+            mobile: Mobile number with country code (e.g., '+8613800000000').
+
+        Returns:
+            UserStatus object containing account information
+
+        Raises:
+            DysonAuthError: If no mobile number is provided
+            DysonConnectionError: If connection fails
+            DysonAPIError: If API request fails
+        """
+        target_mobile = mobile
+        if not target_mobile:
+            raise DysonAuthError("Mobile number required for user status check")
+
+        url = urljoin(
+            get_api_hostname(self.country), "/v3/userregistration/mobile/userstatus"
+        )
+        params = {
+            "country": self.country,
+            "culture": self.culture,
+        }
+        payload = {"mobile": target_mobile}
+
+        try:
+            client = await self._get_client()
+            response = await client.post(url, params=params, json=payload)
+            response.raise_for_status()
+        except httpx.RequestError as e:
+            raise DysonConnectionError(f"Failed to get user status: {e}") from e
+        except httpx.HTTPStatusError as e:
+            raise DysonConnectionError(f"Failed to get user status: {e}") from e
+
+        try:
+            data = response.json()
+            # Type safety: cast to UserStatusResponseDict
+            typed_data = cast(UserStatusResponseDict, data)
+            return UserStatus.from_dict(typed_data)
+        except (ValueError, TypeError, KeyError) as e:
+            raise DysonAPIError(f"Invalid user status response: {e}") from e
+
+    async def begin_login_mobile(  # noqa: C901
+        self, mobile: str | None = None
+    ) -> LoginChallenge:
+        """
+        Begin the login process by requesting an OTP challenge using mobile number.
+
+        This will trigger an OTP code to be sent to the user's mobile phone via SMS.
+        Available on China region (CN) server. Mobile number must include country code.
+
+        Args:
+            mobile: Mobile number with country code (e.g., '+8613800000000').
+
+        Returns:
+            LoginChallenge containing challenge ID for completing login
+
+        Raises:
+            DysonAuthError: If no mobile number is provided
+            DysonConnectionError: If connection fails
+            DysonAPIError: If API request fails
+        """
+        target_mobile = mobile
+        if not target_mobile:
+            raise DysonAuthError("Mobile number required for login")
+
+        url = urljoin(
+            get_api_hostname(self.country), "/v3/userregistration/mobile/auth"
+        )
+        params = {"country": self.country, "culture": self.culture}
+        payload = {"mobile": target_mobile}
+
+        try:
+            client = await self._get_client()
+            response = await client.post(url, params=params, json=payload)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Invalid mobile number or not authorized") from e
+            elif e.response.status_code == 400:
+                # Enhanced error details for 400 Bad Request
+                try:
+                    error_body = e.response.text
+                    logger.error(f"400 Bad Request - Response body: {error_body}")
+                    logger.error(f"400 Bad Request - Request URL: {e.response.url}")
+                except (AttributeError, ValueError, TypeError) as log_error:
+                    logger.debug(
+                        f"Could not extract detailed error information: {log_error}"
+                    )
+                raise DysonAuthError(
+                    f"Bad request to Dyson API (400): {e}. Check mobile format."
+                ) from e
+            raise DysonConnectionError(f"Failed to begin login: {e}") from e
+        except httpx.RequestError as e:
+            raise DysonConnectionError(f"Failed to begin login: {e}") from e
+
+        try:
+            data = response.json()
+            # Type safety: cast to LoginChallengeResponseDict
+            typed_data = cast(LoginChallengeResponseDict, data)
+            return LoginChallenge.from_dict(typed_data)
+        except (ValueError, TypeError, KeyError) as e:
+            raise DysonAPIError(f"Invalid login challenge response: {e}") from e
+
+    async def complete_login_mobile(  # noqa: C901
+        self,
+        challenge_id: str,
+        otp_code: str,
+        mobile: str | None = None,
+    ) -> LoginInformation:
+        """
+        Complete the login process using the OTP code sent to mobile number.
+
+        Available on China region (CN) server. Mobile number must include country code.
+
+        Args:
+            challenge_id: Challenge ID from begin_login_mobile()
+            otp_code: OTP code received via SMS
+            mobile: Mobile number with country code (e.g., '+8613800000000').
+
+        Returns:
+            LoginInformation containing authentication token and account details
+
+        Raises:
+            DysonAuthError: If mobile number is missing or OTP is invalid
+            DysonConnectionError: If connection fails
+            DysonAPIError: If API request fails
+        """
+        target_mobile = mobile
+
+        if not target_mobile:
+            raise DysonAuthError("Mobile number is required for authentication")
+
+        url = urljoin(
+            get_api_hostname(self.country), "/v3/userregistration/mobile/verify"
+        )
+        params = {"country": self.country, "culture": self.culture}
+        payload = {
+            "challengeId": challenge_id,
+            "mobile": target_mobile,
+            "otpCode": otp_code,
         }
 
         try:
