@@ -3,6 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/libdyson-rest.svg)](https://badge.fury.io/py/libdyson-rest)
 [![Python](https://img.shields.io/pypi/pyversions/libdyson-rest.svg)](https://pypi.org/project/libdyson-rest/)
 [![License](https://img.shields.io/pypi/l/libdyson-rest.svg)](https://github.com/cmgrayb/libdyson-rest/blob/main/LICENSE)
+[![codecov](https://codecov.io/github/cmgrayb/libdyson-rest/branch/main/graph/badge.svg?token=NHV0GFO8FU)](https://codecov.io/github/cmgrayb/libdyson-rest)
 
 A Python library for interacting with Dyson devices through their official REST API.
 
