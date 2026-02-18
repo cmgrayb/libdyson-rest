@@ -85,13 +85,9 @@ jobs:
 
     - name: Run tests with pytest
       run: |
-        python -m pytest --cov=src/libdyson_rest --cov-report=xml --cov-report=term-missing --cov-fail-under=80
+        python -m pytest --cov=src/libdyson_rest --cov-report=xml --cov-report=term-missing --cov-fail-under=80  -o junit_family=legacy --junitxml=junit.xml
 
-    - name: Upload coverage to Codecov
+    - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
-      if: matrix.python-version == '3.11'
       with:
-        file: ./coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
