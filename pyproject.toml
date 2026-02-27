@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "libdyson-rest"
-version = "0.12.0"
+version = "0.12.1"
 description = "Python library for interacting with Dyson devices through their official REST API"
 readme = "README.md"
 license = "MIT"
@@ -31,6 +31,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Home Automation",
     "Topic :: Internet :: WWW/HTTP :: Dynamic Content",
     "Topic :: Software Development :: Libraries :: Python Modules",
