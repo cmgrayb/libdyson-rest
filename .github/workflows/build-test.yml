@@ -134,7 +134,7 @@ jobs:
             sys.exit(1)
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       with:
         name: build-artifacts
