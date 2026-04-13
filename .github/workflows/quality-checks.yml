@@ -88,6 +88,6 @@ jobs:
         python -m pytest --cov=src/libdyson_rest --cov-report=xml --cov-report=term-missing --cov-fail-under=80  -o junit_family=legacy --junitxml=junit.xml
 
     - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
