@@ -99,7 +99,7 @@ jobs:
 
     - name: Create summary comment
       if: github.event_name == 'workflow_dispatch'
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         script: |
           // Create a summary of the Renovate run for manual dispatches
@@ -143,7 +143,7 @@ jobs:
 
     steps:
     - name: Check for quality tool PRs
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         script: |
           // Look for recently created Renovate PRs that update quality tools
