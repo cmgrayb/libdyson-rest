@@ -3307,3 +3307,428 @@ paths:
                   - 4
                 monthlyTrend:
                 monthlyAverageAq: 5
+
+  /v1/XXX-XX-XXXXXXX/clean-maps:
+    get:
+      operationId: getCleanMaps
+      summary: getCleanMaps
+      description: >
+        Returns the robot vacuum's recent cleaning runs, newest first.
+        Captured from 360 Vis Nav via mitmproxy. Each entry contains the
+        dust-density map blob, the cleaned-footprint bitmap, the cleaning
+        timeline, and (for zone cleans) the cleaningProgramme with zone IDs.
+        Used by hass-dyson for cleaning-history sensors and the dust-map image
+        entity.
+      parameters:
+        - name: dustMap
+          in: query
+          required: false
+          description: >
+            Pass `total` to include the aggregated dust-density map blob
+            (base64-encoded, zlib-compressed) in each clean record.
+          schema:
+            type: string
+            enum: [total]
+            default: total
+        - name: authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            format: bearer
+      responses:
+        '200':
+          description: List of recent clean records (newest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    cleanId:
+                      type: string
+                      format: uuid
+                    sequenceNumber:
+                      type: integer
+                    cleanTimeline:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          time:
+                            type: string
+                            format: date-time
+                          eventName:
+                            type: string
+                          faultLocation:
+                            type: string
+                            nullable: true
+                    cleanedFootprint:
+                      type: object
+                      nullable: true
+                      properties:
+                        data:
+                          type: string
+                          description: Base64-encoded PNG of the cleaned area footprint
+                        area:
+                          type: number
+                          description: Cleaned area in square metres
+                    cleaningProgramme:
+                      type: object
+                      nullable: true
+                      description: Present on zone cleans; absent on whole-house cleans
+                      properties:
+                        persistentMapId:
+                          type: string
+                        orderedZones:
+                          type: array
+                          items:
+                            type: string
+                        unorderedZones:
+                          type: array
+                          items:
+                            type: string
+                    persistentMap:
+                      type: object
+                      nullable: true
+                      properties:
+                        id:
+                          type: string
+                        cleanMapPosition:
+                          type: object
+                          description: >
+                            Origin of the dust-map crop in world coordinates (mm).
+                            Used to correctly position the dust-map overlay on the
+                            presentation floor plan.
+                          properties:
+                            x:
+                              type: number
+                            y:
+                              type: number
+                    dustMap:
+                      type: object
+                      nullable: true
+                      description: Aggregated dust-density map for this clean
+                      properties:
+                        width:
+                          type: integer
+                        height:
+                          type: integer
+                        resolution:
+                          type: integer
+                          description: Millimetres per pixel (typically 20 for Vis Nav)
+                        dustData:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              scaleFactor:
+                                type: integer
+                                description: Max scale value (typically 255)
+                              data:
+                                type: string
+                                description: >
+                                  Base64-encoded, zlib-compressed byte array
+                                  (width × height bytes, 0 = no dust).
+
+  /v1/app/XXX-XX-XXXXXXX/persistent-map-metadata:
+    get:
+      operationId: getPersistentMapMetadata
+      summary: getPersistentMapMetadata
+      description: >
+        Returns the list of persistent maps stored for a Vis Nav device.
+        Each map entry contains the map's ID and name, the list of zones
+        (with IDs, human-readable names, icon keys, and areas), and the
+        zonesDefinitionLastUpdatedDate timestamp needed when triggering
+        zone cleans. Captured from the MyDyson iOS app via mitmproxy.
+      parameters:
+        - name: authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            format: bearer
+      responses:
+        '200':
+          description: List of persistent maps with zone metadata
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    zonesDefinitionLastUpdatedDate:
+                      type: string
+                      format: date-time
+                    zones:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                          icon:
+                            type: string
+                            description: >
+                              Zone icon key (e.g. hallway, living_room, bedroom,
+                              kitchen, bathroom, office, garage, custom)
+                          area:
+                            type: number
+                            description: Zone area in square metres
+
+  /v1/app/XXX-XX-XXXXXXX/persistent-maps/EXAMPLE_MAP_ID:
+    get:
+      operationId: getPersistentMap
+      summary: getPersistentMap
+      description: >
+        Returns the full persistent-map record for a single map ID. Includes
+        the presentation-map PNG (base64-encoded), the zones definition with
+        the display orientation angle, and the world-coordinate offset used
+        to align the dust-map crop onto the floor plan. Captured from the
+        MyDyson iOS app via mitmproxy; consumed by hass-dyson's floor-plan
+        and dust-map image entities.
+      parameters:
+        - name: authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            format: bearer
+      responses:
+        '200':
+          description: Persistent map record
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  offset:
+                    type: object
+                    description: >
+                      World-coordinate origin of the presentation map (mm).
+                      Subtract from dustMap's cleanMapPosition to get the
+                      dust-map crop's pixel offset within the floor plan.
+                    properties:
+                      x:
+                        type: number
+                      y:
+                        type: number
+                  presentationMap:
+                    type: object
+                    properties:
+                      data:
+                        type: string
+                        description: Base64-encoded PNG of the annotated floor plan
+                  zonesDefinition:
+                    type: object
+                    properties:
+                      persistentMapDisplayOrientation:
+                        type: integer
+                        description: >
+                          Clockwise rotation (degrees) to apply when rendering
+                          the floor plan so it matches the MyDyson app view.
+                  zones:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        icon:
+                          type: string
+
+  /v1/app/XXX-XX-XXXXXXX/recommended-cleans:
+    get:
+      operationId: getRecommendedCleans
+      summary: getRecommendedCleans
+      description: >
+        Returns Dyson's cloud recommendation for which zones to clean next,
+        ranked by accumulated dust load. Each entry contains per-zone dust
+        predictions broken down by particle size class
+        (extraFine / fine / medium / large / other / total), expressed in
+        milligrams. Captured from the MyDyson iOS app via mitmproxy.
+      parameters:
+        - name: authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            format: bearer
+      responses:
+        '200':
+          description: Zone-clean recommendations per persistent map
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    persistentMapId:
+                      type: string
+                    zonePredictions:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          zoneId:
+                            type: string
+                          zoneDustMilligrams:
+                            type: array
+                            description: >
+                              Dust breakdown by particle class. Known `name`
+                              values: extraFine, fine, medium, large, other, total.
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                weight:
+                                  type: number
+
+  /v1/app/XXX-XX-XXXXXXX/EXAMPLE_MAP_ID/zones/EXAMPLE_ZONE_ID/zone-behaviours:
+    put:
+      operationId: setZoneBehaviour
+      summary: setZoneBehaviour
+      description: >
+        Persists a per-zone cleaning strategy override to the Dyson cloud.
+        The override applies to every subsequent clean — equivalent to
+        changing the zone's cleaning behaviour in the MyDyson app.
+
+        NOTE: the real path (captured via mitmproxy) is:
+          PUT /v1/app/{serial}/{mapId}/zones/{zoneId}/zone-behaviours
+        The longer path documented by thoukydides/matterbridge-dyson-robot
+        (`/persistent-maps/{mapId}/...`) returns 404 on the live API.
+      parameters:
+        - name: authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            format: bearer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cleaningStrategy
+              properties:
+                cleaningStrategy:
+                  type: string
+                  enum: [auto, quick, quiet, boost]
+                  description: >
+                    Corresponds to the four Vis Nav power modes:
+                    auto (sensor-driven), quick, quiet, boost.
+      responses:
+        '200':
+          description: Zone behaviour updated successfully
+        '204':
+          description: Zone behaviour updated successfully (no content)
+
+  /v1/messageprocessor/devices/XXX-XX-XXXXXXX/environmentdata/daily:
+    get:
+      operationId: getDailyEnvironmentData
+      summary: getDailyEnvironmentData
+      description: >
+        Returns indoor air-quality history for the device at 15-minute
+        resolution for the current day. The `aqlm` array contains one numeric
+        AQI sample per 15-minute slot (up to 96 entries for a full day);
+        null or absent entries indicate no reading for that slot. Captured
+        from the MyDyson iOS app via mitmproxy; used by hass-dyson's
+        DysonDailyAirQualitySensor.
+      parameters:
+        - name: authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            format: bearer
+      responses:
+        '200':
+          description: Daily indoor AQI time-series at 15-minute resolution
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  start_time:
+                    type: string
+                    format: date-time
+                    description: Timestamp of the first sample in the series
+                  resolution:
+                    type: integer
+                    description: Sample interval in minutes (typically 15)
+                  aqlm:
+                    type: array
+                    description: AQI samples, newest last; null = no reading for that slot
+                    items:
+                      type: number
+                      nullable: true
+
+  /v1/unifiedscheduler/XXX-XX-XXXXXXX/events:
+    get:
+      operationId: getScheduledEvents
+      summary: getScheduledEvents
+      description: >
+        Returns the MyDyson-app scheduled automation events for this device.
+        Each event encodes the days of the week, start time, and the MQTT
+        state-set payload that Dyson would push to the device at trigger time.
+        Read-only from this integration; writing schedules is deferred.
+        Captured from the MyDyson iOS app via mitmproxy.
+      parameters:
+        - name: productType
+          in: query
+          required: false
+          description: >
+            Device product-type code (e.g. 438K). Required by the server to
+            return the correct schedule schema for this product family.
+          schema:
+            type: string
+        - name: authorization
+          in: header
+          required: true
+          schema:
+            type: string
+            format: bearer
+      responses:
+        '200':
+          description: Scheduled events for the device
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    description: Whether the overall schedule is enabled for this device
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        enabled:
+                          type: boolean
+                        days:
+                          type: array
+                          items:
+                            type: string
+                          description: Days of the week (e.g. ["Monday", "Wednesday"])
+                        startTime:
+                          type: string
+                          description: Local time in HH:MM format
