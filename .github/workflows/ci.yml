@@ -57,7 +57,7 @@ jobs:
 
     - name: Add PR comment on success
       if: github.event_name == 'pull_request'
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         script: |
           const comment = `
@@ -66,7 +66,7 @@ jobs:
           CI checks are running for this PR. Individual workflows will report their status:
 
           ### Running Checks
-          - 🔄 **Code Quality Checks** (formatting, linting, type checking, **full test suite** across Python 3.9-3.13)
+          - 🔄 **Code Quality Checks** (formatting, linting, type checking, **full test suite** across Python 3.10-3.14)
           - 🔄 **Build and Package Test** (cross-platform installation testing)  
           - 🔄 **Security Scan** (vulnerability detection with Bandit)
 
@@ -74,7 +74,7 @@ jobs:
           - ✅ **Unit Tests**: All core functionality
           - ✅ **Integration Tests**: Real API interaction patterns
           - ✅ **Coverage Requirement**: 80%+ maintained
-          - ✅ **Multi-Python**: Tested on Python 3.9, 3.10, 3.11, 3.12, 3.13
+          - ✅ **Multi-Python**: Tested on Python 3.10, 3.11, 3.12, 3.13, 3.14
 
           Please wait for all checks to complete before merging.
 

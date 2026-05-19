@@ -268,7 +268,7 @@ The project includes comprehensive VSCode tasks accessible via Ctrl+Shift+P → 
 The project includes comprehensive GitHub Actions workflows for continuous integration and quality assurance:
 
 ### Quality Assurance Workflows
-- **Code Quality Checks**: Black formatting, Flake8 linting, isort imports, mypy types, pytest tests across Python 3.9-3.13
+- **Code Quality Checks**: Black formatting, Flake8 linting, isort imports, mypy types, pytest tests across Python 3.10-3.14
 - **Pre-commit Validation**: Runs all pre-commit hooks with caching for fast execution
 - **Build Testing**: Cross-platform package building and installation testing (Ubuntu/Windows/macOS)
 
