@@ -5,7 +5,7 @@ These definitions provide compile-time type safety for JSON API responses
 and enable better IDE support and error detection.
 """
 
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from typing_extensions import NotRequired, Required
 
@@ -259,3 +259,27 @@ class ScheduledEventsDataDict(TypedDict):
 
     enabled: NotRequired[bool]
     events: NotRequired[list[ScheduledEventDict]]
+
+
+class OutdoorEnvironmentDataDict(TypedDict):
+    """Response from GET /v1/environment/devices/{serial}/data."""
+
+    DateTime: NotRequired[str | None]
+    AqiState: NotRequired[int]
+    AqiValue: NotRequired[Any | None]
+    ColorValue: NotRequired[Any | None]
+    Pm25Value: NotRequired[Any | None]
+    Pm10Value: NotRequired[Any | None]
+    No2Value: NotRequired[Any | None]
+    WeatherState: NotRequired[int]
+    Humidity: NotRequired[Any | None]
+    Temperature: NotRequired[Any | None]
+    LocationName: NotRequired[str | None]
+    ColorIndex: NotRequired[Any | None]
+    AqiName: NotRequired[str | None]
+    AqiDescription: NotRequired[str | None]
+    Icon: NotRequired[Any | None]
+    Measure: NotRequired[Any | None]
+    PollenState: NotRequired[int]
+    DominantPollen: NotRequired[Any | None]
+    Pollens: NotRequired[Any | None]

@@ -25,6 +25,7 @@ from .models import (
     IoTData,
     LoginChallenge,
     LoginInformation,
+    OutdoorAirQualityData,
     PendingRelease,
     PersistentMap,
     PersistentMapMeta,
@@ -39,6 +40,7 @@ from .types import (
     IoTDataResponseDict,
     LoginChallengeResponseDict,
     LoginInformationResponseDict,
+    OutdoorEnvironmentDataDict,
     PendingReleaseResponseDict,
     PersistentMapDict,
     PersistentMapMetaDict,
@@ -1438,3 +1440,60 @@ class DysonClient:
             return ScheduledEventsData.from_dict(cast(ScheduledEventsDataDict, data))
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid scheduled-events response: {e}") from e
+
+    def get_outdoor_environment_data(
+        self, serial_number: str, language: str = "en"
+    ) -> OutdoorAirQualityData:
+        """Get outdoor air quality and weather data for a device's location.
+
+        Args:
+            serial_number: Device serial number.
+            language: Language code for localised field values (default ``en``).
+
+        Returns:
+            OutdoorAirQualityData with AQI, pollutant, weather, and pollen fields.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_outdoor_environment_data"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/environment/devices/{serial_number}/data",
+        )
+        params: dict[str, str] = {"language": language}
+
+        try:
+            response = self.session.get(url, params=params, timeout=self.timeout)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(
+                f"Failed to get outdoor environment data: {e}"
+            ) from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError(
+                    "Expected object in outdoor environment data response"
+                )
+            return OutdoorAirQualityData.from_dict(
+                cast(OutdoorEnvironmentDataDict, data)
+            )
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(
+                f"Invalid outdoor environment data response: {e}"
+            ) from e
+

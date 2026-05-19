@@ -21,7 +21,12 @@ from .device import (
     PendingRelease,
     RemoteBrokerType,
 )
-from .environment import DailyAirQualityData, ScheduledEvent, ScheduledEventsData
+from .environment import (
+    DailyAirQualityData,
+    OutdoorAirQualityData,
+    ScheduledEvent,
+    ScheduledEventsData,
+)
 from .iot import IoTCredentials, IoTData
 from .robot import (
     CleanedFootprint,
@@ -74,6 +79,7 @@ __all__ = [
     "ZonePrediction",
     # Environment / EC purifier models
     "DailyAirQualityData",
+    "OutdoorAirQualityData",
     "ScheduledEvent",
     "ScheduledEventsData",
 ]
