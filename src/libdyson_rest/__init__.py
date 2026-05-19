@@ -48,7 +48,7 @@ Basic Usage (Asynchronous):
                 print(f"Device: {device.name} ({device.serial_number})")
 """
 
-__version__ = "0.12.1"
+__version__ = "0.14.0-beta.1"
 __author__ = "Christopher Gray"
 __email__ = "79777799+cmgrayb@users.noreply.github.com"
 
@@ -67,14 +67,30 @@ from .exceptions import (
     DysonValidationError,
 )
 from .models import (
+    CleanedFootprint,
+    CleaningProgramme,
+    CleaningStrategy,
+    CleanMapPosition,
+    CleanRecord,
+    CleanTimelineEvent,
     ConnectionCategory,
+    DailyAirQualityData,
     Device,
     DeviceCategory,
+    DustMapData,
     IoTData,
     LoginChallenge,
     LoginInformation,
     PendingRelease,
+    PersistentMap,
+    PersistentMapMeta,
+    RecommendedCleanMap,
+    ScheduledEvent,
+    ScheduledEventsData,
     UserStatus,
+    ZoneDustBreakdown,
+    ZoneMeta,
+    ZonePrediction,
 )
 
 __all__ = [
@@ -87,7 +103,7 @@ __all__ = [
     "DysonConnectionError",
     "DysonDeviceError",
     "DysonValidationError",
-    # Key models
+    # Core device models
     "Device",
     "DeviceCategory",
     "ConnectionCategory",
@@ -96,4 +112,22 @@ __all__ = [
     "LoginInformation",
     "PendingRelease",
     "UserStatus",
+    # Vis Nav robot models
+    "CleanedFootprint",
+    "CleaningProgramme",
+    "CleaningStrategy",
+    "CleanMapPosition",
+    "CleanRecord",
+    "CleanTimelineEvent",
+    "DustMapData",
+    "PersistentMap",
+    "PersistentMapMeta",
+    "RecommendedCleanMap",
+    "ZoneDustBreakdown",
+    "ZoneMeta",
+    "ZonePrediction",
+    # EC air purifier models
+    "DailyAirQualityData",
+    "ScheduledEvent",
+    "ScheduledEventsData",
 ]

@@ -20,6 +20,8 @@ A Python library for interacting with Dyson devices through their official REST 
 - **Error Handling**: Detailed exception hierarchy for robust error handling
 - **Context Manager Support**: Automatic resource cleanup
 - **Async/Await Support**: Full asynchronous client for Home Assistant and other async environments
+- **Vis Nav Robot Vacuum**: Clean history, persistent maps, zone management, and dust predictions
+- **EC Air Purifier**: Daily air-quality history and scheduled event retrieval
 
 ## Installation
 
@@ -239,6 +241,17 @@ DysonClient(
 - `get_iot_credentials(serial_number) -> IoTData`: Get AWS IoT connection info
 - `get_pending_release(serial_number) -> PendingRelease`: Get pending firmware release info
 
+##### Vis Nav Robot Vacuum
+- `get_clean_maps(serial_number, include_dust_map=True) -> list[CleanRecord]`: Cleaning history with optional dust-density maps
+- `get_persistent_map_metadata(serial_number) -> list[PersistentMapMeta]`: Zone names, IDs and areas for each stored map
+- `get_persistent_map(serial_number, map_id) -> PersistentMap`: Full map record including floor-plan PNG
+- `get_recommended_cleans(serial_number) -> list[RecommendedCleanMap]`: Dyson's zone-clean recommendations ranked by dust load
+- `set_zone_behaviour(serial_number, map_id, zone_id, strategy) -> None`: Set per-zone cleaning strategy
+
+##### EC Air Purifier
+- `get_daily_environment_data(serial_number) -> DailyAirQualityData`: Indoor AQI history at 15-minute resolution
+- `get_scheduled_events(serial_number, product_type=None) -> ScheduledEventsData`: MyDyson-app automation schedule
+
 ##### Session Management
 - `close() -> None`: Close session and clear state
 - `__enter__()` and `__exit__()`: Context manager support
@@ -272,6 +285,17 @@ AsyncDysonClient(
 - `await get_devices() -> List[Device]`: List all account devices
 - `await get_iot_credentials(serial_number) -> IoTData`: Get AWS IoT connection info
 - `await get_pending_release(serial_number) -> PendingRelease`: Get pending firmware release info
+
+##### Vis Nav Robot Vacuum
+- `await get_clean_maps(serial_number, include_dust_map=True) -> list[CleanRecord]`: Cleaning history with optional dust-density maps
+- `await get_persistent_map_metadata(serial_number) -> list[PersistentMapMeta]`: Zone names, IDs and areas for each stored map
+- `await get_persistent_map(serial_number, map_id) -> PersistentMap`: Full map record including floor-plan PNG
+- `await get_recommended_cleans(serial_number) -> list[RecommendedCleanMap]`: Dyson's zone-clean recommendations ranked by dust load
+- `await set_zone_behaviour(serial_number, map_id, zone_id, strategy) -> None`: Set per-zone cleaning strategy
+
+##### EC Air Purifier
+- `await get_daily_environment_data(serial_number) -> DailyAirQualityData`: Indoor AQI history at 15-minute resolution
+- `await get_scheduled_events(serial_number, product_type=None) -> ScheduledEventsData`: MyDyson-app automation schedule
 
 ##### Session Management
 - `await close() -> None`: Close async session and clear state
@@ -462,6 +486,12 @@ This library implements the complete Dyson App API as documented in their OpenAP
 - Device management (`/v3/manifest`)
 - IoT credentials (`/v2/authorize/iot-credentials`)
 - Provisioning (`/v1/provisioningservice/application/Android/version`)
+- Vis Nav cleaning history (`/v1/{serial}/clean-maps`)
+- Vis Nav persistent maps (`/v1/app/{serial}/persistent-map-metadata`, `/v1/app/{serial}/persistent-maps/{map_id}`)
+- Vis Nav zone recommendations (`/v1/app/{serial}/recommended-cleans`)
+- Vis Nav zone behaviour (`/v1/app/{serial}/{map_id}/zones/{zone_id}/zone-behaviours`)
+- EC air quality history (`/v1/messageprocessor/devices/{serial}/environmentdata/daily`)
+- Scheduled events (`/v1/unifiedscheduler/{serial}/events`)
 
 ## Requirements
 
