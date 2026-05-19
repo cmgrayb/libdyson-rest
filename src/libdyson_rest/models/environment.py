@@ -9,6 +9,8 @@ Endpoints covered:
     → DailyAirQualityData
 - GET /v1/unifiedscheduler/{serial}/events?productType={code}
     → ScheduledEventsData
+- GET /v1/environment/devices/{serial}/data
+    → OutdoorAirQualityData
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ from typing import Any, cast
 
 from ..types import (
     DailyEnvironmentDataDict,
+    OutdoorEnvironmentDataDict,
     ScheduledEventDict,
     ScheduledEventsDataDict,
 )
@@ -137,3 +140,79 @@ class ScheduledEventsData:
     def active_events(self) -> list[ScheduledEvent]:
         """Return only the enabled events."""
         return [e for e in self.events if e.enabled]
+
+
+@dataclass
+class OutdoorAirQualityData:
+    """Outdoor air quality and weather data for a device's location.
+
+    Source: GET /v1/environment/devices/{serial}/data
+
+    Fields come from a third-party outdoor AQI service and may be ``None``
+    when data is unavailable for the device's registered location.
+    """
+
+    aqi_state: int | None
+    """Numeric AQI state code (e.g. 4 = poor)."""
+    weather_state: int | None
+    """Numeric weather state code."""
+    pollen_state: int | None
+    """Numeric pollen state code."""
+    date_time: str | None
+    """ISO-8601 timestamp of the reading, or ``None``."""
+    aqi_value: Any | None
+    """Raw AQI value as returned by the API, or ``None``."""
+    pm25_value: Any | None
+    """PM2.5 concentration value, or ``None``."""
+    pm10_value: Any | None
+    """PM10 concentration value, or ``None``."""
+    no2_value: Any | None
+    """NO₂ concentration value, or ``None``."""
+    humidity: Any | None
+    """Outdoor humidity value, or ``None``."""
+    temperature: Any | None
+    """Outdoor temperature value, or ``None``."""
+    location_name: str | None
+    """Human-readable location name, or ``None``."""
+    aqi_name: str | None
+    """Localised AQI category label (e.g. ``"Poor"``), or ``None``."""
+    aqi_description: str | None
+    """Localised AQI description, or ``None``."""
+    dominant_pollen: Any | None
+    """Dominant pollen type, or ``None``."""
+    pollens: Any | None
+    """Full pollen detail object, or ``None``."""
+    raw: dict[str, Any]
+    """Full raw response dict for accessing any extra fields."""
+
+    @classmethod
+    def from_dict(cls, data: OutdoorEnvironmentDataDict) -> OutdoorAirQualityData:
+        """Create an OutdoorAirQualityData from an API response dict."""
+        raw: dict[str, Any] = dict(data)
+        aqi_state_raw = raw.get("AqiState")
+        weather_state_raw = raw.get("WeatherState")
+        pollen_state_raw = raw.get("PollenState")
+        return cls(
+            aqi_state=int(aqi_state_raw)
+            if isinstance(aqi_state_raw, int | float)
+            else None,
+            weather_state=int(weather_state_raw)
+            if isinstance(weather_state_raw, int | float)
+            else None,
+            pollen_state=int(pollen_state_raw)
+            if isinstance(pollen_state_raw, int | float)
+            else None,
+            date_time=raw.get("DateTime"),
+            aqi_value=raw.get("AqiValue"),
+            pm25_value=raw.get("Pm25Value"),
+            pm10_value=raw.get("Pm10Value"),
+            no2_value=raw.get("No2Value"),
+            humidity=raw.get("Humidity"),
+            temperature=raw.get("Temperature"),
+            location_name=raw.get("LocationName"),
+            aqi_name=raw.get("AqiName"),
+            aqi_description=raw.get("AqiDescription"),
+            dominant_pollen=raw.get("DominantPollen"),
+            pollens=raw.get("Pollens"),
+            raw=raw,
+        )

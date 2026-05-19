@@ -48,7 +48,7 @@ Basic Usage (Asynchronous):
                 print(f"Device: {device.name} ({device.serial_number})")
 """
 
-__version__ = "0.14.0b1"
+__version__ = "0.14.0b2"
 __author__ = "Christopher Gray"
 __email__ = "79777799+cmgrayb@users.noreply.github.com"
 
@@ -81,6 +81,7 @@ from .models import (
     IoTData,
     LoginChallenge,
     LoginInformation,
+    OutdoorAirQualityData,
     PendingRelease,
     PersistentMap,
     PersistentMapMeta,
@@ -128,6 +129,7 @@ __all__ = [
     "ZonePrediction",
     # EC air purifier models
     "DailyAirQualityData",
+    "OutdoorAirQualityData",
     "ScheduledEvent",
     "ScheduledEventsData",
 ]
