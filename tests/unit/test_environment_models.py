@@ -231,4 +231,3 @@ class TestOutdoorAirQualityData:
         data = OutdoorAirQualityData.from_dict(OUTDOOR_RAW)
         assert data.raw["LocationName"] == "London"
         assert data.raw["AqiState"] == 4
-

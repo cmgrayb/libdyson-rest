@@ -1496,4 +1496,3 @@ class DysonClient:
             raise DysonAPIError(
                 f"Invalid outdoor environment data response: {e}"
             ) from e
-

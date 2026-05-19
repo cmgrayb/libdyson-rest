@@ -583,4 +583,3 @@ class TestAsyncGetOutdoorEnvironmentData:
         with pytest.raises(DysonAPIError, match="Expected object"):
             await client.get_outdoor_environment_data(SERIAL)
         await client.close()
-

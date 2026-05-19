@@ -1477,9 +1477,7 @@ class AsyncDysonClient:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
                 raise DysonAuthError("Authentication token expired or invalid") from e
-            raise DysonAPIError(
-                f"Failed to get outdoor environment data: {e}"
-            ) from e
+            raise DysonAPIError(f"Failed to get outdoor environment data: {e}") from e
         except httpx.RequestError as e:
             raise DysonConnectionError(
                 f"Failed to get outdoor environment data: {e}"
@@ -1498,4 +1496,3 @@ class AsyncDysonClient:
             raise DysonAPIError(
                 f"Invalid outdoor environment data response: {e}"
             ) from e
-
