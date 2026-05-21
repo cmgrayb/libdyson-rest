@@ -252,6 +252,7 @@ class ScheduledEventDict(TypedDict):
     enabled: NotRequired[bool]
     days: NotRequired[list[str]]
     startTime: NotRequired[str]
+    settings: NotRequired[dict[str, Any]]
 
 
 class ScheduledEventsDataDict(TypedDict):

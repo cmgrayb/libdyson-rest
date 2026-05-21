@@ -14,6 +14,9 @@ Endpoints covered:
 
 from __future__ import annotations
 
+import base64 as _base64
+import struct as _struct
+import zlib as _zlib
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, cast
@@ -25,6 +28,111 @@ from ..types import (
     RecommendedCleanMapDict,
     ZoneMetaDict,
 )
+
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+
+
+def _png_count_opaque_pixels(png_bytes: bytes) -> int:
+    """Count non-background pixels in a PNG byte string.
+
+    Supports all five PNG filter types and color types 0 (Greyscale), 2 (RGB),
+    3 (Indexed), 4 (Grey+Alpha), and 6 (RGBA), with bit depth ≥ 8.
+    Non-interlaced only.
+
+    For RGBA and Grey+Alpha images, "non-background" means alpha > 0.
+    For all other color types, any pixel with at least one non-zero byte
+    is counted as foreground.
+
+    Raises:
+        ValueError: If the bytes are not a valid PNG, use interlacing, or
+            use a bit depth below 8.
+    """
+    if png_bytes[:8] != _PNG_SIGNATURE:
+        raise ValueError("Not a valid PNG: bad signature")
+
+    # --- parse chunks -------------------------------------------------------
+    idat_chunks: list[bytes] = []
+    width = height = bit_depth = color_type = interlace = 0
+    pos = 8
+    while pos + 12 <= len(png_bytes):
+        (length,) = _struct.unpack_from(">I", png_bytes, pos)
+        chunk_type = png_bytes[pos + 4 : pos + 8]
+        chunk_data = png_bytes[pos + 8 : pos + 8 + length]
+        pos += 12 + length  # length + type(4) + data + crc(4)
+
+        if chunk_type == b"IHDR":
+            width, height = _struct.unpack_from(">II", chunk_data)
+            bit_depth = chunk_data[8]
+            color_type = chunk_data[9]
+            interlace = chunk_data[12]
+        elif chunk_type == b"IDAT":
+            idat_chunks.append(chunk_data)
+        elif chunk_type == b"IEND":
+            break
+
+    if interlace:
+        raise ValueError("Interlaced PNG images are not supported")
+    if bit_depth < 8:
+        raise ValueError(f"Bit depth {bit_depth} < 8 is not supported")
+
+    # --- determine bytes per pixel ------------------------------------------
+    # color_type: 0=Greyscale, 2=RGB, 3=Indexed, 4=Grey+Alpha, 6=RGBA
+    channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}.get(color_type, 1)
+    bpp = (bit_depth // 8) * channels  # bytes per pixel
+
+    # --- decompress all IDAT chunks together --------------------------------
+    raw = _zlib.decompress(b"".join(idat_chunks))
+
+    # --- reconstruct scanlines and count non-background pixels --------------
+    stride = width * bpp  # bytes per row, excluding the leading filter byte
+    count = 0
+    prev_row = bytearray(stride)
+
+    for row_idx in range(height):
+        base = row_idx * (stride + 1)
+        filter_type = raw[base]
+        row = bytearray(raw[base + 1 : base + 1 + stride])
+
+        # Reconstruct the row according to the PNG filter type.
+        if filter_type == 1:  # Sub
+            for i in range(bpp, stride):
+                row[i] = (row[i] + row[i - bpp]) & 0xFF
+        elif filter_type == 2:  # Up
+            for i in range(stride):
+                row[i] = (row[i] + prev_row[i]) & 0xFF
+        elif filter_type == 3:  # Average
+            for i in range(stride):
+                a = row[i - bpp] if i >= bpp else 0
+                row[i] = (row[i] + (a + prev_row[i]) // 2) & 0xFF
+        elif filter_type == 4:  # Paeth
+            for i in range(stride):
+                a = row[i - bpp] if i >= bpp else 0
+                b = prev_row[i]
+                c = prev_row[i - bpp] if i >= bpp else 0
+                pa = abs(b - c)
+                pb = abs(a - c)
+                pc = abs(a + b - 2 * c)
+                pr = a if pa <= pb and pa <= pc else (b if pb <= pc else c)
+                row[i] = (row[i] + pr) & 0xFF
+        # filter_type == 0 (None): row is already correct.
+
+        # Count non-background pixels.
+        if color_type == 6:  # RGBA: alpha channel is index 3
+            for i in range(0, stride, bpp):
+                if row[i + 3] > 0:
+                    count += 1
+        elif color_type == 4:  # Grey+Alpha: alpha channel is index 1
+            for i in range(0, stride, bpp):
+                if row[i + 1] > 0:
+                    count += 1
+        else:  # Greyscale, RGB, Indexed: any non-zero byte is foreground
+            for i in range(0, stride, bpp):
+                if any(row[i + j] for j in range(bpp)):
+                    count += 1
+
+        prev_row = row
+
+    return count
 
 
 class CleaningStrategy(str, Enum):
@@ -74,6 +182,31 @@ class CleanedFootprint:
             data=data.get("data"),
             area=area,
         )
+
+    def compute_area_m2(self, tile_resolution_mm: float = 20.0) -> float | None:
+        """Compute the cleaned area in square metres from the footprint bitmap.
+
+        Decodes the base64-encoded PNG stored in ``data`` and counts the
+        non-background pixels.  Each pixel represents a
+        ``tile_resolution_mm × tile_resolution_mm`` mm² cell on the floor.
+
+        Args:
+            tile_resolution_mm: Millimetres per pixel in the Vis Nav footprint
+                bitmap (default: 20, which is the standard Dyson resolution).
+
+        Returns:
+            Cleaned area in square metres, or ``None`` if ``data`` is absent
+            or cannot be decoded.
+        """
+        if not self.data:
+            return None
+        try:
+            png_bytes = _base64.b64decode(self.data)
+            pixel_count = _png_count_opaque_pixels(png_bytes)
+            tile_m = tile_resolution_mm / 1000.0
+            return pixel_count * tile_m * tile_m
+        except Exception:
+            return None
 
 
 @dataclass
@@ -243,6 +376,17 @@ class CleanRecord:
             self.cleaning_programme is not None
             and self.cleaning_programme.is_zone_clean
         )
+
+    @property
+    def clean_type(self) -> str:
+        """Human-readable clean type string.
+
+        Returns ``"zone_configured"`` when a cleaning programme with one or
+        more zones exists, ``"global"`` for a standard whole-home run.
+        """
+        if self.is_zone_clean:
+            return "zone_configured"
+        return "global"
 
 
 @dataclass

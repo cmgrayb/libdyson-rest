@@ -112,6 +112,19 @@ class TestScheduledEvent:
         event = ScheduledEvent.from_dict({"days": [0, 1, 2]})
         assert event.days == ["0", "1", "2"]
 
+    def test_settings_preserved_in_raw(self) -> None:
+        # ScheduledEventDict now declares a 'settings' key; verify the value
+        # round-trips through raw without any code change needed.
+        event = ScheduledEvent.from_dict(
+            {
+                "enabled": True,
+                "days": ["Monday"],
+                "startTime": "08:00",
+                "settings": {"nmod": 1, "fnsp": "0003"},
+            }
+        )
+        assert event.raw["settings"] == {"nmod": 1, "fnsp": "0003"}
+
 
 # ---------------------------------------------------------------------------
 # ScheduledEventsData

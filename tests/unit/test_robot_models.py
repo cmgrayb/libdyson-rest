@@ -1,5 +1,9 @@
 """Unit tests for Vis Nav robot vacuum model classes."""
 
+import base64
+import struct
+import zlib
+
 import pytest
 
 from libdyson_rest.models import (
@@ -17,6 +21,41 @@ from libdyson_rest.models import (
     ZoneMeta,
     ZonePrediction,
 )
+
+# ---------------------------------------------------------------------------
+# PNG test helpers
+# ---------------------------------------------------------------------------
+
+
+def _make_rgba_png(pixels: list[list[tuple[int, int, int, int]]]) -> bytes:
+    """Build a minimal RGBA PNG from a 2-D list of (R, G, B, A) tuples."""
+    height = len(pixels)
+    width = len(pixels[0]) if pixels else 0
+
+    raw = bytearray()
+    for row in pixels:
+        raw.append(0)  # filter type: None
+        for r, g, b, a in row:
+            raw.extend([r, g, b, a])
+
+    def chunk(name: bytes, data: bytes) -> bytes:
+        payload = name + data
+        crc = zlib.crc32(payload) & 0xFFFFFFFF
+        return struct.pack(">I", len(data)) + payload + struct.pack(">I", crc)
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", zlib.compress(bytes(raw)))
+        + chunk(b"IEND", b"")
+    )
+
+
+def _b64_png(pixels: list[list[tuple[int, int, int, int]]]) -> str:
+    """Return a base64-encoded RGBA PNG string."""
+    return base64.b64encode(_make_rgba_png(pixels)).decode()
+
 
 # ---------------------------------------------------------------------------
 # CleaningStrategy
@@ -89,6 +128,67 @@ class TestCleanedFootprint:
     def test_from_dict_non_numeric_area(self) -> None:
         fp = CleanedFootprint.from_dict({"area": "unknown"})
         assert fp.area is None
+
+    # --- compute_area_m2 ------------------------------------------------
+
+    def test_compute_area_m2_no_data(self) -> None:
+        fp = CleanedFootprint(data=None, area=None)
+        assert fp.compute_area_m2() is None
+
+    def test_compute_area_m2_invalid_base64_returns_none(self) -> None:
+        fp = CleanedFootprint(data="not-valid-base64!!!", area=None)
+        assert fp.compute_area_m2() is None
+
+    def test_compute_area_m2_not_a_png_returns_none(self) -> None:
+        fp = CleanedFootprint(
+            data=base64.b64encode(b"this is not a png").decode(), area=None
+        )
+        assert fp.compute_area_m2() is None
+
+    def test_compute_area_m2_all_transparent(self) -> None:
+        # 2×2 image where all pixels are fully transparent
+        png_b64 = _b64_png(
+            [
+                [(0, 0, 0, 0), (0, 0, 0, 0)],
+                [(0, 0, 0, 0), (0, 0, 0, 0)],
+            ]
+        )
+        fp = CleanedFootprint(data=png_b64, area=None)
+        assert fp.compute_area_m2() == pytest.approx(0.0)
+
+    def test_compute_area_m2_fully_opaque(self) -> None:
+        # 3×2 image, all 6 pixels opaque → 6 × (0.02 m)² = 0.0024 m²
+        png_b64 = _b64_png(
+            [
+                [(255, 0, 0, 255), (255, 0, 0, 255), (255, 0, 0, 255)],
+                [(255, 0, 0, 255), (255, 0, 0, 255), (255, 0, 0, 255)],
+            ]
+        )
+        fp = CleanedFootprint(data=png_b64, area=None)
+        assert fp.compute_area_m2() == pytest.approx(6 * 0.02 * 0.02)
+
+    def test_compute_area_m2_partial_coverage(self) -> None:
+        # 2×2 image: 3 opaque + 1 transparent → 3 × 0.0004 m²
+        png_b64 = _b64_png(
+            [
+                [(255, 255, 255, 255), (0, 0, 0, 0)],
+                [(255, 0, 0, 255), (0, 255, 0, 255)],
+            ]
+        )
+        fp = CleanedFootprint(data=png_b64, area=None)
+        assert fp.compute_area_m2() == pytest.approx(3 * 0.0004)
+
+    def test_compute_area_m2_custom_resolution(self) -> None:
+        # 1×1 opaque pixel at 10 mm/px → 0.01 × 0.01 = 0.0001 m²
+        png_b64 = _b64_png([[(100, 100, 100, 200)]])
+        fp = CleanedFootprint(data=png_b64, area=None)
+        assert fp.compute_area_m2(tile_resolution_mm=10.0) == pytest.approx(0.0001)
+
+    def test_compute_area_m2_default_resolution_is_20mm(self) -> None:
+        # 1×1 opaque → 0.02 × 0.02 = 0.0004 m²
+        png_b64 = _b64_png([[(50, 50, 50, 128)]])
+        fp = CleanedFootprint(data=png_b64, area=None)
+        assert fp.compute_area_m2() == pytest.approx(0.0004)
 
 
 # ---------------------------------------------------------------------------
@@ -256,6 +356,24 @@ class TestCleanRecord:
     def test_is_zone_clean_no_programme(self) -> None:
         record = CleanRecord.from_dict({})
         assert record.is_zone_clean is False
+
+    def test_clean_type_zone_configured(self) -> None:
+        record = CleanRecord.from_dict(CLEAN_RECORD_FULL)
+        assert record.clean_type == "zone_configured"
+
+    def test_clean_type_global_no_programme(self) -> None:
+        record = CleanRecord.from_dict({})
+        assert record.clean_type == "global"
+
+    def test_clean_type_global_programme_no_zones(self) -> None:
+        data = dict(CLEAN_RECORD_FULL)
+        data["cleaningProgramme"] = {
+            "persistentMapId": "map-001",
+            "orderedZones": [],
+            "unorderedZones": [],
+        }
+        record = CleanRecord.from_dict(data)
+        assert record.clean_type == "global"
 
 
 # ---------------------------------------------------------------------------
