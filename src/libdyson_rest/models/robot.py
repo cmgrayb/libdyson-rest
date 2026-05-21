@@ -379,13 +379,13 @@ class CleanRecord:
 
     @property
     def clean_type(self) -> str:
-        """Human-readable clean type string.
+        """Clean type string matching the Dyson API vocabulary.
 
-        Returns ``"zone_configured"`` when a cleaning programme with one or
+        Returns ``"zoneConfigured"`` when a cleaning programme with one or
         more zones exists, ``"global"`` for a standard whole-home run.
         """
         if self.is_zone_clean:
-            return "zone_configured"
+            return "zoneConfigured"
         return "global"
 
 

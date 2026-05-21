@@ -359,7 +359,7 @@ class TestCleanRecord:
 
     def test_clean_type_zone_configured(self) -> None:
         record = CleanRecord.from_dict(CLEAN_RECORD_FULL)
-        assert record.clean_type == "zone_configured"
+        assert record.clean_type == "zoneConfigured"
 
     def test_clean_type_global_no_programme(self) -> None:
         record = CleanRecord.from_dict({})
