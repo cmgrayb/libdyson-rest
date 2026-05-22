@@ -36,16 +36,17 @@ def _png_count_opaque_pixels(png_bytes: bytes) -> int:
     """Count non-background pixels in a PNG byte string.
 
     Supports all five PNG filter types and color types 0 (Greyscale), 2 (RGB),
-    3 (Indexed), 4 (Grey+Alpha), and 6 (RGBA), with bit depth ≥ 8.
-    Non-interlaced only.
+    3 (Indexed), 4 (Grey+Alpha), and 6 (RGBA), with bit depths 1, 2, 4, 8,
+    and 16.  Non-interlaced only.
 
     For RGBA and Grey+Alpha images, "non-background" means alpha > 0.
-    For all other color types, any pixel with at least one non-zero byte
-    is counted as foreground.
+    For all other color types, any pixel with at least one non-zero sample
+    is counted as foreground.  For sub-byte depths (1, 2, 4) this means any
+    sample whose value is non-zero (e.g. a set bit in a 1-bit mask).
 
     Raises:
         ValueError: If the bytes are not a valid PNG, use interlacing, or
-            use a bit depth below 8.
+            use an unsupported bit depth.
     """
     if png_bytes[:8] != _PNG_SIGNATURE:
         raise ValueError("Not a valid PNG: bad signature")
@@ -72,19 +73,25 @@ def _png_count_opaque_pixels(png_bytes: bytes) -> int:
 
     if interlace:
         raise ValueError("Interlaced PNG images are not supported")
-    if bit_depth < 8:
-        raise ValueError(f"Bit depth {bit_depth} < 8 is not supported")
 
-    # --- determine bytes per pixel ------------------------------------------
+    # --- determine stride and bytes-per-pixel for filter reconstruction -----
     # color_type: 0=Greyscale, 2=RGB, 3=Indexed, 4=Grey+Alpha, 6=RGBA
-    channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}.get(color_type, 1)
-    bpp = (bit_depth // 8) * channels  # bytes per pixel
+    if bit_depth >= 8:
+        channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}.get(color_type, 1)
+        bpp = (bit_depth // 8) * channels  # bytes per pixel
+        stride = width * bpp  # bytes per row, excluding the filter byte
+    elif bit_depth in (1, 2, 4):
+        # Sub-byte packed format (valid for color types 0 and 3 in the PNG spec).
+        # PNG filter reconstruction operates at byte granularity, so bpp = 1.
+        bpp = 1
+        stride = (width * bit_depth + 7) // 8
+    else:
+        raise ValueError(f"Unsupported bit depth: {bit_depth}")
 
     # --- decompress all IDAT chunks together --------------------------------
     raw = _zlib.decompress(b"".join(idat_chunks))
 
     # --- reconstruct scanlines and count non-background pixels --------------
-    stride = width * bpp  # bytes per row, excluding the leading filter byte
     count = 0
     prev_row = bytearray(stride)
 
@@ -117,7 +124,19 @@ def _png_count_opaque_pixels(png_bytes: bytes) -> int:
         # filter_type == 0 (None): row is already correct.
 
         # Count non-background pixels.
-        if color_type == 6:  # RGBA: alpha channel is index 3
+        if bit_depth < 8:
+            # Packed sub-byte samples, stored MSB-first within each byte.
+            mask = (1 << bit_depth) - 1
+            pixels_per_byte = 8 // bit_depth
+            pixel_num = 0
+            for byte in row:
+                for slot in range(pixels_per_byte - 1, -1, -1):
+                    if pixel_num >= width:
+                        break
+                    if (byte >> (slot * bit_depth)) & mask:
+                        count += 1
+                    pixel_num += 1
+        elif color_type == 6:  # RGBA: alpha channel is index 3
             for i in range(0, stride, bpp):
                 if row[i + 3] > 0:
                     count += 1
@@ -183,7 +202,12 @@ class CleanedFootprint:
             area=area,
         )
 
-    def compute_area_m2(self, tile_resolution_mm: float = 20.0) -> float | None:
+    def compute_area_m2(
+        self,
+        tile_resolution_mm: float = 20.0,
+        *,
+        resolution_mm: float | None = None,
+    ) -> float | None:
         """Compute the cleaned area in square metres from the footprint bitmap.
 
         Decodes the base64-encoded PNG stored in ``data`` and counts the
@@ -193,11 +217,16 @@ class CleanedFootprint:
         Args:
             tile_resolution_mm: Millimetres per pixel in the Vis Nav footprint
                 bitmap (default: 20, which is the standard Dyson resolution).
+            resolution_mm: Deprecated alias for ``tile_resolution_mm``.
+                Provided for backward compatibility; prefer
+                ``tile_resolution_mm``.
 
         Returns:
             Cleaned area in square metres, or ``None`` if ``data`` is absent
             or cannot be decoded.
         """
+        if resolution_mm is not None:
+            tile_resolution_mm = resolution_mm
         if not self.data:
             return None
         try:

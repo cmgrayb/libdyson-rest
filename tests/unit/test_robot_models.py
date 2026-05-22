@@ -57,6 +57,60 @@ def _b64_png(pixels: list[list[tuple[int, int, int, int]]]) -> str:
     return base64.b64encode(_make_rgba_png(pixels)).decode()
 
 
+def _make_1bit_greyscale_png(rows: list[list[int]]) -> bytes:
+    """Build a minimal 1-bit greyscale PNG from a 2-D list of 0/1 values.
+
+    Each inner list is one row; each value is 0 (black) or 1 (white).
+    Rows need not be a multiple of 8 wide — the last byte is zero-padded.
+    """
+    height = len(rows)
+    width = len(rows[0]) if rows else 0
+
+    def chunk(name: bytes, data: bytes) -> bytes:
+        payload = name + data
+        crc = zlib.crc32(payload) & 0xFFFFFFFF
+        return struct.pack(">I", len(data)) + payload + struct.pack(">I", crc)
+
+    raw = bytearray()
+    for row in rows:
+        raw.append(0)  # filter type: None
+        # Pack pixels MSB-first, 8 pixels per byte, zero-pad the last byte.
+        byte = 0
+        bit_pos = 7
+        for px in row:
+            if px:
+                byte |= 1 << bit_pos
+            bit_pos -= 1
+            if bit_pos < 0:
+                raw.append(byte)
+                byte = 0
+                bit_pos = 7
+        if bit_pos < 7:  # flush any partial byte
+            raw.append(byte)
+
+    ihdr = struct.pack(
+        ">IIBBBBB",
+        width,
+        height,
+        1,
+        0,
+        0,
+        0,
+        0,  # bit_depth=1, color_type=0
+    )
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", zlib.compress(bytes(raw)))
+        + chunk(b"IEND", b"")
+    )
+
+
+def _b64_1bit_png(rows: list[list[int]]) -> str:
+    """Return a base64-encoded 1-bit greyscale PNG string."""
+    return base64.b64encode(_make_1bit_greyscale_png(rows)).decode()
+
+
 # ---------------------------------------------------------------------------
 # CleaningStrategy
 # ---------------------------------------------------------------------------
@@ -189,6 +243,40 @@ class TestCleanedFootprint:
         png_b64 = _b64_png([[(50, 50, 50, 128)]])
         fp = CleanedFootprint(data=png_b64, area=None)
         assert fp.compute_area_m2() == pytest.approx(0.0004)
+
+    # --- 1-bit greyscale PNG (Vis Nav cloud masks) --------------------------
+
+    def test_compute_area_m2_1bit_png_all_set(self) -> None:
+        # 8×2 1-bit greyscale: all pixels set → 16 × (0.02)² = 0.0064 m²
+        png_b64 = _b64_1bit_png([[1] * 8, [1] * 8])
+        fp = CleanedFootprint(data=png_b64, area=None)
+        assert fp.compute_area_m2() == pytest.approx(16 * 0.02 * 0.02)
+
+    def test_compute_area_m2_1bit_png_all_clear(self) -> None:
+        # 8×2 1-bit greyscale: no pixels set → 0.0 m²
+        png_b64 = _b64_1bit_png([[0] * 8, [0] * 8])
+        fp = CleanedFootprint(data=png_b64, area=None)
+        assert fp.compute_area_m2() == pytest.approx(0.0)
+
+    def test_compute_area_m2_1bit_png_partial(self) -> None:
+        # 8×2: top row all set (8), bottom row all clear (0) → 8 pixels
+        png_b64 = _b64_1bit_png([[1] * 8, [0] * 8])
+        fp = CleanedFootprint(data=png_b64, area=None)
+        assert fp.compute_area_m2() == pytest.approx(8 * 0.02 * 0.02)
+
+    def test_compute_area_m2_1bit_png_non_multiple_of_8_width(self) -> None:
+        # 5-pixel wide, 1-bit greyscale: 3 set + 2 clear per row, 2 rows → 6
+        png_b64 = _b64_1bit_png([[1, 1, 1, 0, 0], [1, 1, 1, 0, 0]])
+        fp = CleanedFootprint(data=png_b64, area=None)
+        assert fp.compute_area_m2() == pytest.approx(6 * 0.02 * 0.02)
+
+    # --- backward-compat resolution_mm kwarg --------------------------------
+
+    def test_compute_area_m2_resolution_mm_compat(self) -> None:
+        # resolution_mm=10 → tile_m = 0.01 → 1 pixel = 0.01 × 0.01 = 0.0001 m²
+        png_b64 = _b64_png([[(100, 100, 100, 200)]])
+        fp = CleanedFootprint(data=png_b64, area=None)
+        assert fp.compute_area_m2(resolution_mm=10.0) == pytest.approx(0.0001)
 
 
 # ---------------------------------------------------------------------------
