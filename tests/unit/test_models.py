@@ -546,7 +546,10 @@ def test_lec_only_device_with_no_mqtt_config() -> None:
 
 
 def test_mqtt_remote_broker_type_mqtts() -> None:
-    """Test that 'mqtts' is a valid RemoteBrokerType (regression: some devices return mqtts)."""
+    """Test that 'mqtts' is a valid RemoteBrokerType.
+
+    Regression: some devices return 'mqtts' as the remote broker type.
+    """
     mqtt_data = {
         "localBrokerCredentials": "encrypted_credentials",
         "mqttRootTopicLevel": "root/topic",
