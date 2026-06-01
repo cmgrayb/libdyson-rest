@@ -49,6 +49,7 @@ class ConnectionCategory(Enum):
 class RemoteBrokerType(Enum):
     """Remote broker type enumeration."""
 
+    MQTTS = "mqtts"
     WSS = "wss"
 
 

@@ -17,19 +17,34 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .exceptions import DysonAPIError, DysonAuthError, DysonConnectionError
 from .models import (
+    CleaningStrategy,
+    CleanRecord,
+    DailyAirQualityData,
     Device,
     IoTData,
     LoginChallenge,
     LoginInformation,
+    OutdoorAirQualityData,
     PendingRelease,
+    PersistentMap,
+    PersistentMapMeta,
+    RecommendedCleanMap,
+    ScheduledEventsData,
     UserStatus,
 )
 from .types import (
+    CleanRecordDict,
+    DailyEnvironmentDataDict,
     DeviceResponseDict,
     IoTDataResponseDict,
     LoginChallengeResponseDict,
     LoginInformationResponseDict,
+    OutdoorEnvironmentDataDict,
     PendingReleaseResponseDict,
+    PersistentMapDict,
+    PersistentMapMetaDict,
+    RecommendedCleanMapDict,
+    ScheduledEventsDataDict,
     UserStatusResponseDict,
 )
 from .utils import get_api_hostname
@@ -1073,3 +1088,411 @@ class AsyncDysonClient:
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Async context manager exit."""
         await self.close()
+
+    # ------------------------------------------------------------------
+    # Robot / Vis Nav cloud endpoints
+    # ------------------------------------------------------------------
+
+    async def get_clean_maps(
+        self, serial_number: str, include_dust_map: bool = True
+    ) -> list[CleanRecord]:
+        """Get recent cleaning runs for a Vis Nav robot vacuum.
+
+        Args:
+            serial_number: Device serial number.
+            include_dust_map: When True (default), requests the aggregated
+                dust-density map blob for each run (``dustMap=total``).
+
+        Returns:
+            List of CleanRecord objects, newest first.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_clean_maps")
+
+        url = urljoin(get_api_hostname(self.country), f"/v1/{serial_number}/clean-maps")
+        params: dict[str, str] = {}
+        if include_dust_map:
+            params["dustMap"] = "total"
+
+        try:
+            client = await self._get_client()
+            response = await client.get(url, params=params)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonAPIError(f"Failed to get clean maps: {e}") from e
+        except httpx.RequestError as e:
+            raise DysonConnectionError(f"Failed to get clean maps: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, list):
+                raise DysonAPIError("Expected list in clean-maps response")
+            return [
+                CleanRecord.from_dict(cast(CleanRecordDict, item))
+                for item in data
+                if isinstance(item, dict)
+            ]
+        except (ValueError, TypeError, KeyError) as e:
+            raise DysonAPIError(f"Invalid clean-maps response: {e}") from e
+
+    async def get_persistent_map_metadata(
+        self, serial_number: str
+    ) -> list[PersistentMapMeta]:
+        """Get persistent map metadata (zone names, IDs, areas) for a Vis Nav.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            List of PersistentMapMeta objects (one per stored map).
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_persistent_map_metadata"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/app/{serial_number}/persistent-map-metadata",
+        )
+
+        try:
+            client = await self._get_client()
+            response = await client.get(url)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonAPIError(f"Failed to get persistent map metadata: {e}") from e
+        except httpx.RequestError as e:
+            raise DysonConnectionError(
+                f"Failed to get persistent map metadata: {e}"
+            ) from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, list):
+                raise DysonAPIError("Expected list in persistent-map-metadata response")
+            return [
+                PersistentMapMeta.from_dict(cast(PersistentMapMetaDict, item))
+                for item in data
+                if isinstance(item, dict)
+            ]
+        except (ValueError, TypeError, KeyError) as e:
+            raise DysonAPIError(f"Invalid persistent-map-metadata response: {e}") from e
+
+    async def get_persistent_map(
+        self, serial_number: str, map_id: str
+    ) -> PersistentMap:
+        """Get the full persistent map record including the floor-plan PNG.
+
+        Args:
+            serial_number: Device serial number.
+            map_id: Persistent map ID (from get_persistent_map_metadata).
+
+        Returns:
+            PersistentMap with presentation image, orientation, offset, and zones.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_persistent_map")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/app/{serial_number}/persistent-maps/{map_id}",
+        )
+
+        try:
+            client = await self._get_client()
+            response = await client.get(url)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonAPIError(f"Failed to get persistent map: {e}") from e
+        except httpx.RequestError as e:
+            raise DysonConnectionError(f"Failed to get persistent map: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in persistent-map response")
+            return PersistentMap.from_dict(cast(PersistentMapDict, data))
+        except (ValueError, TypeError, KeyError) as e:
+            raise DysonAPIError(f"Invalid persistent-map response: {e}") from e
+
+    async def get_recommended_cleans(
+        self, serial_number: str
+    ) -> list[RecommendedCleanMap]:
+        """Get Dyson's zone-clean recommendations for a Vis Nav.
+
+        Recommendations are ranked by accumulated dust load. Each entry
+        contains per-zone dust predictions broken down by particle class.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            List of RecommendedCleanMap objects (one per persistent map).
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_recommended_cleans"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/app/{serial_number}/recommended-cleans",
+        )
+
+        try:
+            client = await self._get_client()
+            response = await client.get(url)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonAPIError(f"Failed to get recommended cleans: {e}") from e
+        except httpx.RequestError as e:
+            raise DysonConnectionError(f"Failed to get recommended cleans: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, list):
+                raise DysonAPIError("Expected list in recommended-cleans response")
+            return [
+                RecommendedCleanMap.from_dict(cast(RecommendedCleanMapDict, item))
+                for item in data
+                if isinstance(item, dict)
+            ]
+        except (ValueError, TypeError, KeyError) as e:
+            raise DysonAPIError(f"Invalid recommended-cleans response: {e}") from e
+
+    async def set_zone_behaviour(
+        self,
+        serial_number: str,
+        map_id: str,
+        zone_id: str,
+        strategy: CleaningStrategy | str,
+    ) -> None:
+        """Set the per-zone cleaning strategy for a Vis Nav zone.
+
+        This persists the override to the Dyson cloud; the device picks it
+        up on the next clean — equivalent to changing the zone's behaviour
+        in the MyDyson app.
+
+        Note: the real API path is ``/v1/app/{serial}/{mapId}/zones/{zoneId}/
+        zone-behaviours`` (without a ``persistent-maps/`` segment).
+
+        Args:
+            serial_number: Device serial number.
+            map_id: Persistent map ID.
+            zone_id: Zone ID to update.
+            strategy: One of the CleaningStrategy enum values
+                (``auto``, ``quick``, ``quiet``, ``boost``).
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling set_zone_behaviour")
+
+        strategy_value = (
+            strategy.value if isinstance(strategy, CleaningStrategy) else str(strategy)
+        )
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/app/{serial_number}/{map_id}/zones/{zone_id}/zone-behaviours",
+        )
+
+        try:
+            client = await self._get_client()
+            response = await client.put(url, json={"cleaningStrategy": strategy_value})
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonAPIError(f"Failed to set zone behaviour: {e}") from e
+        except httpx.RequestError as e:
+            raise DysonConnectionError(f"Failed to set zone behaviour: {e}") from e
+
+    # ------------------------------------------------------------------
+    # EC (air purifier) cloud endpoints
+    # ------------------------------------------------------------------
+
+    async def get_daily_environment_data(
+        self, serial_number: str, language: str = "en"
+    ) -> DailyAirQualityData:
+        """Get indoor air-quality history at 15-minute resolution for today.
+
+        Args:
+            serial_number: Device serial number.
+            language: Language code for localised field values (default ``en``).
+
+        Returns:
+            DailyAirQualityData with sample series and resolution metadata.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_daily_environment_data"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/messageprocessor/devices/{serial_number}/environmentdata/daily",
+        )
+
+        try:
+            client = await self._get_client()
+            response = await client.get(url)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonAPIError(f"Failed to get daily environment data: {e}") from e
+        except httpx.RequestError as e:
+            raise DysonConnectionError(
+                f"Failed to get daily environment data: {e}"
+            ) from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in environmentdata/daily response")
+            return DailyAirQualityData.from_dict(cast(DailyEnvironmentDataDict, data))
+        except (ValueError, TypeError, KeyError) as e:
+            raise DysonAPIError(f"Invalid environmentdata/daily response: {e}") from e
+
+    async def get_scheduled_events(
+        self, serial_number: str, product_type: str | None = None
+    ) -> ScheduledEventsData:
+        """Get MyDyson-app scheduled automation events for a device.
+
+        Args:
+            serial_number: Device serial number.
+            product_type: Device product-type code (e.g. ``438K``). Required
+                by the server to return the correct schedule schema; omit if
+                the product type is unknown.
+
+        Returns:
+            ScheduledEventsData containing the schedule enabled flag and events.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_scheduled_events"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/unifiedscheduler/{serial_number}/events",
+        )
+        params: dict[str, str] = {}
+        if product_type:
+            params["productType"] = product_type
+
+        try:
+            client = await self._get_client()
+            response = await client.get(url, params=params)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonAPIError(f"Failed to get scheduled events: {e}") from e
+        except httpx.RequestError as e:
+            raise DysonConnectionError(f"Failed to get scheduled events: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in scheduled-events response")
+            return ScheduledEventsData.from_dict(cast(ScheduledEventsDataDict, data))
+        except (ValueError, TypeError, KeyError) as e:
+            raise DysonAPIError(f"Invalid scheduled-events response: {e}") from e
+
+    async def get_outdoor_environment_data(
+        self, serial_number: str, language: str = "en"
+    ) -> OutdoorAirQualityData:
+        """Get outdoor air quality and weather data for a device's location.
+
+        Args:
+            serial_number: Device serial number.
+            language: Language code for localised field values (default ``en``).
+
+        Returns:
+            OutdoorAirQualityData with AQI, pollutant, weather, and pollen fields.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_outdoor_environment_data"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/environment/devices/{serial_number}/data",
+        )
+        params: dict[str, str] = {"language": language}
+
+        try:
+            client = await self._get_client()
+            response = await client.get(url, params=params)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonAPIError(f"Failed to get outdoor environment data: {e}") from e
+        except httpx.RequestError as e:
+            raise DysonConnectionError(
+                f"Failed to get outdoor environment data: {e}"
+            ) from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError(
+                    "Expected object in outdoor environment data response"
+                )
+            return OutdoorAirQualityData.from_dict(
+                cast(OutdoorEnvironmentDataDict, data)
+            )
+        except (ValueError, TypeError, KeyError) as e:
+            raise DysonAPIError(
+                f"Invalid outdoor environment data response: {e}"
+            ) from e

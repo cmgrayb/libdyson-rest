@@ -543,3 +543,18 @@ def test_lec_only_device_with_no_mqtt_config() -> None:
     result = device.to_dict()
     assert result["connectionCategory"] == "lecOnly"
     assert "mqtt" not in result["connectedConfiguration"]
+
+
+def test_mqtt_remote_broker_type_mqtts() -> None:
+    """Test that 'mqtts' is a valid RemoteBrokerType.
+
+    Regression: some devices return 'mqtts' as the remote broker type.
+    """
+    mqtt_data = {
+        "localBrokerCredentials": "encrypted_credentials",
+        "mqttRootTopicLevel": "root/topic",
+        "remoteBrokerType": "mqtts",
+    }
+    mqtt = MQTT.from_dict(mqtt_data)  # type: ignore[arg-type]
+    assert mqtt.remote_broker_type == RemoteBrokerType.MQTTS
+    assert mqtt.remote_broker_type.value == "mqtts"

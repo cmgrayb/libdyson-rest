@@ -5,7 +5,7 @@ These definitions provide compile-time type safety for JSON API responses
 and enable better IDE support and error detection.
 """
 
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from typing_extensions import NotRequired, Required
 
@@ -91,3 +91,196 @@ class IoTDataResponseDict(TypedDict):
 
     Endpoint: Required[str]
     IoTCredentials: Required[IoTCredentialsResponseDict]
+
+
+# ---------------------------------------------------------------------------
+# Robot / Vis Nav cloud endpoints
+# ---------------------------------------------------------------------------
+
+
+class CleanTimelineEventDict(TypedDict):
+    """One event in a cleaning run timeline."""
+
+    time: NotRequired[str]
+    eventName: NotRequired[str]
+    faultLocation: NotRequired[str | None]
+
+
+class DustDataEntryDict(TypedDict):
+    """A single dust-density blob (base64-encoded, zlib-compressed)."""
+
+    scaleFactor: NotRequired[int]
+    data: Required[str]
+
+
+class DustMapDict(TypedDict):
+    """Aggregated dust-density map for one cleaning run."""
+
+    width: Required[int]
+    height: Required[int]
+    resolution: NotRequired[int]
+    dustData: Required[list[DustDataEntryDict]]
+
+
+class CleanedFootprintDict(TypedDict):
+    """Cleaned-area footprint for one cleaning run."""
+
+    data: NotRequired[str]
+    area: NotRequired[float]
+
+
+class CleanMapPositionDict(TypedDict):
+    """World-coordinate origin of a dust-map crop (mm)."""
+
+    x: Required[float]
+    y: Required[float]
+
+
+class PersistentMapRefDict(TypedDict):
+    """Persistent-map reference embedded in a clean record."""
+
+    id: NotRequired[str]
+    cleanMapPosition: NotRequired[CleanMapPositionDict]
+
+
+class CleaningProgrammeDict(TypedDict):
+    """Zone-clean programme embedded in a clean record."""
+
+    persistentMapId: NotRequired[str]
+    orderedZones: NotRequired[list[str]]
+    unorderedZones: NotRequired[list[str]]
+    zonesDefinitionLastUpdatedDate: NotRequired[str]
+
+
+class CleanRecordDict(TypedDict):
+    """One entry from GET /v1/{serial}/clean-maps."""
+
+    cleanId: NotRequired[str]
+    sequenceNumber: NotRequired[int]
+    cleanTimeline: NotRequired[list[CleanTimelineEventDict]]
+    cleanedFootprint: NotRequired[CleanedFootprintDict | None]
+    cleaningProgramme: NotRequired[CleaningProgrammeDict | None]
+    persistentMap: NotRequired[PersistentMapRefDict | None]
+    dustMap: NotRequired[DustMapDict | None]
+
+
+class ZoneMetaDict(TypedDict):
+    """One zone entry from persistent-map metadata."""
+
+    id: Required[str]
+    name: NotRequired[str]
+    icon: NotRequired[str]
+    area: NotRequired[float]
+
+
+class PersistentMapMetaDict(TypedDict):
+    """One entry from GET /v1/app/{serial}/persistent-map-metadata."""
+
+    id: Required[str]
+    name: NotRequired[str]
+    zonesDefinitionLastUpdatedDate: NotRequired[str]
+    zones: NotRequired[list[ZoneMetaDict]]
+
+
+class PresentationMapDict(TypedDict):
+    """Presentation map PNG blob (base64-encoded)."""
+
+    data: Required[str]
+
+
+class ZonesDefinitionDict(TypedDict):
+    """Zones definition including display orientation."""
+
+    persistentMapDisplayOrientation: NotRequired[int]
+
+
+class MapOffsetDict(TypedDict):
+    """World-coordinate offset of the presentation map origin (mm)."""
+
+    x: Required[float]
+    y: Required[float]
+
+
+class PersistentMapDict(TypedDict):
+    """Full persistent map from GET /v1/app/{serial}/persistent-maps/{id}."""
+
+    id: Required[str]
+    name: NotRequired[str]
+    offset: NotRequired[MapOffsetDict]
+    presentationMap: NotRequired[PresentationMapDict]
+    zonesDefinition: NotRequired[ZonesDefinitionDict]
+    zones: NotRequired[list[ZoneMetaDict]]
+
+
+class ZoneDustMilligramsEntryDict(TypedDict):
+    """One particle-class dust entry (e.g. fine, total) in mg."""
+
+    name: Required[str]
+    weight: Required[float]
+
+
+class ZonePredictionDict(TypedDict):
+    """Dust prediction for one zone."""
+
+    zoneId: Required[str]
+    zoneDustMilligrams: NotRequired[list[ZoneDustMilligramsEntryDict]]
+
+
+class RecommendedCleanMapDict(TypedDict):
+    """One entry from GET /v1/app/{serial}/recommended-cleans."""
+
+    persistentMapId: Required[str]
+    zonePredictions: NotRequired[list[ZonePredictionDict]]
+
+
+# ---------------------------------------------------------------------------
+# EC (air purifier) cloud endpoints
+# ---------------------------------------------------------------------------
+
+
+class DailyEnvironmentDataDict(TypedDict):
+    """Response from GET /v1/messageprocessor/devices/{serial}/environmentdata/daily."""
+
+    start_time: NotRequired[str]
+    resolution: NotRequired[int]
+    aqlm: NotRequired[list[float | None]]
+
+
+class ScheduledEventDict(TypedDict):
+    """One scheduled event from GET /v1/unifiedscheduler/{serial}/events."""
+
+    enabled: NotRequired[bool]
+    days: NotRequired[list[str]]
+    startTime: NotRequired[str]
+    settings: NotRequired[dict[str, Any]]
+
+
+class ScheduledEventsDataDict(TypedDict):
+    """Response from GET /v1/unifiedscheduler/{serial}/events."""
+
+    enabled: NotRequired[bool]
+    events: NotRequired[list[ScheduledEventDict]]
+
+
+class OutdoorEnvironmentDataDict(TypedDict):
+    """Response from GET /v1/environment/devices/{serial}/data."""
+
+    DateTime: NotRequired[str | None]
+    AqiState: NotRequired[int]
+    AqiValue: NotRequired[Any | None]
+    ColorValue: NotRequired[Any | None]
+    Pm25Value: NotRequired[Any | None]
+    Pm10Value: NotRequired[Any | None]
+    No2Value: NotRequired[Any | None]
+    WeatherState: NotRequired[int]
+    Humidity: NotRequired[Any | None]
+    Temperature: NotRequired[Any | None]
+    LocationName: NotRequired[str | None]
+    ColorIndex: NotRequired[Any | None]
+    AqiName: NotRequired[str | None]
+    AqiDescription: NotRequired[str | None]
+    Icon: NotRequired[Any | None]
+    Measure: NotRequired[Any | None]
+    PollenState: NotRequired[int]
+    DominantPollen: NotRequired[Any | None]
+    Pollens: NotRequired[Any | None]
