@@ -153,7 +153,7 @@ class CleaningProgrammeDict(TypedDict):
 
 
 class CleanRecordDict(TypedDict):
-    """One entry from GET /v1/{serial}/clean-maps."""
+    """One entry from GET /v2/{serial}/clean-maps."""
 
     cleanId: NotRequired[str]
     sequenceNumber: NotRequired[int]

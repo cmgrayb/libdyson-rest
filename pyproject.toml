@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "libdyson-rest"
-version = "0.15.0b1"
+version = "0.15.0b2"
 description = "Python library for interacting with Dyson devices through their official REST API"
 readme = "README.md"
 license = "MIT"
@@ -19,8 +19,9 @@ keywords = [
     "air-purifier",
     "fan",
     "iot",
+    "vacuum",
+    "robot",
     "rest-api",
-    "mqtt",
     "home-automation",
 ]
 classifiers = [

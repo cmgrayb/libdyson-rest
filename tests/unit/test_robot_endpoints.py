@@ -198,7 +198,7 @@ class TestSyncGetPersistentMapMetadata:
         client.get_persistent_map_metadata(SERIAL)
 
         url = mock_get.call_args.args[0]
-        assert f"/v1/app/{SERIAL}/persistent-map-metadata" in url
+        assert f"/v2/app/{SERIAL}/persistent-map-metadata" in url
 
     @patch("httpx.Client.get")
     def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
@@ -253,7 +253,7 @@ class TestSyncGetPersistentMap:
         client.get_persistent_map(SERIAL, MAP_ID)
 
         url = mock_get.call_args.args[0]
-        assert f"/v1/app/{SERIAL}/persistent-maps/{MAP_ID}" in url
+        assert f"/v2/app/{SERIAL}/persistent-maps/{MAP_ID}" in url
 
     @patch("httpx.Client.get")
     def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:

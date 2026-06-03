@@ -1092,7 +1092,7 @@ class DysonClient:
         if not self._auth_token:
             raise DysonAuthError("Must authenticate before calling get_clean_maps")
 
-        url = urljoin(get_api_hostname(self.country), f"/v1/{serial_number}/clean-maps")
+        url = urljoin(get_api_hostname(self.country), f"/v2/{serial_number}/clean-maps")
         params: dict[str, str] = {}
         if include_dust_map:
             params["dustMap"] = "total"
@@ -1144,7 +1144,7 @@ class DysonClient:
 
         url = urljoin(
             get_api_hostname(self.country),
-            f"/v1/app/{serial_number}/persistent-map-metadata",
+            f"/v2/app/{serial_number}/persistent-map-metadata",
         )
 
         try:
@@ -1193,7 +1193,7 @@ class DysonClient:
 
         url = urljoin(
             get_api_hostname(self.country),
-            f"/v1/app/{serial_number}/persistent-maps/{map_id}",
+            f"/v2/app/{serial_number}/persistent-maps/{map_id}",
         )
 
         try:
@@ -1482,3 +1482,1304 @@ class DysonClient:
             raise DysonAPIError(
                 f"Invalid outdoor environment data response: {e}"
             ) from e
+
+    # ------------------------------------------------------------------
+    # Robot vacuum v2 additional endpoints
+    # ------------------------------------------------------------------
+
+    def get_clean_map_data(self, serial_number: str, clean_id: str) -> dict[str, Any]:
+        """Get detailed data for a single cleaning session.
+
+        Args:
+            serial_number: Device serial number.
+            clean_id: Cleaning session ID (from get_clean_maps).
+
+        Returns:
+            Raw dict with detailed clean session data.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_clean_map_data")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v2/{serial_number}/clean-maps-data/{clean_id}",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get clean map data: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in clean-map-data response")
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid clean-map-data response: {e}") from e
+
+    def update_persistent_map(
+        self, serial_number: str, map_id: str, name: str | None = None
+    ) -> None:
+        """Update an existing persistent map (rename, etc.).
+
+        Args:
+            serial_number: Device serial number.
+            map_id: Persistent map ID.
+            name: New name for the map.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling update_persistent_map"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v2/app/{serial_number}/persistent-maps/{map_id}",
+        )
+        body: dict[str, Any] = {}
+        if name is not None:
+            body["name"] = name
+
+        try:
+            response = self.session.put(url, json=body, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to update persistent map: {e}") from e
+
+    def delete_persistent_map(self, serial_number: str, map_id: str) -> None:
+        """Delete a persistent map from the device.
+
+        Args:
+            serial_number: Device serial number.
+            map_id: Persistent map ID to delete.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling delete_persistent_map"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v2/app/{serial_number}/persistent-maps/{map_id}",
+        )
+
+        try:
+            response = self.session.delete(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to delete persistent map: {e}") from e
+
+    def update_map_metadata(
+        self,
+        serial_number: str,
+        map_id: str,
+        name: str | None = None,
+    ) -> None:
+        """Update persistent map metadata (e.g. map name) for a Vis Nav.
+
+        Args:
+            serial_number: Device serial number.
+            map_id: Persistent map ID.
+            name: New name for the map.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling update_map_metadata")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v2/app/{serial_number}/persistent-map-metadata/{map_id}",
+        )
+        body: dict[str, Any] = {}
+        if name is not None:
+            body["name"] = name
+
+        try:
+            response = self.session.put(url, json=body, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to update map metadata: {e}") from e
+
+    def get_clean_estimation(
+        self,
+        serial_number: str,
+        map_id: str,
+        zone_ids: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Request a cleaning estimation for a set of zones.
+
+        Args:
+            serial_number: Device serial number.
+            map_id: Persistent map ID.
+            zone_ids: List of zone IDs to estimate. If None, estimates all zones.
+
+        Returns:
+            Raw dict with estimated cleaning duration and coverage.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_clean_estimation"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v2/app/{serial_number}/persistent-maps/{map_id}/clean-estimation",
+        )
+        body: dict[str, Any] = {}
+        if zone_ids is not None:
+            body["zoneIds"] = zone_ids
+
+        try:
+            response = self.session.post(url, json=body, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get clean estimation: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in clean-estimation response")
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid clean-estimation response: {e}") from e
+
+    def get_restrictions(self, serial_number: str, map_id: str) -> dict[str, Any]:
+        """Get no-go and restricted-area definitions for a persistent map.
+
+        Args:
+            serial_number: Device serial number.
+            map_id: Persistent map ID.
+
+        Returns:
+            Raw dict with restriction definitions (no-go zones, keep-out areas).
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_restrictions")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v2/app/{serial_number}/restrictions-definitions/{map_id}",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get restrictions: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError(
+                    "Expected object in restrictions-definitions response"
+                )
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(
+                f"Invalid restrictions-definitions response: {e}"
+            ) from e
+
+    def update_restrictions(
+        self, serial_number: str, map_id: str, body: dict[str, Any]
+    ) -> None:
+        """Update no-go and restricted-area definitions for a persistent map.
+
+        Args:
+            serial_number: Device serial number.
+            map_id: Persistent map ID.
+            body: Restriction definitions payload.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling update_restrictions")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v2/app/{serial_number}/restrictions-definitions/{map_id}",
+        )
+
+        try:
+            response = self.session.put(url, json=body, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to update restrictions: {e}") from e
+
+    def divide_zone(
+        self, serial_number: str, map_id: str, body: dict[str, Any]
+    ) -> None:
+        """Divide a zone into two sub-zones on a persistent map.
+
+        Args:
+            serial_number: Device serial number.
+            map_id: Persistent map ID.
+            body: Division specification payload (zone IDs, dividing line, etc.).
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling divide_zone")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v2/app/{serial_number}/zones-definitions/{map_id}/divide-zone",
+        )
+
+        try:
+            response = self.session.put(url, json=body, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to divide zone: {e}") from e
+
+    def merge_zones(
+        self, serial_number: str, map_id: str, body: dict[str, Any]
+    ) -> None:
+        """Merge two or more zones into one on a persistent map.
+
+        Args:
+            serial_number: Device serial number.
+            map_id: Persistent map ID.
+            body: Merge specification payload (zone IDs to merge, resulting name, etc.).
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling merge_zones")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v2/app/{serial_number}/zones-definitions/{map_id}/merge-zones",
+        )
+
+        try:
+            response = self.session.put(url, json=body, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to merge zones: {e}") from e
+
+    def get_live_map_cleaning(self, serial_number: str) -> dict[str, Any]:
+        """Get the current live map during a cleaning run.
+
+        Returns the robot's real-time position and cleaned footprint during
+        an active cleaning session.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            Raw dict with live map data including robot position and footprint.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_live_map_cleaning"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/app/{serial_number}/live-maps/cleaning",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get live map (cleaning): {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in live-maps/cleaning response")
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid live-maps/cleaning response: {e}") from e
+
+    def get_live_map_mapping(self, serial_number: str) -> dict[str, Any]:
+        """Get the current live map during a mapping run.
+
+        Returns the robot's real-time position and discovered floor plan
+        during an active mapping session.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            Raw dict with live map data including robot position and discovered area.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_live_map_mapping"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/app/{serial_number}/live-maps/mapping",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get live map (mapping): {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in live-maps/mapping response")
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid live-maps/mapping response: {e}") from e
+
+    def set_scheduled_events(
+        self,
+        serial_number: str,
+        enabled: bool,
+        events: list[dict[str, Any]],
+        product_type: str | None = None,
+    ) -> None:
+        """Update the scheduled automation events for a device.
+
+        Args:
+            serial_number: Device serial number.
+            enabled: Whether the overall schedule should be active.
+            events: List of event dicts matching the ScheduledEvent schema
+                (keys: ``enabled``, ``days``, ``startTime``, ``settings``).
+            product_type: Device product-type code (e.g. ``438K``).
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling set_scheduled_events"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/unifiedscheduler/{serial_number}/events",
+        )
+        params: dict[str, str] = {}
+        if product_type:
+            params["productType"] = product_type
+
+        body: dict[str, Any] = {"enabled": enabled, "events": events}
+
+        try:
+            response = self.session.put(
+                url, json=body, params=params, timeout=self.timeout
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to set scheduled events: {e}") from e
+
+    def get_schedule_binary(self, serial_number: str) -> bytes:
+        """Download the device schedule as a binary blob.
+
+        The binary schedule is intended for direct device programming via BLE.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            Raw bytes of the schedule binary.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_schedule_binary")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/unifiedscheduler/{serial_number}/app/schedule.bin",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get schedule binary: {e}") from e
+
+        return response.content
+
+    # ------------------------------------------------------------------
+    # Device management additional endpoints
+    # ------------------------------------------------------------------
+
+    def get_timezone(self, serial_number: str) -> str | None:
+        """Get the timezone configured for a device.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            IANA timezone name (e.g. ``"Europe/London"``), or None if not set.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_timezone")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/machine/{serial_number}/timezone",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get timezone: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in timezone response")
+            return data.get("timezone") or data.get("timeZone") or data.get("tz")
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid timezone response: {e}") from e
+
+    def set_timezone(self, serial_number: str, timezone: str) -> None:
+        """Set the timezone for a device.
+
+        Args:
+            serial_number: Device serial number.
+            timezone: IANA timezone name (e.g. ``"Europe/London"``).
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling set_timezone")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/machine/{serial_number}/timezone",
+        )
+
+        try:
+            response = self.session.put(
+                url, json={"timezone": timezone}, timeout=self.timeout
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to set timezone: {e}") from e
+
+    def get_ota_info(self, serial_number: str) -> dict[str, Any]:
+        """Get over-the-air firmware update information for a device.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            Raw dict with OTA firmware info.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_ota_info")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/assets/devices/{serial_number}/ota",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get OTA info: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in OTA info response")
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid OTA info response: {e}") from e
+
+    def is_banned_machine(self, serial_number: str) -> bool:
+        """Check whether a device serial number is on the banned machine list.
+
+        A banned machine cannot connect to Dyson cloud services.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            True if the device is banned, False otherwise.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling is_banned_machine")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/bannedmachine/{serial_number}",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to check banned machine: {e}") from e
+
+        try:
+            data = response.json()
+            if isinstance(data, dict):
+                return bool(data.get("banned", False) or data.get("isBanned", False))
+            if isinstance(data, bool):
+                return data
+            return False
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid banned machine response: {e}") from e
+
+    def get_feature_support(self) -> dict[str, Any]:
+        """Get the global feature-support configuration from the Dyson API.
+
+        Returns a server-controlled feature-flags object used by the MyDyson
+        app to enable or disable app features at runtime.
+
+        Returns:
+            Raw dict with feature support flags.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_feature_support")
+
+        url = urljoin(get_api_hostname(self.country), "/v1/featuresupport")
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get feature support: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in feature support response")
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid feature support response: {e}") from e
+
+    def get_voice_languages(self, serial_number: str) -> list[str]:
+        """Get available voice-command language codes for a device.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            List of IETF language tag strings (e.g. ``["en-GB", "fr-FR"]``).
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_voice_languages")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/package/voice/{serial_number}/languages",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get voice languages: {e}") from e
+
+        try:
+            data = response.json()
+            if isinstance(data, list):
+                return [str(item) for item in data]
+            if isinstance(data, dict):
+                langs = data.get("languages") or data.get("Languages")
+                if isinstance(langs, list):
+                    return [str(item) for item in langs]
+            raise DysonAPIError("Unexpected format in voice languages response")
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid voice languages response: {e}") from e
+
+    # ------------------------------------------------------------------
+    # EC (air purifier) additional endpoints
+    # ------------------------------------------------------------------
+
+    def get_environment_history(self, serial_number: str) -> dict[str, Any]:
+        """Get the multi-day indoor air-quality history for a device.
+
+        Unlike ``get_daily_environment_data`` (today at 15-minute resolution),
+        this endpoint returns a longer historical dataset across multiple days.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            Raw dict with historical air-quality data.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_environment_history"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/messageprocessor/devices/{serial_number}/environmentdailyhistory",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get environment history: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError(
+                    "Expected object in environmentdailyhistory response"
+                )
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid environmentdailyhistory response: {e}") from e
+
+    def get_energy_insights(
+        self,
+        serial_number: str,
+        year: int | None = None,
+        month: int | None = None,
+    ) -> dict[str, Any]:
+        """Get monthly energy consumption insights for a device.
+
+        Args:
+            serial_number: Device serial number.
+            year: Year (default: current year on the server).
+            month: Month, 1-12 (default: current month on the server).
+
+        Returns:
+            Raw dict with monthly energy/EC usage data.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_energy_insights")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/insights/ec/{serial_number}/monthly",
+        )
+        params: dict[str, str] = {}
+        if year is not None:
+            params["year"] = str(year)
+        if month is not None:
+            params["month"] = str(month)
+
+        try:
+            response = self.session.get(url, params=params, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get energy insights: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in energy insights response")
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid energy insights response: {e}") from e
+
+    # ------------------------------------------------------------------
+    # Product support endpoints
+    # ------------------------------------------------------------------
+
+    def get_product_faults(self, serial_number: str) -> dict[str, Any]:
+        """Get known product faults and remedies for a device.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            Raw dict with product fault information.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_product_faults")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/support/product-faults/{serial_number}",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get product faults: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in product faults response")
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid product faults response: {e}") from e
+
+    def get_product_guide(self, serial_number: str) -> dict[str, Any]:
+        """Get the product user guide content for a device.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            Raw dict with product guide content.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_product_guide")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/support/product-guide/{serial_number}",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get product guide: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in product guide response")
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid product guide response: {e}") from e
+
+    def get_product_voice_commands(self, serial_number: str) -> dict[str, Any]:
+        """Get voice command reference content for a device.
+
+        Args:
+            serial_number: Device serial number.
+
+        Returns:
+            Raw dict with voice command reference data.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_product_voice_commands"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/support/product-voice-commands/{serial_number}",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(
+                f"Failed to get product voice commands: {e}"
+            ) from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError(
+                    "Expected object in product voice commands response"
+                )
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid product voice commands response: {e}") from e
+
+    # ------------------------------------------------------------------
+    # Push notification endpoints
+    # ------------------------------------------------------------------
+
+    def register_push_token(
+        self,
+        application_id: str,
+        token: str,
+        platform: str,
+        serial_numbers: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Register a push notification token with the Dyson API.
+
+        Args:
+            application_id: The application or notification token identifier.
+            token: The platform push notification token (APNs or FCM).
+            platform: The platform type (``"ios"`` or ``"android"``).
+            serial_numbers: Optional list of device serial numbers to associate.
+
+        Returns:
+            Raw dict with registration confirmation.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling register_push_token")
+
+        url = urljoin(get_api_hostname(self.country), "/v1/notifier/applications")
+        body: dict[str, Any] = {
+            "applicationId": application_id,
+            "token": token,
+            "platform": platform,
+        }
+        if serial_numbers is not None:
+            body["serialNumbers"] = serial_numbers
+
+        try:
+            response = self.session.post(url, json=body, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to register push token: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError(
+                    "Expected object in push token registration response"
+                )
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid push token registration response: {e}") from e
+
+    def get_notification_permissions(
+        self, application_id: str, serial_number: str
+    ) -> dict[str, Any]:
+        """Get notification permissions for a device and application.
+
+        Args:
+            application_id: The application or notification token identifier.
+            serial_number: The device serial number.
+
+        Returns:
+            Raw dict with per-device notification permission settings.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_notification_permissions"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v2/notifier/applications/{application_id}/permissions/{serial_number}",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(
+                f"Failed to get notification permissions: {e}"
+            ) from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError(
+                    "Expected object in notification permissions response"
+                )
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(
+                f"Invalid notification permissions response: {e}"
+            ) from e
+
+    def update_notification_permissions(
+        self,
+        application_id: str,
+        serial_number: str,
+        permissions: dict[str, Any],
+    ) -> None:
+        """Update notification permissions for a device and application.
+
+        Args:
+            application_id: The application or notification token identifier.
+            serial_number: The device serial number.
+            permissions: Permission settings payload.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling update_notification_permissions"
+            )
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v2/notifier/applications/{application_id}/permissions",
+        )
+        body: dict[str, Any] = {"serialNumber": serial_number, **permissions}
+
+        try:
+            response = self.session.put(url, json=body, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(
+                f"Failed to update notification permissions: {e}"
+            ) from e
+
+    # ------------------------------------------------------------------
+    # Smart home (NCP/NSP) endpoints
+    # ------------------------------------------------------------------
+
+    def get_registered_products(self) -> dict[str, Any]:
+        """Get smart-home products registered with Dyson's NCP platform.
+
+        Returns:
+            Raw dict with registered smart-home product data.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError(
+                "Must authenticate before calling get_registered_products"
+            )
+
+        url = urljoin(get_api_hostname(self.country), "/v1/ncp/product/registered")
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get registered products: {e}") from e
+
+        try:
+            data = response.json()
+            if not isinstance(data, dict):
+                raise DysonAPIError("Expected object in registered products response")
+            return data
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
+            raise DysonAPIError(f"Invalid registered products response: {e}") from e
+
+    def register_ncp(self, body: dict[str, Any]) -> None:
+        """Register a device with Dyson's NCP smart-home platform.
+
+        Args:
+            body: Registration payload.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling register_ncp")
+
+        url = urljoin(get_api_hostname(self.country), "/v1/ncp/register")
+
+        try:
+            response = self.session.put(url, json=body, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to register NCP device: {e}") from e
+
+    def register_nsp(self, body: dict[str, Any]) -> None:
+        """Register a device with Dyson's NSP smart-home platform.
+
+        Args:
+            body: Registration payload.
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling register_nsp")
+
+        url = urljoin(get_api_hostname(self.country), "/v1/nsp/register")
+
+        try:
+            response = self.session.put(url, json=body, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to register NSP device: {e}") from e

@@ -1,14 +1,32 @@
 openapi: 3.0.0
 info:
-  title: /app/flows Mitmproxy2Swagger
+  title: MyDyson REST API
+  description: >
+    Dyson REST API endpoints extracted from the MyDyson Android app (v6.4.26220)
+    via APK smali analysis and mitmproxy traffic capture.
   version: 1.0.0
 servers:
 - url: https://appapi.cp.dyson.com
-  description: The default server
+  description: Main mobile API (legacy cp.dyson.com domain; most endpoints)
+- url: https://api.dyson.com
+  description: Primary REST API domain (newer endpoints)
+- url: https://linkapp-api.dyson.com
+  description: App-linking API (Alexa / LEAP integrations)
+- url: https://appapi.cp.dyson.cn
+  description: China region — main mobile API
+- url: https://api.dyson.cn
+  description: China region — primary REST API
 paths:
-  /v1/supportedmarket/US:
+  /v1/supportedmarket/{market}:
     get:
-      summary: GET us
+      summary: GET supported market
+      parameters:
+      - name: market
+        in: path
+        required: true
+        schema:
+          type: string
+        example: US
       responses:
         '200':
           description: ''
@@ -272,7 +290,31 @@ paths:
         required: false
         schema:
           type: string
-  /v1/machine/XXX-XX-XXXXXXX/timezone:
+    post:
+      summary: POST ownership
+      description: Register device ownership to the current account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                serial:
+                  type: string
+                country:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+  /v1/machine/{serial}/timezone:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
       summary: GET timezone
       responses:
@@ -287,7 +329,28 @@ paths:
                     type: string
               example:
                 timezone: America/Los_Angeles
-  /v1/assets/devices/XXX-XX-XXXXXXX/pendingrelease:
+    put:
+      summary: PUT timezone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                timezone:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+  /v1/assets/devices/{serial}/pendingrelease:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
       summary: GET pendingrelease
       responses:
@@ -366,9 +429,15 @@ paths:
         required: false
         schema:
           type: string
-  /v1/app-ui/content/sections/XXX-XX-XXXXXXX:
+  /v2/app-ui/content/sections/{serial}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
-      summary: GET xxx-xx-xxxxxxx
+      summary: GET sections for device
       responses:
         '200':
           description: ''
@@ -479,7 +548,13 @@ paths:
         required: false
         schema:
           type: string
-  /v1/messageprocessor/devices/XXX-XX-XXXXXXX/connectionstatus:
+  /v1/messageprocessor/devices/{serial}/connectionstatus:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
       summary: GET connectionstatus
       responses:
@@ -641,9 +716,15 @@ paths:
         required: false
         schema:
           type: string
-  /v1/environment/devices/XXX-XX-XXXXXXX/data:
+  /v1/environment/devices/{serial}/location:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
-      summary: GET data
+      summary: GET location
       responses:
         '200':
           description: ''
@@ -743,16 +824,29 @@ paths:
               schema:
                 type: string
               example: 5.0.21062
-  /v1/contactdetails/us:
+  /v1/contactdetails/{countryCode}:
     get:
-      summary: GET us
+      summary: GET contact details
+      parameters:
+      - name: countryCode
+        in: path
+        required: true
+        schema:
+          type: string
+        example: us
       responses:
         '200':
           description: OK
           content: {}
-  /v2/personalized-content/XXX-XX-XXXXXXX:
+  /v2/personalized-content/{serial}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
-      summary: GET xxx-xx-xxxxxxx
+      summary: GET personalized content
       responses:
         '200':
           description: ''
@@ -3028,9 +3122,15 @@ paths:
         required: false
         schema:
           type: string
-  /v1/notifier/applications/EXAMPLE_APPLICATION_ID:
+  /v1/notifier/applications/{notificationId}:
     put:
-      summary: PUT EXAMPLE_APPLICATION_ID
+      summary: PUT notifier application
+      parameters:
+      - name: notificationId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         '200':
           description: ''
@@ -3202,7 +3302,13 @@ paths:
               device_model: iPad7,11
               app_version: 6.4.25340
               device_manufacturer: Apple
-  /v1/insights/ec/XXX-XX-XXXXXXX/monthly:
+  /v1/insights/ec/{serial}/monthly:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
       summary: GET monthly
       responses:
@@ -3308,7 +3414,13 @@ paths:
                 monthlyTrend:
                 monthlyAverageAq: 5
 
-  /v1/XXX-XX-XXXXXXX/clean-maps:
+  /v2/{serial}/clean-maps:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
       operationId: getCleanMaps
       summary: getCleanMaps
@@ -3432,7 +3544,13 @@ paths:
                                   Base64-encoded, zlib-compressed byte array
                                   (width × height bytes, 0 = no dust).
 
-  /v1/app/XXX-XX-XXXXXXX/persistent-map-metadata:
+  /v2/app/{serial}/persistent-map-metadata:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
       operationId: getPersistentMapMetadata
       summary: getPersistentMapMetadata
@@ -3484,7 +3602,18 @@ paths:
                             type: number
                             description: Zone area in square metres
 
-  /v1/app/XXX-XX-XXXXXXX/persistent-maps/EXAMPLE_MAP_ID:
+  /v2/app/{serial}/persistent-maps/{mapId}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: mapId
+      in: path
+      required: true
+      schema:
+        type: string
     get:
       operationId: getPersistentMap
       summary: getPersistentMap
@@ -3550,8 +3679,39 @@ paths:
                           type: string
                         icon:
                           type: string
+    put:
+      operationId: updatePersistentMap
+      summary: updatePersistentMap
+      description: Update an existing persistent map (e.g. rename, update zones layout).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+    delete:
+      operationId: deletePersistentMap
+      summary: deletePersistentMap
+      description: Delete a persistent map from the device.
+      responses:
+        '200':
+          description: OK
+          content: {}
 
-  /v1/app/XXX-XX-XXXXXXX/recommended-cleans:
+  /v1/app/{serial}/recommended-cleans:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
       operationId: getRecommendedCleans
       summary: getRecommendedCleans
@@ -3600,7 +3760,23 @@ paths:
                                 weight:
                                   type: number
 
-  /v1/app/XXX-XX-XXXXXXX/EXAMPLE_MAP_ID/zones/EXAMPLE_ZONE_ID/zone-behaviours:
+  /v1/app/{serial}/{mapId}/zones/{zoneId}/zone-behaviours:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: mapId
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: zoneId
+      in: path
+      required: true
+      schema:
+        type: string
     put:
       operationId: setZoneBehaviour
       summary: setZoneBehaviour
@@ -3641,7 +3817,13 @@ paths:
         '204':
           description: Zone behaviour updated successfully (no content)
 
-  /v1/messageprocessor/devices/XXX-XX-XXXXXXX/environmentdata/daily:
+  /v1/messageprocessor/devices/{serial}/environmentdata/daily:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
       operationId: getDailyEnvironmentData
       summary: getDailyEnvironmentData
@@ -3681,7 +3863,13 @@ paths:
                       type: number
                       nullable: true
 
-  /v1/unifiedscheduler/XXX-XX-XXXXXXX/events:
+  /v1/unifiedscheduler/{serial}/events:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
     get:
       operationId: getScheduledEvents
       summary: getScheduledEvents
@@ -3732,3 +3920,1167 @@ paths:
                         startTime:
                           type: string
                           description: Local time in HH:MM format
+    put:
+      operationId: setScheduledEvents
+      summary: setScheduledEvents
+      description: Update the scheduled automation events for this device.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+                events:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      enabled:
+                        type: boolean
+                      days:
+                        type: array
+                        items:
+                          type: string
+                      startTime:
+                        type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # New endpoints extracted from MyDyson Android APK v6.4.26220 (smali analysis)
+  # ──────────────────────────────────────────────────────────────────────────
+
+  # Authentication
+  /v1/auth/migrate:
+    post:
+      summary: Migrate authentication token
+      description: Migrate an existing auth token to a new format.
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v1/auth/revoke:
+    delete:
+      summary: Revoke authentication token
+      description: Revoke the current authentication token (sign out).
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v1/oauth2/token:
+    post:
+      summary: Exchange OAuth2 token
+      description: Exchange an authorization code or refresh token for an access token.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                code:
+                  type: string
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: integer
+                  refresh_token:
+                    type: string
+
+  # MFS (Multi-Factor / Passwordless) Authentication
+  /v1/mfsauth/user/generate-challenge:
+    post:
+      summary: Generate MFS authentication challenge
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v1/mfsauth/user/token/token_to_code:
+    post:
+      summary: Convert MFS token to authorization code
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v1/mfsauth/user/verify-credential:
+    post:
+      summary: Verify MFS credential
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # User Registration
+  /v1/supportedmarket:
+    get:
+      summary: GET all supported markets
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /v3/userregistration/authenticate:
+    post:
+      summary: Authenticate user (v3)
+      description: Authenticate with email/password to obtain a session token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Email:
+                  type: string
+                Password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v3/userregistration/register:
+    post:
+      summary: Register new user (v3)
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # Alexa App Linking
+  /v1/applinking/alexa/initiate:
+    post:
+      summary: Initiate Alexa account linking
+      description: Begin the Alexa account-linking OAuth flow.
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v1/applinking/alexa/link:
+    post:
+      summary: Complete Alexa account linking
+      description: Complete the Alexa account-linking flow with the OAuth callback data.
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # AI Assistant
+  /v1/ai-assistant/auth/code:
+    get:
+      summary: Get AI assistant authorization code
+      description: Obtain an authorization code for the Dyson AI assistant feature.
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # Firmware / OTA
+  /v1/assets/devices/{serial}/ota:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET OTA firmware update status
+      description: Check if an over-the-air firmware update is available for the device.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/assets/devices/{serial}/versions/{version}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: version
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET specific firmware version info
+      description: Retrieve details about a specific firmware version for a device.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/provisioningservice/devices/{serial}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    put:
+      summary: Update device provisioning record
+      description: Update provisioning metadata for a registered device.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # LEC (BLE Local Edge Commissioning / Provisioning)
+  /v1/lec/{machineId}/ltk:
+    parameters:
+    - name: machineId
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET LEC long-term key
+      description: Retrieve the long-term BLE key for device commissioning.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/lec/{serial}/auth:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      summary: POST LEC authentication
+      description: Initiate LEC (local edge commissioning) authentication for BLE pairing.
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v1/lec/{serial}/provision:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      summary: POST LEC provision
+      description: Provision the device via local edge commissioning (BLE).
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v1/lec/{serial}/reverify:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      summary: POST LEC re-verify
+      description: Re-verify LEC session credentials.
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v1/lec/{serial}/verify:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      summary: POST LEC verify
+      description: Verify LEC session after initial auth.
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # Environment / Location
+  /v3/environment/devices/{serial}/location:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    put:
+      summary: PUT device location (v3)
+      description: Update the geographic location associated with a device (v3 endpoint).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                latitude:
+                  type: number
+                longitude:
+                  type: number
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # Air Quality History
+  /v1/messageprocessor/devices/{serial}/environmentdailyhistory:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET daily environment history
+      description: Returns multi-day indoor air-quality history for the device.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # App UI Content
+  /v1/app-ui/content/productGroups:
+    get:
+      summary: GET product groups menu
+      description: Returns the top-level product group navigation structure for the app UI.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/app-ui/content/productGroups/{menuType}:
+    parameters:
+    - name: menuType
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET product group by menu type
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/app-ui/content/products/{serial}/{id}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET app UI content for product item
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/app-ui/content/products/{serial}/onboarding:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET onboarding content for device (v1)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/app-ui/content/shop:
+    get:
+      summary: GET shop content
+      description: Returns shop/accessories content for the app UI.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/app-ui/content/support/{serial}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET device-specific support content
+      description: Returns support content tailored for a specific device serial.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v2/app-ui/content/products/{serial}/onboarding:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET onboarding content for device (v2)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v2/app-ui/content/products/{serial}/onboarding/{chapterId}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: chapterId
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET specific onboarding chapter (v2)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # Content Delivery
+  /v1/content-delivery/assets:
+    get:
+      summary: GET content delivery assets (all devices)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/content-delivery/assets/{serial}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET content delivery assets for device
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/content-delivery/pats:
+    get:
+      summary: GET content delivery PATs
+      description: Retrieve pre-authorized tokens for content delivery.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/pats:
+    get:
+      summary: GET pre-authorized tokens
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # Push Notifications
+  /v1/notifier/applications:
+    post:
+      summary: POST register notification application
+      description: Register a new push notification application (device token).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                BuildIdentifier:
+                  type: string
+                Token:
+                  type: string
+                Platform:
+                  type: string
+                  enum: [Android, Ios]
+                Version:
+                  type: string
+                Culture:
+                  type: string
+                Description:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+              description: Returns the new notificationId
+
+  /v2/notifier/applications/{applicationID}/permissions/{serialNumber}:
+    parameters:
+    - name: applicationID
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: serialNumber
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET notification permissions for device
+      description: Retrieve notification permission settings for a specific device.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v2/notifier/applications/{applicationID}/permissions:
+    parameters:
+    - name: applicationID
+      in: path
+      required: true
+      schema:
+        type: string
+    put:
+      summary: PUT notification permissions
+      description: Update notification permissions for a registered application.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # Robot Vacuum v2 — Clean Maps
+  /v2/{serial}/clean-maps-data/{cleanId}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: cleanId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    get:
+      summary: GET detailed clean data by ID
+      description: Returns the full data record for a single robot vacuum cleaning session.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # Robot Vacuum v2 — Persistent Map Operations
+  /v2/app/{serial}/persistent-map-metadata/{mapId}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: mapId
+      in: path
+      required: true
+      schema:
+        type: string
+    put:
+      summary: PUT persistent map metadata
+      description: Update the metadata (e.g. name) for a saved persistent map.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v2/app/{serial}/persistent-maps/{mapId}/clean-estimation:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: mapId
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      summary: POST clean estimation
+      description: Request a cleaning time/area estimation for a persistent map.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # Robot Vacuum v2 — Zone/Restriction Definitions
+  /v2/app/{serial}/restrictions-definitions/{mapId}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: mapId
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET no-go zone restrictions for map
+      description: Returns the no-go zone restriction definitions for a persistent map.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+    put:
+      summary: PUT no-go zone restrictions for map
+      description: Update no-go zone restriction definitions for a persistent map.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v2/app/{serial}/zones-definitions/{mapId}/divide-zone:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: mapId
+      in: path
+      required: true
+      schema:
+        type: string
+    put:
+      summary: PUT divide zone
+      description: Split an existing zone in a persistent map into two zones.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v2/app/{serial}/zones-definitions/{mapId}/merge-zones:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    - name: mapId
+      in: path
+      required: true
+      schema:
+        type: string
+    put:
+      summary: PUT merge zones
+      description: Merge multiple zones in a persistent map into a single zone.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # Robot Vacuum — Live Maps (in-progress cleaning view)
+  /v1/app/{serial}/live-maps/cleaning:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET live cleaning map
+      description: Returns the real-time map data for an in-progress cleaning session.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/app/{serial}/live-maps/mapping:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET live mapping map
+      description: Returns the real-time map data during an in-progress mapping session.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # Device Profiling / Questionnaire
+  /v1/profiling/questionnaire/available:
+    get:
+      summary: GET available questionnaires
+      description: Returns a list of profiling questionnaires available to the user.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /v1/profiling/questionnaire/category/{category}:
+    parameters:
+    - name: category
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET questionnaire by category
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/profiling/questionnaire/device/{serial}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET questionnaire for device
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/profiling/questionnaire/{questionnaireId}:
+    parameters:
+    - name: questionnaireId
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      summary: POST questionnaire response
+      description: Submit a completed profiling questionnaire.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # Telemetry
+  /v1/telemetry/device/{serial}/sessions:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET device telemetry sessions
+      description: Returns telemetry session records for the device.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /v1/telemetry/device/{serial}/logs:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET device telemetry logs
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      summary: POST device telemetry log
+      description: Submit a telemetry log entry for the device.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v1/telemetry/device/{serial}/timesync:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    post:
+      summary: POST device time sync
+      description: Synchronize the device clock via the telemetry service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # Device / Product Support
+  /v1/bannedmachine/{serial}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET banned machine status
+      description: Check whether a device serial number is flagged as banned/blocked.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  banned:
+                    type: boolean
+
+  /v1/featuresupport:
+    get:
+      summary: GET feature support flags
+      description: Returns the feature flags/capabilities supported by the current API version.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/package/voice/{serial}/languages:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET supported voice package languages
+      description: Returns the list of languages available for the device's voice assistant package.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /v1/support/product-faults/{serial}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET product fault codes
+      description: Returns known fault codes and their descriptions for a device.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/support/product-guide/{serial}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET product user guide
+      description: Returns the product user guide content for a device.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /v1/support/product-voice-commands/{serial}:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET product voice commands
+      description: Returns the list of supported voice commands for a device.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+
+  # NCP / NSP Registration (smart-home / matter pairing)
+  /v1/ncp/product/registered:
+    get:
+      summary: GET NCP registered products
+      description: Returns the list of products registered with the NCP (smart-home) service.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /v1/ncp/register:
+    put:
+      summary: PUT NCP registration
+      description: Register or update a device with the NCP (smart-home) service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  /v1/nsp/register:
+    put:
+      summary: PUT NSP registration
+      description: Register or update a device with the NSP (smart-home) service.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+          content: {}
+
+  # Scheduler Binary
+  /v1/unifiedscheduler/{serial}/app/schedule.bin:
+    parameters:
+    - name: serial
+      in: path
+      required: true
+      schema:
+        type: string
+    get:
+      summary: GET schedule binary
+      description: Download the device schedule as a binary blob for direct device programming.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary

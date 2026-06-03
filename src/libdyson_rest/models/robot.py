@@ -5,7 +5,7 @@ These models represent cloud data structures returned by the Dyson API for
 robot vacuum devices (360 Vis Nav, 360 Heurist, 360 Eye).
 
 Endpoints covered:
-- GET /v1/{serial}/clean-maps          → list[CleanRecord]
+- GET /v2/{serial}/clean-maps          → list[CleanRecord]
 - GET /v1/app/{serial}/persistent-map-metadata → list[PersistentMapMeta]
 - GET /v1/app/{serial}/persistent-maps/{id}    → PersistentMap
 - GET /v1/app/{serial}/recommended-cleans      → list[RecommendedCleanMap]
@@ -307,7 +307,7 @@ class CleaningProgramme:
 
 @dataclass
 class CleanRecord:
-    """One entry from GET /v1/{serial}/clean-maps.
+    """One entry from GET /v2/{serial}/clean-maps.
 
     Represents a single historical cleaning run returned by the Dyson cloud.
     The ``dust_map`` field is only populated when the endpoint is called with
