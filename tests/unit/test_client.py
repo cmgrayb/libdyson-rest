@@ -939,3 +939,69 @@ class TestDysonClientMobileAuth:
 
         assert "Invalid login response" in str(exc_info.value)
         client.close()
+
+    def test_debug_mode_initialization(self) -> None:
+        """Test client initialization with debug=True covers debug logging setup."""
+        import logging
+
+        client = DysonClient(debug=True)
+        assert logging.getLogger("httpx").level == logging.DEBUG
+        client.close()
+
+    @patch("httpx.Client.post")
+    def test_get_user_status_connection_error(self, mock_post: Mock) -> None:
+        """Test get_user_status raises DysonConnectionError on network failure."""
+        mock_post.side_effect = httpx.NetworkError("Connection failed")
+
+        client = DysonClient(email="test@example.com", password="password")
+        client._provisioned = True  # skip provision
+
+        with pytest.raises(DysonConnectionError, match="Failed to get user status"):
+            client.get_user_status()
+        client.close()
+
+    @patch("httpx.Client.post")
+    def test_begin_login_connection_error(self, mock_post: Mock) -> None:
+        """Test begin_login raises DysonConnectionError on network failure."""
+        mock_post.side_effect = httpx.NetworkError("Connection failed")
+
+        client = DysonClient(email="test@example.com", password="password")
+        client._provisioned = True  # skip provision
+
+        with pytest.raises(DysonConnectionError, match="Failed to begin login"):
+            client.begin_login()
+        client.close()
+
+    @patch("httpx.Client.post")
+    def test_begin_login_mobile_connection_error(self, mock_post: Mock) -> None:
+        """Test begin_login_mobile raises DysonConnectionError on network failure."""
+        mock_post.side_effect = httpx.NetworkError("Connection failed")
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+        client._provisioned = True  # skip provision
+
+        with pytest.raises(DysonConnectionError, match="Failed to begin login"):
+            client.begin_login_mobile("+8613800000000")
+        client.close()
+
+    @patch("httpx.Client.get")
+    def test_get_devices_connection_error(self, mock_get: Mock) -> None:
+        """Test get_devices raises DysonConnectionError on network failure."""
+        mock_get.side_effect = httpx.NetworkError("Connection failed")
+
+        client = DysonClient(auth_token="test_token")
+
+        with pytest.raises(DysonConnectionError, match="Failed to get devices"):
+            client.get_devices()
+        client.close()
+
+    @patch("httpx.Client.post")
+    def test_get_iot_credentials_connection_error(self, mock_post: Mock) -> None:
+        """Test get_iot_credentials raises DysonConnectionError on network failure."""
+        mock_post.side_effect = httpx.NetworkError("Connection failed")
+
+        client = DysonClient(auth_token="test_token")
+
+        with pytest.raises(DysonConnectionError, match="Failed to get IoT credentials"):
+            client.get_iot_credentials("TEST-SERIAL-123")
+        client.close()

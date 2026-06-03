@@ -200,6 +200,14 @@ class TestSyncGetPersistentMapMetadata:
         url = mock_get.call_args.args[0]
         assert f"/v1/app/{SERIAL}/persistent-map-metadata" in url
 
+    @patch("httpx.Client.get")
+    def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
+        mock_get.side_effect = httpx.NetworkError("timeout")
+
+        client = DysonClient(auth_token="tok")
+        with pytest.raises(DysonConnectionError):
+            client.get_persistent_map_metadata(SERIAL)
+
 
 class TestSyncGetPersistentMap:
     @patch("httpx.Client.get")
@@ -247,6 +255,14 @@ class TestSyncGetPersistentMap:
         url = mock_get.call_args.args[0]
         assert f"/v1/app/{SERIAL}/persistent-maps/{MAP_ID}" in url
 
+    @patch("httpx.Client.get")
+    def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
+        mock_get.side_effect = httpx.NetworkError("timeout")
+
+        client = DysonClient(auth_token="tok")
+        with pytest.raises(DysonConnectionError):
+            client.get_persistent_map(SERIAL, MAP_ID)
+
 
 class TestSyncGetRecommendedCleans:
     @patch("httpx.Client.get")
@@ -278,6 +294,14 @@ class TestSyncGetRecommendedCleans:
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError, match="Expected list"):
+            client.get_recommended_cleans(SERIAL)
+
+    @patch("httpx.Client.get")
+    def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
+        mock_get.side_effect = httpx.NetworkError("timeout")
+
+        client = DysonClient(auth_token="tok")
+        with pytest.raises(DysonConnectionError):
             client.get_recommended_cleans(SERIAL)
 
 
