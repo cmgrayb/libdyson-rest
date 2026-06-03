@@ -12,7 +12,6 @@ from typing import Any, cast
 from urllib.parse import urljoin
 
 import httpx
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .exceptions import DysonAPIError, DysonAuthError, DysonConnectionError
@@ -161,8 +160,6 @@ class AsyncDysonClient:
 
     def _configure_debug_logging(self) -> None:
         """Configure detailed HTTP debug logging."""
-        import logging
-
         # Enable debug logging for httpx
         logging.getLogger("httpx").setLevel(logging.DEBUG)
 
@@ -970,9 +967,7 @@ class AsyncDysonClient:
             encrypted_bytes = base64.b64decode(encrypted_password)
 
             # Create AES-CBC cipher
-            cipher = Cipher(
-                algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend()
-            )
+            cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv))
             decryptor = cipher.decryptor()
 
             # Decrypt the data

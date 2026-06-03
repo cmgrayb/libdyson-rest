@@ -3,6 +3,7 @@
 import base64
 import hashlib
 import json
+import re
 from typing import Any
 
 
@@ -16,8 +17,6 @@ def validate_email(email: str) -> bool:
     Returns:
         True if email format is valid, False otherwise
     """
-    import re
-
     pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return bool(re.match(pattern, email))
 

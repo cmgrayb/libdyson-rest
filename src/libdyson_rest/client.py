@@ -12,8 +12,7 @@ import logging
 from typing import Any, cast
 from urllib.parse import urljoin
 
-import requests
-from cryptography.hazmat.backends import default_backend
+import httpx
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .exceptions import DysonAPIError, DysonAuthError, DysonConnectionError
@@ -137,8 +136,7 @@ class DysonClient:
         self.user_agent = user_agent
         self.debug = debug
 
-        self.session = requests.Session()
-        self.session.headers.update({"User-Agent": user_agent})
+        self.session = httpx.Client(headers={"User-Agent": user_agent})
 
         # Configure debug logging if enabled
         if debug:
@@ -156,18 +154,8 @@ class DysonClient:
 
     def _configure_debug_logging(self) -> None:
         """Configure detailed HTTP debug logging."""
-        import logging
-
-        # Enable debug logging for requests
-        logging.getLogger("urllib3.connectionpool").setLevel(logging.DEBUG)
-
-        # Configure requests logging to show request/response details
-        try:
-            import http.client as http_client
-
-            http_client.HTTPConnection.debuglevel = 1
-        except ImportError:
-            pass
+        # Enable debug logging for httpx
+        logging.getLogger("httpx").setLevel(logging.DEBUG)
 
     def provision(self) -> str:
         """
@@ -203,7 +191,7 @@ class DysonClient:
                 logger.debug(f"📥 Response Headers: {dict(response.headers)}")
 
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if self.debug:
                 logger.error(f"❌ Provisioning failed: {e}")
                 logger.error(f"❌ Request URL: {url}")
@@ -257,7 +245,7 @@ class DysonClient:
                 url, params=params, json=payload, timeout=self.timeout
             )
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             raise DysonConnectionError(f"Failed to get user status: {e}") from e
 
         try:
@@ -298,7 +286,7 @@ class DysonClient:
                 url, params=params, json=payload, timeout=self.timeout
             )
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             raise DysonConnectionError(f"Failed to begin login: {e}") from e
 
         try:
@@ -365,7 +353,7 @@ class DysonClient:
                 url, params=params, json=payload, timeout=self.timeout
             )
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -453,7 +441,7 @@ class DysonClient:
                 url, params=params, json=payload, timeout=self.timeout
             )
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             raise DysonConnectionError(f"Failed to get user status: {e}") from e
 
         try:
@@ -498,7 +486,7 @@ class DysonClient:
                 url, params=params, json=payload, timeout=self.timeout
             )
             response.raise_for_status()
-        except requests.HTTPError as e:
+        except httpx.HTTPStatusError as e:
             if e.response is not None:
                 if e.response.status_code == 401:
                     raise DysonAuthError(
@@ -518,7 +506,7 @@ class DysonClient:
                         f"Bad request to Dyson API (400): {e}. Check mobile format."
                     ) from e
             raise DysonConnectionError(f"Failed to begin login: {e}") from e
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             raise DysonConnectionError(f"Failed to begin login: {e}") from e
 
         try:
@@ -583,7 +571,7 @@ class DysonClient:
                 url, params=params, json=payload, timeout=self.timeout
             )
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -731,7 +719,7 @@ class DysonClient:
         try:
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -777,7 +765,7 @@ class DysonClient:
         try:
             response = self.session.post(url, json=payload, timeout=self.timeout)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -822,7 +810,7 @@ class DysonClient:
         try:
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -874,7 +862,7 @@ class DysonClient:
         try:
             response = self.session.post(url, headers=headers, timeout=self.timeout)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -973,9 +961,7 @@ class DysonClient:
             encrypted_bytes = base64.b64decode(encrypted_password)
 
             # Create AES-CBC cipher
-            cipher = Cipher(
-                algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend()
-            )
+            cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv))
             decryptor = cipher.decryptor()
 
             # Decrypt the data
@@ -1114,7 +1100,7 @@ class DysonClient:
         try:
             response = self.session.get(url, params=params, timeout=self.timeout)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -1164,7 +1150,7 @@ class DysonClient:
         try:
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -1213,7 +1199,7 @@ class DysonClient:
         try:
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -1260,7 +1246,7 @@ class DysonClient:
         try:
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -1327,7 +1313,7 @@ class DysonClient:
                 timeout=self.timeout,
             )
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -1370,7 +1356,7 @@ class DysonClient:
         try:
             response = self.session.get(url, timeout=self.timeout)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -1424,7 +1410,7 @@ class DysonClient:
         try:
             response = self.session.get(url, params=params, timeout=self.timeout)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None
@@ -1472,7 +1458,7 @@ class DysonClient:
         try:
             response = self.session.get(url, params=params, timeout=self.timeout)
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             if (
                 hasattr(e, "response")
                 and e.response is not None

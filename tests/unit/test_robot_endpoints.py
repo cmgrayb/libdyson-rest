@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import httpx
 import pytest
-import requests
 
 from libdyson_rest.async_client import AsyncDysonClient
 from libdyson_rest.client import DysonClient
@@ -78,7 +77,7 @@ RECOMMENDED_CLEANS_ITEM = {
 
 
 class TestSyncGetCleanMaps:
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_success_returns_clean_records(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -93,7 +92,7 @@ class TestSyncGetCleanMaps:
         assert records[0].clean_id == "cr-001"
         mock_get.assert_called_once()
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_dust_map_param_included_by_default(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -106,7 +105,7 @@ class TestSyncGetCleanMaps:
         call_kwargs = mock_get.call_args.kwargs
         assert call_kwargs.get("params") == {"dustMap": "total"}
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_dust_map_param_omitted_when_false(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -124,25 +123,27 @@ class TestSyncGetCleanMaps:
         with pytest.raises(DysonAuthError, match="Must authenticate"):
             client.get_clean_maps(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_auth_error_on_401(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.status_code = 401
-        mock_get.side_effect = requests.HTTPError(response=mock_response)
+        mock_get.side_effect = httpx.HTTPStatusError(
+            "error", request=Mock(), response=mock_response
+        )
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonAuthError, match="expired"):
             client.get_clean_maps(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
-        mock_get.side_effect = requests.ConnectionError("timeout")
+        mock_get.side_effect = httpx.NetworkError("timeout")
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonConnectionError):
             client.get_clean_maps(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_api_error_on_non_list_response(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -155,7 +156,7 @@ class TestSyncGetCleanMaps:
 
 
 class TestSyncGetPersistentMapMetadata:
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_success_returns_map_meta_list(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -175,7 +176,7 @@ class TestSyncGetPersistentMapMetadata:
         with pytest.raises(DysonAuthError):
             client.get_persistent_map_metadata(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_api_error_on_non_list_response(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -186,7 +187,7 @@ class TestSyncGetPersistentMapMetadata:
         with pytest.raises(DysonAPIError, match="Expected list"):
             client.get_persistent_map_metadata(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_correct_url_used(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -201,7 +202,7 @@ class TestSyncGetPersistentMapMetadata:
 
 
 class TestSyncGetPersistentMap:
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_success_returns_persistent_map(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -222,7 +223,7 @@ class TestSyncGetPersistentMap:
         with pytest.raises(DysonAuthError):
             client.get_persistent_map(SERIAL, MAP_ID)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_api_error_on_non_dict_response(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -233,7 +234,7 @@ class TestSyncGetPersistentMap:
         with pytest.raises(DysonAPIError, match="Expected object"):
             client.get_persistent_map(SERIAL, MAP_ID)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_correct_url_includes_map_id(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -248,7 +249,7 @@ class TestSyncGetPersistentMap:
 
 
 class TestSyncGetRecommendedCleans:
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_success_returns_recommendations(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -268,7 +269,7 @@ class TestSyncGetRecommendedCleans:
         with pytest.raises(DysonAuthError):
             client.get_recommended_cleans(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_api_error_on_non_list_response(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -281,7 +282,7 @@ class TestSyncGetRecommendedCleans:
 
 
 class TestSyncSetZoneBehaviour:
-    @patch("requests.Session.put")
+    @patch("httpx.Client.put")
     def test_success_with_enum_strategy(self, mock_put: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -294,7 +295,7 @@ class TestSyncSetZoneBehaviour:
         call_kwargs = mock_put.call_args.kwargs
         assert call_kwargs["json"] == {"cleaningStrategy": "boost"}
 
-    @patch("requests.Session.put")
+    @patch("httpx.Client.put")
     def test_success_with_string_strategy(self, mock_put: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -306,7 +307,7 @@ class TestSyncSetZoneBehaviour:
         call_kwargs = mock_put.call_args.kwargs
         assert call_kwargs["json"] == {"cleaningStrategy": "quiet"}
 
-    @patch("requests.Session.put")
+    @patch("httpx.Client.put")
     def test_correct_url_format(self, mock_put: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -325,19 +326,21 @@ class TestSyncSetZoneBehaviour:
         with pytest.raises(DysonAuthError):
             client.set_zone_behaviour(SERIAL, MAP_ID, ZONE_ID, CleaningStrategy.AUTO)
 
-    @patch("requests.Session.put")
+    @patch("httpx.Client.put")
     def test_raises_auth_error_on_401(self, mock_put: Mock) -> None:
         mock_response = Mock()
         mock_response.status_code = 401
-        mock_put.side_effect = requests.HTTPError(response=mock_response)
+        mock_put.side_effect = httpx.HTTPStatusError(
+            "error", request=Mock(), response=mock_response
+        )
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonAuthError, match="expired"):
             client.set_zone_behaviour(SERIAL, MAP_ID, ZONE_ID, CleaningStrategy.AUTO)
 
-    @patch("requests.Session.put")
+    @patch("httpx.Client.put")
     def test_raises_connection_error_on_network_failure(self, mock_put: Mock) -> None:
-        mock_put.side_effect = requests.ConnectionError("down")
+        mock_put.side_effect = httpx.NetworkError("down")
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonConnectionError):
