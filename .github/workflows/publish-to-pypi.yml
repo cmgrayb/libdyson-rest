@@ -23,9 +23,12 @@ on:
     types: [published]
 
 jobs:
-  publish:
-    name: Publish Package
+  prepare:
+    name: Build & Verify Package
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      target: ${{ steps.version.outputs.target }}
 
     steps:
     - name: Check out code
@@ -90,42 +93,77 @@ jobs:
         pip install twine
         python -m twine check dist/*
 
-    - name: Publish to TestPyPI
-      if: steps.version.outputs.target == 'testpypi'
-      uses: pypa/gh-action-pypi-publish@release/v1
+    - name: Upload dist artifacts
+      uses: actions/upload-artifact@v4
       with:
-        environment-name: testpypi
-        repository-url: https://test.pypi.org/legacy/
-        print-hash: true
+        name: dist
+        path: dist/
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: prepare
+    if: needs.prepare.outputs.target == 'pypi'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+
+    steps:
+    - name: Download dist artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
 
     - name: Publish to PyPI
-      if: steps.version.outputs.target == 'pypi'
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        environment-name: pypi
         print-hash: true
 
     - name: Write job summary
       run: |
-        VERSION="${{ steps.version.outputs.version }}"
-        TARGET="${{ steps.version.outputs.target }}"
-        echo "## Package Published" >> $GITHUB_STEP_SUMMARY
+        VERSION="${{ needs.prepare.outputs.version }}"
+        echo "## Package Published to PyPI" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Version:** \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
-        echo "**Target:** $TARGET" >> $GITHUB_STEP_SUMMARY
+        echo "**URL:** https://pypi.org/project/libdyson-rest/$VERSION/" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        if [[ "$TARGET" == "testpypi" ]]; then
-          echo "**URL:** https://test.pypi.org/project/libdyson-rest/$VERSION/" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Install" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "pip install -i https://test.pypi.org/simple/ libdyson-rest==$VERSION" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "**URL:** https://pypi.org/project/libdyson-rest/$VERSION/" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Install" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "pip install libdyson-rest==$VERSION" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        fi
+        echo "### Install" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "pip install libdyson-rest==$VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: prepare
+    if: needs.prepare.outputs.target == 'testpypi'
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+
+    steps:
+    - name: Download dist artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: dist
+        path: dist/
+
+    - name: Publish to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        print-hash: true
+
+    - name: Write job summary
+      run: |
+        VERSION="${{ needs.prepare.outputs.version }}"
+        echo "## Package Published to TestPyPI" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
+        echo "**URL:** https://test.pypi.org/project/libdyson-rest/$VERSION/" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Install" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "pip install -i https://test.pypi.org/simple/ libdyson-rest==$VERSION" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
