@@ -41,6 +41,41 @@ CLEAN_MAP_ITEM = {
     "dustMap": {"width": 50, "height": 40, "resolution": 20, "dustData": []},
 }
 
+# v2 schema item — matches the real RB05-AA response shape
+CLEAN_MAP_ITEM_V2 = {
+    "persistentMapId": MAP_ID,
+    "cleanId": "fce99365-3756-5655-5356-444130343735",
+    "isSpotClean": False,
+    "orientation": 0,
+    "startTime": 1780779744,
+    "endTime": 1780784253,
+    "cleanDuration": 76,
+    "areaCleaned": 37.76,
+    "downloadUrl": "https://example.s3.eu-west-1.amazonaws.com/map.bin?X-Amz-Expires=900",
+    "zones": [
+        {
+            "id": ZONE_ID,
+            "name": "Living room",
+            "type": "livingRoom",
+            "isSelected": True,
+            "settings": {
+                "cleaningStrategy": "auto",
+                "cleanType": "vacuum",
+                "waterLevel": "low",
+                "mopPasses": 1,
+                "dryPasses": 1,
+            },
+            "nameLocation": {"x": 1.825, "y": -1.725},
+        }
+    ],
+    "spotZones": [],
+    "dockLocation": None,
+    "startBattery": 100.0,
+    "endBattery": 56.0,
+    "faults": [{"type": "2108", "x": -0.449, "y": 0.003}],
+    "firmwareVersion": None,
+}
+
 MAP_META_ITEM = {
     "id": MAP_ID,
     "name": "Ground Floor",
@@ -155,6 +190,51 @@ class TestSyncGetCleanMaps:
         with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
             client.get_clean_maps(SERIAL)
         assert exc_info.value.raw == '{"error": "unexpected"}'
+
+    @patch("httpx.Client.get")
+    def test_v2_wrapped_response_parsed_correctly(self, mock_get: Mock) -> None:
+        """v2 endpoint wraps the list in a ``{"data": [...]}`` envelope."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {"data": [CLEAN_MAP_ITEM_V2]}
+        mock_get.return_value = mock_response
+
+        client = DysonClient(auth_token="tok")
+        records = client.get_clean_maps(SERIAL)
+
+        assert len(records) == 1
+        record = records[0]
+        assert isinstance(record, CleanRecord)
+        assert record.clean_id == "fce99365-3756-5655-5356-444130343735"
+        assert record.persistent_map_id == MAP_ID
+        assert record.start_time_epoch == 1780779744
+        assert record.end_time_epoch == 1780784253
+        assert record.clean_duration == 76
+        assert record.area_cleaned == pytest.approx(37.76)
+        assert record.is_spot_clean is False
+        assert record.start_battery == pytest.approx(100.0)
+        assert record.end_battery == pytest.approx(56.0)
+        assert len(record.zones) == 1
+        assert record.zones[0].id == ZONE_ID
+        assert record.zones[0].is_selected is True
+        assert record.zones[0].settings is not None
+        assert record.zones[0].settings.cleaning_strategy == "auto"
+        assert len(record.faults) == 1
+        assert record.faults[0].type == "2108"
+        assert record.faults[0].x == pytest.approx(-0.449)
+
+    @patch("httpx.Client.get")
+    def test_v2_data_envelope_with_non_list_value_raises(self, mock_get: Mock) -> None:
+        """``{"data": <non-list>}`` should still raise DysonAPIError."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {"data": "not-a-list"}
+        mock_response.text = '{"data": "not-a-list"}'
+        mock_get.return_value = mock_response
+
+        client = DysonClient(auth_token="tok")
+        with pytest.raises(DysonAPIError, match="Expected list"):
+            client.get_clean_maps(SERIAL)
 
 
 class TestSyncGetPersistentMapMetadata:
@@ -447,6 +527,48 @@ class TestAsyncGetCleanMaps:
         with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
             await client.get_clean_maps(SERIAL)
         assert exc_info.value.raw == '{"error": "oops"}'
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_v2_wrapped_response_parsed_correctly(
+        self, mock_get: AsyncMock
+    ) -> None:
+        """v2 endpoint wraps the list in a ``{"data": [...]}`` envelope."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {"data": [CLEAN_MAP_ITEM_V2]}
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="tok")
+        records = await client.get_clean_maps(SERIAL)
+
+        assert len(records) == 1
+        record = records[0]
+        assert isinstance(record, CleanRecord)
+        assert record.clean_id == "fce99365-3756-5655-5356-444130343735"
+        assert record.start_time_epoch == 1780779744
+        assert record.end_time_epoch == 1780784253
+        assert record.area_cleaned == pytest.approx(37.76)
+        assert len(record.zones) == 1
+        assert len(record.faults) == 1
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_v2_data_envelope_with_non_list_value_raises(
+        self, mock_get: AsyncMock
+    ) -> None:
+        """``{"data": <non-list>}`` should still raise DysonAPIError."""
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {"data": "not-a-list"}
+        mock_response.text = '{"data": "not-a-list"}'
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="tok")
+        with pytest.raises(DysonAPIError, match="Expected list"):
+            await client.get_clean_maps(SERIAL)
         await client.close()
 
 

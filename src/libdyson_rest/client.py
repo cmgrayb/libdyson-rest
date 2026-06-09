@@ -1111,6 +1111,8 @@ class DysonClient:
 
         try:
             data = response.json()
+            if isinstance(data, dict) and "data" in data:
+                data = data["data"]
             if not isinstance(data, list):
                 raise DysonAPIError(
                     "Expected list in clean-maps response",

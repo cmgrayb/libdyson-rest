@@ -22,7 +22,10 @@ from enum import Enum
 from typing import Any, cast
 
 from ..types import (
+    CleanFaultDict,
     CleanRecordDict,
+    CleanZoneDict,
+    CleanZoneSettingsDict,
     PersistentMapDict,
     PersistentMapMetaDict,
     RecommendedCleanMapDict,
@@ -279,6 +282,85 @@ class CleanMapPosition:
 
 
 @dataclass
+class CleanZoneSettings:
+    """Per-zone cleaning settings from a v2 clean record."""
+
+    cleaning_strategy: str | None
+    clean_type: str | None
+    water_level: str | None
+    mop_passes: int | None
+    dry_passes: int | None
+
+    @classmethod
+    def from_dict(cls, data: CleanZoneSettingsDict) -> CleanZoneSettings:
+        """Create a CleanZoneSettings from a raw dict."""
+        raw: dict[str, Any] = dict(data)
+        return cls(
+            cleaning_strategy=raw.get("cleaningStrategy"),
+            clean_type=raw.get("cleanType"),
+            water_level=raw.get("waterLevel"),
+            mop_passes=raw.get("mopPasses"),
+            dry_passes=raw.get("dryPasses"),
+        )
+
+
+@dataclass
+class CleanZone:
+    """One zone entry from a v2 clean record."""
+
+    id: str
+    name: str | None
+    type: str | None
+    is_selected: bool
+    settings: CleanZoneSettings | None
+    name_location: CleanMapPosition | None
+
+    @classmethod
+    def from_dict(cls, data: CleanZoneDict) -> CleanZone:
+        """Create a CleanZone from a raw dict."""
+        raw: dict[str, Any] = dict(data)
+        settings_raw = raw.get("settings")
+        settings = (
+            CleanZoneSettings.from_dict(cast(CleanZoneSettingsDict, settings_raw))
+            if isinstance(settings_raw, dict)
+            else None
+        )
+        name_loc_raw = raw.get("nameLocation")
+        name_location = (
+            CleanMapPosition.from_dict(name_loc_raw)
+            if isinstance(name_loc_raw, dict)
+            else None
+        )
+        return cls(
+            id=str(raw.get("id", "")),
+            name=raw.get("name"),
+            type=raw.get("type"),
+            is_selected=bool(raw.get("isSelected", False)),
+            settings=settings,
+            name_location=name_location,
+        )
+
+
+@dataclass
+class CleanFault:
+    """A fault event reported during a v2 clean run."""
+
+    type: str
+    x: float
+    y: float
+
+    @classmethod
+    def from_dict(cls, data: CleanFaultDict) -> CleanFault:
+        """Create a CleanFault from a raw dict."""
+        raw: dict[str, Any] = dict(data)
+        return cls(
+            type=str(raw.get("type", "")),
+            x=float(raw.get("x", 0)),
+            y=float(raw.get("y", 0)),
+        )
+
+
+@dataclass
 class CleaningProgramme:
     """Zone-clean programme embedded in a clean record."""
 
@@ -310,26 +392,76 @@ class CleanRecord:
     """One entry from GET /v2/{serial}/clean-maps.
 
     Represents a single historical cleaning run returned by the Dyson cloud.
-    The ``dust_map`` field is only populated when the endpoint is called with
-    ``dustMap=total``.
+    The v2 API returns a ``{"data": [...]}`` envelope and a substantially
+    different field set from the v1 schema — see field-level notes below.
+
+    v1-only fields (``timeline``, ``cleaned_footprint``, ``cleaning_programme``,
+    ``clean_map_position``, ``dust_map``) are ``None`` / empty for v2 responses.
+    v2-only fields (``start_time_epoch``, ``end_time_epoch``, ``download_url``,
+    ``zones``, ``faults``, etc.) are ``None`` / empty for v1 responses.
     """
 
+    # --- fields present in both schema versions ---
     clean_id: str | None
+    persistent_map_id: str | None
+    """ID of the persistent map associated with this run (if any)."""
+
+    # --- v1 fields (None / empty for v2 responses) ---
     sequence_number: int | None
     timeline: list[CleanTimelineEvent]
     cleaned_footprint: CleanedFootprint | None
     cleaning_programme: CleaningProgramme | None
-    persistent_map_id: str | None
-    """ID of the persistent map associated with this run (if any)."""
     clean_map_position: CleanMapPosition | None
     """World-coordinate origin of the dust-map crop within the floor plan."""
     dust_map: DustMapData | None
 
+    # --- v2 fields (None / empty for v1 responses) ---
+    start_time_epoch: int | None = None
+    """Unix epoch timestamp of the run start (v2 only)."""
+    end_time_epoch: int | None = None
+    """Unix epoch timestamp of the run end (v2 only)."""
+    clean_duration: int | None = None
+    """Duration of the run in seconds (v2 only)."""
+    area_cleaned: float | None = None
+    """Cleaned area in square metres (v2 only)."""
+    download_url: str | None = None
+    """Pre-signed S3 URL for detailed map data (v2 only, expires ~15 min).
+
+    Note:
+        This URL has a short TTL (``X-Amz-Expires=900`` seconds).  Do not
+        cache it long-term.  Re-call ``get_clean_maps()`` to obtain a fresh
+        URL before each map image fetch.
+    """
+    is_spot_clean: bool | None = None
+    """True when the run was a spot-clean, False for full/zone runs (v2 only)."""
+    orientation: int | None = None
+    """Map orientation in degrees (v2 only)."""
+    start_battery: float | None = None
+    """Battery level at run start, as a percentage (v2 only)."""
+    end_battery: float | None = None
+    """Battery level at run end, as a percentage (v2 only)."""
+    zones: list[CleanZone] = field(default_factory=list)
+    """Per-zone settings for this run (v2 only)."""
+    spot_zones: list[Any] = field(default_factory=list)
+    """Spot-clean zone entries (v2 only, empty for full/zone runs)."""
+    dock_location: Any | None = None
+    """Dock location at time of run (v2 only, often None)."""
+    faults: list[CleanFault] = field(default_factory=list)
+    """Fault events recorded during the run (v2 only)."""
+    firmware_version: str | None = None
+    """Firmware version string at time of run (v2 only, often None)."""
+
     @classmethod
     def from_dict(cls, data: CleanRecordDict) -> CleanRecord:
-        """Create a CleanRecord from an API response dict."""
+        """Create a CleanRecord from an API response dict.
+
+        Handles both v1 (bare-list) and v2 (``data``-wrapped) schemas
+        transparently.  Fields absent from the received schema are left as
+        ``None`` or an empty list.
+        """
         raw: dict[str, Any] = dict(data)
 
+        # --- v1 fields ---
         timeline = [
             CleanTimelineEvent.from_dict(e)
             for e in (raw.get("cleanTimeline") or [])
@@ -350,12 +482,15 @@ class CleanRecord:
             else None
         )
 
+        # persistent_map_id: v1 nests it inside persistentMap.id;
+        # v2 exposes it as a top-level persistentMapId.
         persistent_map_raw = raw.get("persistentMap") or {}
-        persistent_map_id = (
+        persistent_map_id: str | None = (
             persistent_map_raw.get("id")
             if isinstance(persistent_map_raw, dict)
             else None
-        )
+        ) or raw.get("persistentMapId")
+
         position_raw = (
             persistent_map_raw.get("cleanMapPosition")
             if isinstance(persistent_map_raw, dict)
@@ -375,36 +510,98 @@ class CleanRecord:
         )
 
         seq = raw.get("sequenceNumber")
+
+        # --- v2 fields ---
+        zones = [
+            CleanZone.from_dict(cast(CleanZoneDict, z))
+            for z in (raw.get("zones") or [])
+            if isinstance(z, dict)
+        ]
+        spot_zones = list(raw.get("spotZones") or [])
+        faults = [
+            CleanFault.from_dict(cast(CleanFaultDict, f))
+            for f in (raw.get("faults") or [])
+            if isinstance(f, dict)
+        ]
+
+        start_time_raw = raw.get("startTime")
+        end_time_raw = raw.get("endTime")
+        clean_duration_raw = raw.get("cleanDuration")
+        area_cleaned_raw = raw.get("areaCleaned")
+        start_battery_raw = raw.get("startBattery")
+        end_battery_raw = raw.get("endBattery")
+        orientation_raw = raw.get("orientation")
+        is_spot_clean_raw = raw.get("isSpotClean")
+
         return cls(
             clean_id=raw.get("cleanId"),
+            persistent_map_id=persistent_map_id,
             sequence_number=int(seq) if seq is not None else None,
             timeline=timeline,
             cleaned_footprint=footprint,
             cleaning_programme=programme,
-            persistent_map_id=persistent_map_id,
             clean_map_position=position,
             dust_map=dust_map,
+            start_time_epoch=(
+                int(start_time_raw) if start_time_raw is not None else None
+            ),
+            end_time_epoch=(int(end_time_raw) if end_time_raw is not None else None),
+            clean_duration=(
+                int(clean_duration_raw) if clean_duration_raw is not None else None
+            ),
+            area_cleaned=(
+                float(area_cleaned_raw) if area_cleaned_raw is not None else None
+            ),
+            download_url=raw.get("downloadUrl"),
+            is_spot_clean=(
+                bool(is_spot_clean_raw) if is_spot_clean_raw is not None else None
+            ),
+            orientation=(int(orientation_raw) if orientation_raw is not None else None),
+            start_battery=(
+                float(start_battery_raw) if start_battery_raw is not None else None
+            ),
+            end_battery=(
+                float(end_battery_raw) if end_battery_raw is not None else None
+            ),
+            zones=zones,
+            spot_zones=spot_zones,
+            dock_location=raw.get("dockLocation"),
+            faults=faults,
+            firmware_version=raw.get("firmwareVersion"),
         )
 
     @property
     def start_time(self) -> str | None:
-        """Earliest timestamp from the timeline, or None."""
+        """Earliest timestamp from the v1 timeline, or None.
+
+        For v2 responses use ``start_time_epoch`` instead.
+        """
         times = [e.time for e in self.timeline if e.time]
         return min(times) if times else None
 
     @property
     def end_time(self) -> str | None:
-        """Latest timestamp from the timeline, or None."""
+        """Latest timestamp from the v1 timeline, or None.
+
+        For v2 responses use ``end_time_epoch`` instead.
+        """
         times = [e.time for e in self.timeline if e.time]
         return max(times) if times else None
 
     @property
     def is_zone_clean(self) -> bool:
-        """Return True if this was a zone-targeted clean."""
-        return (
+        """Return True if this was a zone-targeted clean.
+
+        Checks the v1 ``cleaning_programme`` and the v2 ``zones`` list.
+        """
+        # v1: cleaning programme with one or more zones
+        if (
             self.cleaning_programme is not None
             and self.cleaning_programme.is_zone_clean
-        )
+        ):
+            return True
+        # v2: zones list is populated and the run is not a spot clean
+        return bool(self.zones and self.is_spot_clean is False)
 
     @property
     def clean_type(self) -> str:
