@@ -1128,14 +1128,20 @@ class AsyncDysonClient:
         try:
             data = response.json()
             if not isinstance(data, list):
-                raise DysonAPIError("Expected list in clean-maps response")
+                raise DysonAPIError(
+                    "Expected list in clean-maps response",
+                    raw=response.text,
+                )
             return [
                 CleanRecord.from_dict(cast(CleanRecordDict, item))
                 for item in data
                 if isinstance(item, dict)
             ]
         except (ValueError, TypeError, KeyError) as e:
-            raise DysonAPIError(f"Invalid clean-maps response: {e}") from e
+            raise DysonAPIError(
+                f"Invalid clean-maps response: {e}",
+                raw=response.text,
+            ) from e
 
     async def get_persistent_map_metadata(
         self, serial_number: str
@@ -1179,14 +1185,20 @@ class AsyncDysonClient:
         try:
             data = response.json()
             if not isinstance(data, list):
-                raise DysonAPIError("Expected list in persistent-map-metadata response")
+                raise DysonAPIError(
+                    "Expected list in persistent-map-metadata response",
+                    raw=response.text,
+                )
             return [
                 PersistentMapMeta.from_dict(cast(PersistentMapMetaDict, item))
                 for item in data
                 if isinstance(item, dict)
             ]
         except (ValueError, TypeError, KeyError) as e:
-            raise DysonAPIError(f"Invalid persistent-map-metadata response: {e}") from e
+            raise DysonAPIError(
+                f"Invalid persistent-map-metadata response: {e}",
+                raw=response.text,
+            ) from e
 
     async def get_persistent_map(
         self, serial_number: str, map_id: str
@@ -1275,14 +1287,20 @@ class AsyncDysonClient:
         try:
             data = response.json()
             if not isinstance(data, list):
-                raise DysonAPIError("Expected list in recommended-cleans response")
+                raise DysonAPIError(
+                    "Expected list in recommended-cleans response",
+                    raw=response.text,
+                )
             return [
                 RecommendedCleanMap.from_dict(cast(RecommendedCleanMapDict, item))
                 for item in data
                 if isinstance(item, dict)
             ]
         except (ValueError, TypeError, KeyError) as e:
-            raise DysonAPIError(f"Invalid recommended-cleans response: {e}") from e
+            raise DysonAPIError(
+                f"Invalid recommended-cleans response: {e}",
+                raw=response.text,
+            ) from e
 
     async def set_zone_behaviour(
         self,

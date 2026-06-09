@@ -14,6 +14,15 @@ def test_dyson_api_error() -> None:
     error = DysonAPIError("Test error")
     assert str(error) == "Test error"
     assert isinstance(error, Exception)
+    assert error.raw is None
+
+
+def test_dyson_api_error_with_raw() -> None:
+    """Test DysonAPIError exception with raw response body."""
+    raw_body = '{"items": [1, 2, 3]}'
+    error = DysonAPIError("Unexpected format", raw=raw_body)
+    assert str(error) == "Unexpected format"
+    assert error.raw == raw_body
 
 
 def test_dyson_connection_error() -> None:

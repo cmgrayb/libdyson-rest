@@ -148,11 +148,13 @@ class TestSyncGetCleanMaps:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {"error": "unexpected"}
+        mock_response.text = '{"error": "unexpected"}'
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="tok")
-        with pytest.raises(DysonAPIError, match="Expected list"):
+        with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
             client.get_clean_maps(SERIAL)
+        assert exc_info.value.raw == '{"error": "unexpected"}'
 
 
 class TestSyncGetPersistentMapMetadata:
@@ -181,11 +183,13 @@ class TestSyncGetPersistentMapMetadata:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {"id": MAP_ID}
+        mock_response.text = f'{{"id": "{MAP_ID}"}}'
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="tok")
-        with pytest.raises(DysonAPIError, match="Expected list"):
+        with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
             client.get_persistent_map_metadata(SERIAL)
+        assert exc_info.value.raw == f'{{"id": "{MAP_ID}"}}'
 
     @patch("httpx.Client.get")
     def test_correct_url_used(self, mock_get: Mock) -> None:
@@ -290,11 +294,13 @@ class TestSyncGetRecommendedCleans:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {}
+        mock_response.text = "{}"
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="tok")
-        with pytest.raises(DysonAPIError, match="Expected list"):
+        with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
             client.get_recommended_cleans(SERIAL)
+        assert exc_info.value.raw == "{}"
 
     @patch("httpx.Client.get")
     def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
@@ -434,11 +440,13 @@ class TestAsyncGetCleanMaps:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {"error": "oops"}
+        mock_response.text = '{"error": "oops"}'
         mock_get.return_value = mock_response
 
         client = AsyncDysonClient(auth_token="tok")
-        with pytest.raises(DysonAPIError, match="Expected list"):
+        with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
             await client.get_clean_maps(SERIAL)
+        assert exc_info.value.raw == '{"error": "oops"}'
         await client.close()
 
 
@@ -474,11 +482,13 @@ class TestAsyncGetPersistentMapMetadata:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {"id": MAP_ID}
+        mock_response.text = f'{{"id": "{MAP_ID}"}}'
         mock_get.return_value = mock_response
 
         client = AsyncDysonClient(auth_token="tok")
-        with pytest.raises(DysonAPIError, match="Expected list"):
+        with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
             await client.get_persistent_map_metadata(SERIAL)
+        assert exc_info.value.raw == f'{{"id": "{MAP_ID}"}}'
         await client.close()
 
 
@@ -554,11 +564,13 @@ class TestAsyncGetRecommendedCleans:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
         mock_response.json.return_value = {}
+        mock_response.text = "{}"
         mock_get.return_value = mock_response
 
         client = AsyncDysonClient(auth_token="tok")
-        with pytest.raises(DysonAPIError, match="Expected list"):
+        with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
             await client.get_recommended_cleans(SERIAL)
+        assert exc_info.value.raw == "{}"
         await client.close()
 
 
