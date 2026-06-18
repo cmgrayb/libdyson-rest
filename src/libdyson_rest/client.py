@@ -2053,6 +2053,54 @@ class DysonClient:
 
         return response.content
 
+    def get_map_image(self, serial_number: str, map_id: str) -> bytes:
+        """Fetch a server-rendered map image from the Dyson Map Visualizer API.
+
+        Uses the ``/v1/mapvisualizer/devices/{serial}/map/{mapId}`` endpoint
+        (discovered from ``assets/config/default/machine/robotEndpointsConfig.json``
+        in the MyDyson APK).  The ``map_id`` can be either a clean session UUID
+        (from ``CleanRecord.clean_id``) or a persistent map ID integer string
+        (from ``CleanRecord.persistent_map_id``).
+
+        For the RB05 (product type 804A) this is the correct path for floor-plan
+        imagery — the ``/v1/app/{serial}/persistent-maps/{id}`` endpoint returns
+        null data for that device.
+
+        Args:
+            serial_number: Device serial number.
+            map_id: Clean session UUID (e.g. from ``CleanRecord.clean_id``) or
+                persistent map ID string (e.g. ``"1780280259"``).
+
+        Returns:
+            Raw image bytes (PNG or JPEG).
+
+        Raises:
+            DysonAuthError: If not authenticated.
+            DysonConnectionError: If connection fails.
+            DysonAPIError: If API request fails.
+        """
+        if not self._auth_token:
+            raise DysonAuthError("Must authenticate before calling get_map_image")
+
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v1/mapvisualizer/devices/{serial_number}/map/{map_id}",
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            if (
+                hasattr(e, "response")
+                and e.response is not None
+                and e.response.status_code == 401
+            ):
+                raise DysonAuthError("Authentication token expired or invalid") from e
+            raise DysonConnectionError(f"Failed to get map image: {e}") from e
+
+        return response.content
+
     # ------------------------------------------------------------------
     # Device management additional endpoints
     # ------------------------------------------------------------------

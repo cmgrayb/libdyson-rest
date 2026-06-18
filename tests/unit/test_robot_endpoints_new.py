@@ -1273,3 +1273,209 @@ class TestAsyncGetScheduleBinary:
         with pytest.raises(DysonConnectionError):
             await client.get_schedule_binary(SERIAL)
         await client.close()
+
+
+# ===========================================================================
+# Map Visualizer endpoint tests
+# ===========================================================================
+
+PNG_BYTES = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR"  # fake PNG header stub
+
+
+class TestSyncGetMapImage:
+    @patch("httpx.Client.get")
+    def test_success_returns_bytes(self, mock_get: Mock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.content = PNG_BYTES
+        mock_get.return_value = mock_response
+
+        client = DysonClient(auth_token="tok")
+        result = client.get_map_image(SERIAL, MAP_ID)
+
+        assert isinstance(result, bytes)
+        assert result == PNG_BYTES
+
+    @patch("httpx.Client.get")
+    def test_correct_url_includes_serial_and_map_id(self, mock_get: Mock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.content = PNG_BYTES
+        mock_get.return_value = mock_response
+
+        client = DysonClient(auth_token="tok")
+        client.get_map_image(SERIAL, MAP_ID)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v1/mapvisualizer/devices/{SERIAL}/map/{MAP_ID}" in url
+
+    def test_raises_auth_error_when_not_authenticated(self) -> None:
+        client = DysonClient()
+        with pytest.raises(DysonAuthError, match="Must authenticate"):
+            client.get_map_image(SERIAL, MAP_ID)
+
+    @patch("httpx.Client.get")
+    def test_raises_auth_error_on_401(self, mock_get: Mock) -> None:
+        mock_response = Mock()
+        mock_response.status_code = 401
+        mock_get.side_effect = httpx.HTTPStatusError(
+            "Unauthorized", request=Mock(), response=mock_response
+        )
+        client = DysonClient(auth_token="tok")
+        with pytest.raises(DysonAuthError, match="expired"):
+            client.get_map_image(SERIAL, MAP_ID)
+
+    @patch("httpx.Client.get")
+    def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
+        mock_get.side_effect = httpx.ConnectError("unreachable")
+        client = DysonClient(auth_token="tok")
+        with pytest.raises(DysonConnectionError):
+            client.get_map_image(SERIAL, MAP_ID)
+
+
+class TestAsyncGetMapImage:
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_success_returns_bytes(self, mock_get: AsyncMock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.content = PNG_BYTES
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="tok")
+        result = await client.get_map_image(SERIAL, MAP_ID)
+
+        assert isinstance(result, bytes)
+        assert result == PNG_BYTES
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_correct_url_includes_serial_and_map_id(
+        self, mock_get: AsyncMock
+    ) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.content = PNG_BYTES
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="tok")
+        await client.get_map_image(SERIAL, MAP_ID)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v1/mapvisualizer/devices/{SERIAL}/map/{MAP_ID}" in url
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_raises_auth_error_when_not_authenticated(self) -> None:
+        client = AsyncDysonClient()
+        with pytest.raises(DysonAuthError, match="Must authenticate"):
+            await client.get_map_image(SERIAL, MAP_ID)
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_raises_auth_error_on_401(self, mock_get: AsyncMock) -> None:
+        mock_response = Mock()
+        mock_response.status_code = 401
+        mock_get.side_effect = httpx.HTTPStatusError(
+            "Unauthorized", request=Mock(), response=mock_response
+        )
+        client = AsyncDysonClient(auth_token="tok")
+        with pytest.raises(DysonAuthError, match="expired"):
+            await client.get_map_image(SERIAL, MAP_ID)
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_raises_connection_error_on_network_failure(
+        self, mock_get: AsyncMock
+    ) -> None:
+        mock_get.side_effect = httpx.RequestError("down")
+        client = AsyncDysonClient(auth_token="tok")
+        with pytest.raises(DysonConnectionError):
+            await client.get_map_image(SERIAL, MAP_ID)
+        await client.close()
+
+
+# ===========================================================================
+# decode_dust_map tests
+# ===========================================================================
+
+import zlib as _zlib_test  # noqa: E402  (kept at class level for test helpers)
+
+from libdyson_rest.models.robot import ProtobufMapData, decode_dust_map  # noqa: E402
+
+
+def _varint(value: int) -> bytes:
+    """Encode an unsigned integer as a protobuf varint."""
+    result = bytearray()
+    while value > 0x7F:
+        result.append((value & 0x7F) | 0x80)
+        value >>= 7
+    result.append(value & 0x7F)
+    return bytes(result)
+
+
+def _field_varint(field_num: int, value: int) -> bytes:
+    return _varint((field_num << 3) | 0) + _varint(value)
+
+
+def _field_bytes(field_num: int, data: bytes) -> bytes:
+    return _varint((field_num << 3) | 2) + _varint(len(data)) + data
+
+
+def _build_proto(
+    message_type: int = 21,
+    start_time: int = 1700000000,
+    end_time: int = 1700001800,
+    session_id: str = "fce99365-3756-5655-5356-444130343735",
+) -> bytes:
+    """Build a minimal zlib-compressed protobuf binary matching the RB05 format."""
+    uuid_inner = _field_bytes(1, session_id.encode())
+    header = (
+        _field_varint(1, start_time)
+        + _field_varint(2, end_time)
+        + _field_bytes(7, uuid_inner)
+    )
+    proto = _field_varint(1, message_type) + _field_bytes(2, header)
+    return _zlib_test.compress(proto)
+
+
+class TestDecodeDustMap:
+    def test_decodes_message_type(self) -> None:
+        raw = _build_proto(message_type=21)
+        result = decode_dust_map(raw)
+        assert isinstance(result, ProtobufMapData)
+        assert result.message_type == 21
+
+    def test_decodes_start_and_end_times(self) -> None:
+        raw = _build_proto(start_time=1700000000, end_time=1700001800)
+        result = decode_dust_map(raw)
+        assert result.start_time == 1700000000
+        assert result.end_time == 1700001800
+
+    def test_decodes_session_id(self) -> None:
+        sid = "fce99365-3756-5655-5356-444130343735"
+        raw = _build_proto(session_id=sid)
+        result = decode_dust_map(raw)
+        assert result.session_id == sid
+
+    def test_raw_payload_is_decompressed_bytes(self) -> None:
+        raw = _build_proto()
+        result = decode_dust_map(raw)
+        assert isinstance(result.raw_payload, bytes)
+        assert len(result.raw_payload) > 0
+
+    def test_raises_value_error_on_invalid_data(self) -> None:
+        with pytest.raises(ValueError, match="decompress"):
+            decode_dust_map(b"\x00\x01\x02\x03not-zlib")
+
+    def test_empty_proto_returns_zero_message_type(self) -> None:
+        # zlib-compressed empty bytes → valid zlib, empty protobuf → message_type=0
+        raw = _zlib_test.compress(b"")
+        result = decode_dust_map(raw)
+        assert result.message_type == 0
+        assert result.start_time is None
+        assert result.end_time is None
+        assert result.session_id is None

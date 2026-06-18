@@ -88,6 +88,7 @@ from .models import (
     PendingRelease,
     PersistentMap,
     PersistentMapMeta,
+    ProtobufMapData,
     RecommendedCleanMap,
     ScheduledEvent,
     ScheduledEventsData,
@@ -95,6 +96,7 @@ from .models import (
     ZoneDustBreakdown,
     ZoneMeta,
     ZonePrediction,
+    decode_dust_map,
 )
 
 __all__ = [
@@ -129,10 +131,12 @@ __all__ = [
     "DustMapData",
     "PersistentMap",
     "PersistentMapMeta",
+    "ProtobufMapData",
     "RecommendedCleanMap",
     "ZoneDustBreakdown",
     "ZoneMeta",
     "ZonePrediction",
+    "decode_dust_map",
     # EC air purifier models
     "DailyAirQualityData",
     "OutdoorAirQualityData",

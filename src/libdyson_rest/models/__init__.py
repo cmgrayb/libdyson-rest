@@ -41,10 +41,12 @@ from .robot import (
     DustMapData,
     PersistentMap,
     PersistentMapMeta,
+    ProtobufMapData,
     RecommendedCleanMap,
     ZoneDustBreakdown,
     ZoneMeta,
     ZonePrediction,
+    decode_dust_map,
 )
 
 __all__ = [
@@ -79,10 +81,12 @@ __all__ = [
     "DustMapData",
     "PersistentMap",
     "PersistentMapMeta",
+    "ProtobufMapData",
     "RecommendedCleanMap",
     "ZoneDustBreakdown",
     "ZoneMeta",
     "ZonePrediction",
+    "decode_dust_map",
     # Environment / EC purifier models
     "DailyAirQualityData",
     "OutdoorAirQualityData",

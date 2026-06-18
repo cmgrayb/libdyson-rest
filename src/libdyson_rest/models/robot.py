@@ -5,11 +5,15 @@ These models represent cloud data structures returned by the Dyson API for
 robot vacuum devices (360 Vis Nav, 360 Heurist, 360 Eye).
 
 Endpoints covered:
-- GET /v2/{serial}/clean-maps          → list[CleanRecord]
-- GET /v1/app/{serial}/persistent-map-metadata → list[PersistentMapMeta]
-- GET /v1/app/{serial}/persistent-maps/{id}    → PersistentMap
-- GET /v1/app/{serial}/recommended-cleans      → list[RecommendedCleanMap]
+- GET /v2/{serial}/clean-maps                          → list[CleanRecord]
+- GET /v1/app/{serial}/persistent-map-metadata         → list[PersistentMapMeta]
+- GET /v1/app/{serial}/persistent-maps/{id}            → PersistentMap
+- GET /v1/app/{serial}/recommended-cleans              → list[RecommendedCleanMap]
+- GET /v1/mapvisualizer/devices/{serial}/map/{mapId}   → bytes (PNG/JPEG)
 - PUT /v1/app/{serial}/{mapId}/zones/{zoneId}/zone-behaviours
+
+Utilities:
+- decode_dust_map(raw_bytes)  → ProtobufMapData  (zlib+protobuf S3 dust map)
 """
 
 from __future__ import annotations
@@ -818,3 +822,196 @@ class RecommendedCleanMap:
     def sorted_by_dust(self) -> list[ZonePrediction]:
         """Return zone predictions sorted by total dust (dirtiest first)."""
         return sorted(self.zone_predictions, key=lambda p: p.dust.total, reverse=True)
+
+
+# ---------------------------------------------------------------------------
+# Minimal protobuf wire-format parser (no external dependency)
+# ---------------------------------------------------------------------------
+
+
+def _proto_read_varint(data: bytes, pos: int) -> tuple[int, int]:
+    """Read a protobuf varint from *data* starting at *pos*.
+
+    Returns ``(value, new_pos)``.
+
+    Raises:
+        ValueError: If the varint is truncated before the stop bit.
+    """
+    result = 0
+    shift = 0
+    while pos < len(data):
+        byte = data[pos]
+        pos += 1
+        result |= (byte & 0x7F) << shift
+        if not (byte & 0x80):
+            return result, pos
+        shift += 7
+    raise ValueError("Truncated varint in protobuf data")
+
+
+def _proto_parse_fields(data: bytes) -> dict[int, list[Any]]:
+    """Parse the top-level fields of a protobuf binary message.
+
+    Handles wire types 0 (varint), 1 (64-bit), 2 (length-delimited), and
+    5 (32-bit).  An unknown wire type terminates parsing.  Length-delimited
+    values are returned as ``bytes``; varints and fixed-width integers as
+    ``int``.
+
+    Returns:
+        Mapping of ``field_number -> [value, ...]`` (list to support repeated
+        fields).
+    """
+    fields: dict[int, list[Any]] = {}
+    pos = 0
+    while pos < len(data):
+        try:
+            tag, pos = _proto_read_varint(data, pos)
+        except ValueError:
+            break
+        field_number = tag >> 3
+        wire_type = tag & 0x7
+
+        try:
+            value: Any
+            if wire_type == 0:  # varint
+                value, pos = _proto_read_varint(data, pos)
+            elif wire_type == 1:  # 64-bit little-endian
+                if pos + 8 > len(data):
+                    break
+                value = int.from_bytes(data[pos : pos + 8], "little")
+                pos += 8
+            elif wire_type == 2:  # length-delimited
+                length, pos = _proto_read_varint(data, pos)
+                if pos + length > len(data):
+                    break
+                value = data[pos : pos + length]
+                pos += length
+            elif wire_type == 5:  # 32-bit little-endian
+                if pos + 4 > len(data):
+                    break
+                value = int.from_bytes(data[pos : pos + 4], "little")
+                pos += 4
+            else:
+                break  # unknown wire type — cannot continue safely
+        except ValueError:
+            break
+
+        fields.setdefault(field_number, []).append(value)
+
+    return fields
+
+
+@dataclass
+class ProtobufMapData:
+    """Decoded zlib+protobuf dust-map binary from the S3 ``downloadUrl``.
+
+    Instances are created by :func:`decode_dust_map` after downloading the
+    binary payload from ``CleanRecord.download_url`` (v2 ``clean-maps``
+    endpoint).
+
+    Observed on the Dyson Spot+Scrub (RB05-AA, product type ``804A``,
+    firmware 34.x) where ``message_type == 21``.
+
+    Attributes:
+        message_type: Integer type discriminator from the outer protobuf
+            envelope (field 1).  Value ``21`` identifies the RB05 session
+            format.
+        start_time: Unix timestamp of the session start (field 2.1), or
+            ``None`` if not present in the binary.
+        end_time: Unix timestamp of the session end (field 2.2), or ``None``
+            if not present in the binary.
+        session_id: Session UUID hex string from the inner ``SessionUUID``
+            message (field 2.7.1), e.g. ``"fce99365-3756-5655-…"``, or
+            ``None`` if not present.
+        raw_payload: Full decompressed protobuf payload bytes, for advanced
+            client-side decoding of robot path, coverage, and obstacle data.
+    """
+
+    message_type: int
+    start_time: int | None
+    end_time: int | None
+    session_id: str | None
+    raw_payload: bytes
+
+
+def decode_dust_map(raw_bytes: bytes) -> ProtobufMapData:
+    """Decode a zlib-compressed Protocol Buffer dust-map binary from S3.
+
+    Download the binary from ``CleanRecord.download_url`` using any HTTP
+    client, then pass the response body to this function.  The format is
+    zlib default compression (magic bytes ``0x78 0x9C``) wrapping a protobuf
+    message with the following top-level structure (reverse-engineered from
+    the MyDyson APK v6.4 smali bytecode)::
+
+        message CleanSession {
+          field 1  (varint) = message_type       # 21 for RB05/804A
+          field 2  (bytes)  = SessionHeader {
+            field 1 (varint) = start_time_epoch
+            field 2 (varint) = end_time_epoch
+            field 7 (bytes)  = SessionUUID {
+              field 1 (bytes) = session_uuid_hex_string
+            }
+          }
+          // remaining bytes: robot path, coverage, obstacle data
+        }
+
+    Note:
+        The protobuf ``.proto`` definition is not published by Dyson.  Fields
+        beyond the header (robot path, coverage, obstacle data) are captured
+        in ``ProtobufMapData.raw_payload`` for callers that perform their own
+        further decoding.
+
+    Args:
+        raw_bytes: Raw bytes fetched from ``CleanRecord.download_url``.
+
+    Returns:
+        :class:`ProtobufMapData` with decoded header fields and the full
+        decompressed payload.
+
+    Raises:
+        ValueError: If *raw_bytes* cannot be decompressed or does not contain
+            a valid protobuf varint tag.
+    """
+    try:
+        payload = _zlib.decompress(raw_bytes)
+    except _zlib.error as exc:
+        raise ValueError(f"Failed to decompress dust map: {exc}") from exc
+
+    top = _proto_parse_fields(payload)
+
+    # Field 1 (varint): message_type
+    mt_vals = top.get(1, [])
+    message_type = int(mt_vals[0]) if mt_vals else 0
+
+    start_time: int | None = None
+    end_time: int | None = None
+    session_id: str | None = None
+
+    # Field 2 (bytes): SessionHeader
+    header_vals = top.get(2, [])
+    if header_vals and isinstance(header_vals[0], bytes):
+        header = _proto_parse_fields(header_vals[0])
+
+        st_vals = header.get(1, [])
+        if st_vals:
+            start_time = int(st_vals[0])
+
+        et_vals = header.get(2, [])
+        if et_vals:
+            end_time = int(et_vals[0])
+
+        # Field 7 (bytes): SessionUUID → field 1 (bytes): uuid string
+        uuid_vals = header.get(7, [])
+        if uuid_vals and isinstance(uuid_vals[0], bytes):
+            inner = _proto_parse_fields(uuid_vals[0])
+            str_vals = inner.get(1, [])
+            if str_vals and isinstance(str_vals[0], bytes):
+                session_id = str_vals[0].decode("utf-8", errors="replace")
+
+    return ProtobufMapData(
+        message_type=message_type,
+        start_time=start_time,
+        end_time=end_time,
+        session_id=session_id,
+        raw_payload=payload,
+    )
