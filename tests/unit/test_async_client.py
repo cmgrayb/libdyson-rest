@@ -397,7 +397,7 @@ class TestAsyncDysonClient:
             patch(
                 "libdyson_rest.async_client.httpx.AsyncClient.post"
             ) as mock_async_post,
-            patch("libdyson_rest.client.requests.Session.post") as mock_sync_post,
+            patch("libdyson_rest.client.httpx.Client.post") as mock_sync_post,
         ):
             # Configure mock responses
             mock_response = Mock()

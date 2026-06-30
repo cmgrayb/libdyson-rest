@@ -48,7 +48,7 @@ Basic Usage (Asynchronous):
                 print(f"Device: {device.name} ({device.serial_number})")
 """
 
-__version__ = "0.14.1"
+__version__ = "0.15.0b5"
 __author__ = "Christopher Gray"
 __email__ = "79777799+cmgrayb@users.noreply.github.com"
 
@@ -68,11 +68,14 @@ from .exceptions import (
 )
 from .models import (
     CleanedFootprint,
+    CleanFault,
     CleaningProgramme,
     CleaningStrategy,
     CleanMapPosition,
     CleanRecord,
     CleanTimelineEvent,
+    CleanZone,
+    CleanZoneSettings,
     ConnectionCategory,
     DailyAirQualityData,
     Device,
@@ -85,6 +88,7 @@ from .models import (
     PendingRelease,
     PersistentMap,
     PersistentMapMeta,
+    ProtobufMapData,
     RecommendedCleanMap,
     ScheduledEvent,
     ScheduledEventsData,
@@ -92,6 +96,7 @@ from .models import (
     ZoneDustBreakdown,
     ZoneMeta,
     ZonePrediction,
+    decode_dust_map,
 )
 
 __all__ = [
@@ -115,18 +120,23 @@ __all__ = [
     "UserStatus",
     # Vis Nav robot models
     "CleanedFootprint",
+    "CleanFault",
     "CleaningProgramme",
     "CleaningStrategy",
     "CleanMapPosition",
     "CleanRecord",
     "CleanTimelineEvent",
+    "CleanZone",
+    "CleanZoneSettings",
     "DustMapData",
     "PersistentMap",
     "PersistentMapMeta",
+    "ProtobufMapData",
     "RecommendedCleanMap",
     "ZoneDustBreakdown",
     "ZoneMeta",
     "ZonePrediction",
+    "decode_dust_map",
     # EC air purifier models
     "DailyAirQualityData",
     "OutdoorAirQualityData",

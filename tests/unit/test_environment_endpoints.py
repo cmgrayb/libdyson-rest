@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import httpx
 import pytest
-import requests
 
 from libdyson_rest.async_client import AsyncDysonClient
 from libdyson_rest.client import DysonClient
@@ -65,7 +64,7 @@ OUTDOOR_ENV_RESPONSE = {
 
 
 class TestSyncGetDailyEnvironmentData:
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_success_returns_daily_air_quality_data(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -82,7 +81,7 @@ class TestSyncGetDailyEnvironmentData:
         assert len(data.samples) == 5
         assert data.latest_sample == pytest.approx(4.0)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_correct_url_used(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -100,25 +99,27 @@ class TestSyncGetDailyEnvironmentData:
         with pytest.raises(DysonAuthError, match="Must authenticate"):
             client.get_daily_environment_data(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_auth_error_on_401(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.status_code = 401
-        mock_get.side_effect = requests.HTTPError(response=mock_response)
+        mock_get.side_effect = httpx.HTTPStatusError(
+            "error", request=Mock(), response=mock_response
+        )
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonAuthError, match="expired"):
             client.get_daily_environment_data(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
-        mock_get.side_effect = requests.ConnectionError("no connection")
+        mock_get.side_effect = httpx.NetworkError("no connection")
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonConnectionError):
             client.get_daily_environment_data(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_api_error_on_non_dict_response(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -131,7 +132,7 @@ class TestSyncGetDailyEnvironmentData:
 
 
 class TestSyncGetScheduledEvents:
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_success_returns_scheduled_events_data(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -146,7 +147,7 @@ class TestSyncGetScheduledEvents:
         assert len(data.events) == 2
         assert len(data.active_events) == 1
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_product_type_included_in_params_when_provided(
         self, mock_get: Mock
     ) -> None:
@@ -161,7 +162,7 @@ class TestSyncGetScheduledEvents:
         call_kwargs = mock_get.call_args.kwargs
         assert call_kwargs.get("params") == {"productType": PRODUCT_TYPE}
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_product_type_omitted_when_none(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -174,7 +175,7 @@ class TestSyncGetScheduledEvents:
         call_kwargs = mock_get.call_args.kwargs
         assert call_kwargs.get("params") == {}
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_correct_url_used(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -192,25 +193,27 @@ class TestSyncGetScheduledEvents:
         with pytest.raises(DysonAuthError, match="Must authenticate"):
             client.get_scheduled_events(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_auth_error_on_401(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.status_code = 401
-        mock_get.side_effect = requests.HTTPError(response=mock_response)
+        mock_get.side_effect = httpx.HTTPStatusError(
+            "error", request=Mock(), response=mock_response
+        )
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonAuthError, match="expired"):
             client.get_scheduled_events(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
-        mock_get.side_effect = requests.ConnectionError("timeout")
+        mock_get.side_effect = httpx.NetworkError("timeout")
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonConnectionError):
             client.get_scheduled_events(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_api_error_on_non_dict_response(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -402,7 +405,7 @@ class TestAsyncGetScheduledEvents:
 
 
 class TestSyncGetOutdoorEnvironmentData:
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_success_returns_outdoor_air_quality_data(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -421,7 +424,7 @@ class TestSyncGetOutdoorEnvironmentData:
         assert data.aqi_description == "Air quality is poor"
         assert data.date_time == "2024-06-01T12:00:00Z"
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_correct_url_used(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -434,7 +437,7 @@ class TestSyncGetOutdoorEnvironmentData:
         url = mock_get.call_args.args[0]
         assert f"/v1/environment/devices/{SERIAL}/data" in url
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_language_param_sent(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None
@@ -452,25 +455,27 @@ class TestSyncGetOutdoorEnvironmentData:
         with pytest.raises(DysonAuthError, match="Must authenticate"):
             client.get_outdoor_environment_data(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_auth_error_on_401(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.status_code = 401
-        mock_get.side_effect = requests.HTTPError(response=mock_response)
+        mock_get.side_effect = httpx.HTTPStatusError(
+            "error", request=Mock(), response=mock_response
+        )
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonAuthError, match="expired"):
             client.get_outdoor_environment_data(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
-        mock_get.side_effect = requests.ConnectionError("no connection")
+        mock_get.side_effect = httpx.NetworkError("no connection")
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonConnectionError):
             client.get_outdoor_environment_data(SERIAL)
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_raises_api_error_on_non_dict_response(self, mock_get: Mock) -> None:
         mock_response = Mock()
         mock_response.raise_for_status.return_value = None

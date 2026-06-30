@@ -2,8 +2,8 @@
 
 from unittest.mock import Mock, patch
 
+import httpx
 import pytest
-import requests
 
 from libdyson_rest.client import DysonClient
 from libdyson_rest.exceptions import DysonAPIError, DysonAuthError, DysonConnectionError
@@ -51,7 +51,7 @@ class TestDysonClient:
         assert "Email and password are required" in str(exc_info.value)
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_authentication_success(self, mock_post: Mock) -> None:
         """Test successful user status check."""
         # Setup mock response for get_user_status
@@ -72,7 +72,7 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_begin_login_success(self, mock_post: Mock) -> None:
         """Test successful begin login."""
         # Setup mock response for begin_login
@@ -90,7 +90,7 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_complete_login_success(self, mock_post: Mock) -> None:
         """Test successful complete login."""
         # Setup mock response for complete_login
@@ -117,7 +117,7 @@ class TestDysonClient:
         auth_header = client.session.headers.get("Authorization")
         assert auth_header == "Bearer test_bearer_token_123"
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_authentication_with_invalid_country(self, mock_post: Mock) -> None:
         """Test authentication with invalid country code."""
         with pytest.raises(
@@ -128,7 +128,7 @@ class TestDysonClient:
                 email="test@example.com", password="password", country="invalid"
             )
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_authentication_with_invalid_culture(self, mock_post: Mock) -> None:
         """Test authentication with invalid culture code."""
         with pytest.raises(ValueError, match="Culture must be in format 'xx-YY'"):
@@ -136,7 +136,7 @@ class TestDysonClient:
                 email="test@example.com", password="password", culture="invalid"
             )
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_provision_success(self, mock_get: Mock) -> None:
         """Test successful provision call."""
         mock_response = Mock()
@@ -153,10 +153,10 @@ class TestDysonClient:
         assert client._provisioned is True
         mock_get.assert_called_once()
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_provision_connection_error(self, mock_get: Mock) -> None:
         """Test provision with connection error."""
-        mock_get.side_effect = requests.RequestException("Connection failed")
+        mock_get.side_effect = httpx.NetworkError("Connection failed")
 
         client = DysonClient(email="test@example.com", password="password")
         with pytest.raises(
@@ -313,7 +313,7 @@ class TestDysonClient:
         # After exiting context, client should be closed
         # (In real implementation, session would be closed)
 
-    @patch("libdyson_rest.client.requests.Session.get")
+    @patch("libdyson_rest.client.httpx.Client.get")
     def test_get_pending_release_success(self, mock_get: Mock) -> None:
         """Test successful pending release retrieval."""
         # Mock response data
@@ -351,10 +351,10 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("libdyson_rest.client.requests.Session.get")
+    @patch("libdyson_rest.client.httpx.Client.get")
     def test_get_pending_release_api_error(self, mock_get: Mock) -> None:
         """Test pending release retrieval handles API errors."""
-        mock_get.side_effect = requests.RequestException("Network error")
+        mock_get.side_effect = httpx.NetworkError("Network error")
 
         client = DysonClient(auth_token="test_token")
 
@@ -363,13 +363,14 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("libdyson_rest.client.requests.Session.post")
+    @patch("libdyson_rest.client.httpx.Client.post")
     def test_complete_login_401_error(self, mock_post: Mock) -> None:
         """Test complete_login handles 401 authentication errors."""
         mock_response = Mock()
         mock_response.status_code = 401
-        mock_error = requests.RequestException("Unauthorized")
-        mock_error.response = mock_response
+        mock_error = httpx.HTTPStatusError(
+            "Unauthorized", request=Mock(), response=mock_response
+        )
         mock_post.side_effect = mock_error
 
         client = DysonClient("test@example.com", "password")
@@ -379,17 +380,18 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("libdyson_rest.client.requests.Session.post")
+    @patch("libdyson_rest.client.httpx.Client.post")
     def test_complete_login_400_error(self, mock_post: Mock) -> None:
         """Test complete_login handles 400 bad request errors."""
         mock_response = Mock()
         mock_response.status_code = 400
         mock_response.text = "Bad Request"
         mock_response.url = "https://api.example.com/login"
-        mock_error = requests.RequestException("Bad Request")
-        mock_error.response = mock_response
-        mock_error.request = Mock()
-        mock_error.request.headers = {"Content-Type": "application/json"}
+        mock_request = Mock()
+        mock_request.headers = {"Content-Type": "application/json"}
+        mock_error = httpx.HTTPStatusError(
+            "Bad Request", request=mock_request, response=mock_response
+        )
         mock_post.side_effect = mock_error
 
         client = DysonClient("test@example.com", "password")
@@ -399,7 +401,7 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("libdyson_rest.client.requests.Session.post")
+    @patch("libdyson_rest.client.httpx.Client.post")
     def test_complete_login_400_error_logging_exception(self, mock_post: Mock) -> None:
         """Test complete_login handles 400 errors when logging fails."""
         mock_response = Mock()
@@ -407,8 +409,9 @@ class TestDysonClient:
         # Make response.text raise an exception to test logging error handling
         mock_response.text = Mock(side_effect=AttributeError("No text"))
         mock_response.url = "https://api.example.com/login"
-        mock_error = requests.RequestException("Bad Request")
-        mock_error.response = mock_response
+        mock_error = httpx.HTTPStatusError(
+            "Bad Request", request=Mock(), response=mock_response
+        )
         mock_post.side_effect = mock_error
 
         client = DysonClient("test@example.com", "password")
@@ -418,10 +421,10 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("libdyson_rest.client.requests.Session.post")
+    @patch("libdyson_rest.client.httpx.Client.post")
     def test_complete_login_connection_error(self, mock_post: Mock) -> None:
         """Test complete_login handles general connection errors."""
-        mock_post.side_effect = requests.RequestException("Connection failed")
+        mock_post.side_effect = httpx.NetworkError("Connection failed")
 
         client = DysonClient("test@example.com", "password")
 
@@ -430,7 +433,7 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("libdyson_rest.client.requests.Session.post")
+    @patch("libdyson_rest.client.httpx.Client.post")
     def test_complete_login_invalid_json_response(self, mock_post: Mock) -> None:
         """Test complete_login handles invalid JSON responses."""
         mock_response = Mock()
@@ -446,7 +449,7 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("libdyson_rest.client.requests.Session.post")
+    @patch("libdyson_rest.client.httpx.Client.post")
     def test_complete_login_missing_key_response(self, mock_post: Mock) -> None:
         """Test complete_login handles responses with missing keys."""
         mock_response = Mock()
@@ -464,7 +467,7 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_regional_endpoint_australia(self, mock_get: Mock) -> None:
         """Test that Australian clients use the default .com endpoint."""
         mock_response = Mock()
@@ -485,7 +488,7 @@ class TestDysonClient:
         assert "appapi.cp.dyson.com" in args[0]
         client.close()
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_regional_endpoint_new_zealand(self, mock_get: Mock) -> None:
         """Test that New Zealand clients use the default .com endpoint."""
         mock_response = Mock()
@@ -506,7 +509,7 @@ class TestDysonClient:
         assert "appapi.cp.dyson.com" in args[0]
         client.close()
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_regional_endpoint_china(self, mock_get: Mock) -> None:
         """Test that Chinese clients use CN endpoint."""
         mock_response = Mock()
@@ -527,7 +530,7 @@ class TestDysonClient:
         assert "appapi.cp.dyson.cn" in args[0]
         client.close()
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_regional_endpoint_default_fallback(self, mock_get: Mock) -> None:
         """Test that unknown countries fall back to .com endpoint."""
         mock_response = Mock()
@@ -551,7 +554,7 @@ class TestDysonClient:
             assert "appapi.cp.dyson.com" in args[0], f"Failed for country {country}"
             client.close()
 
-    @patch("libdyson_rest.client.requests.Session.post")
+    @patch("libdyson_rest.client.httpx.Client.post")
     def test_trigger_firmware_update_success(self, mock_post: Mock) -> None:
         """Test successful firmware update trigger."""
         # Mock 204 No Content response
@@ -591,13 +594,14 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("libdyson_rest.client.requests.Session.post")
+    @patch("libdyson_rest.client.httpx.Client.post")
     def test_trigger_firmware_update_401_error(self, mock_post: Mock) -> None:
         """Test firmware update trigger handles 401 authentication errors."""
         mock_response = Mock()
         mock_response.status_code = 401
-        mock_error = requests.RequestException("Unauthorized")
-        mock_error.response = mock_response
+        mock_error = httpx.HTTPStatusError(
+            "Unauthorized", request=Mock(), response=mock_response
+        )
         mock_post.side_effect = mock_error
 
         client = DysonClient(auth_token="expired_token")
@@ -609,13 +613,14 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("libdyson_rest.client.requests.Session.post")
+    @patch("libdyson_rest.client.httpx.Client.post")
     def test_trigger_firmware_update_404_error(self, mock_post: Mock) -> None:
         """Test firmware update trigger handles 404 device not found errors."""
         mock_response = Mock()
         mock_response.status_code = 404
-        mock_error = requests.RequestException("Not Found")
-        mock_error.response = mock_response
+        mock_error = httpx.HTTPStatusError(
+            "Not Found", request=Mock(), response=mock_response
+        )
         mock_post.side_effect = mock_error
 
         client = DysonClient(auth_token="test_token")
@@ -631,10 +636,10 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("libdyson_rest.client.requests.Session.post")
+    @patch("libdyson_rest.client.httpx.Client.post")
     def test_trigger_firmware_update_connection_error(self, mock_post: Mock) -> None:
         """Test firmware update trigger handles connection errors."""
-        mock_post.side_effect = requests.RequestException("Connection failed")
+        mock_post.side_effect = httpx.NetworkError("Connection failed")
 
         client = DysonClient(auth_token="test_token")
 
@@ -645,7 +650,7 @@ class TestDysonClient:
 
         client.close()
 
-    @patch("libdyson_rest.client.requests.Session.post")
+    @patch("libdyson_rest.client.httpx.Client.post")
     def test_trigger_firmware_update_unexpected_status(self, mock_post: Mock) -> None:
         """Test firmware update trigger handles unexpected response status."""
         mock_response = Mock()
@@ -664,7 +669,7 @@ class TestDysonClient:
 class TestDysonClientMobileAuth:
     """Unit tests for DysonClient mobile authentication methods."""
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_get_user_status_mobile_success(self, mock_post: Mock) -> None:
         """Test successful mobile user status check."""
         mock_response = Mock()
@@ -688,7 +693,7 @@ class TestDysonClientMobileAuth:
 
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_get_user_status_mobile_with_instance_mobile(self, mock_post: Mock) -> None:
         """Test mobile user status check with explicit mobile parameter."""
         mock_response = Mock()
@@ -719,10 +724,10 @@ class TestDysonClientMobileAuth:
         assert "Mobile number is required" in str(exc_info.value)
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_get_user_status_mobile_connection_error(self, mock_post: Mock) -> None:
         """Test mobile user status handles connection errors."""
-        mock_post.side_effect = requests.RequestException("Network error")
+        mock_post.side_effect = httpx.NetworkError("Network error")
 
         client = DysonClient(email="+8613800000000", password="password", country="CN")
 
@@ -732,7 +737,7 @@ class TestDysonClientMobileAuth:
         assert "Failed to get user status" in str(exc_info.value)
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_get_user_status_mobile_invalid_response(self, mock_post: Mock) -> None:
         """Test mobile user status handles invalid JSON response."""
         mock_response = Mock()
@@ -748,7 +753,7 @@ class TestDysonClientMobileAuth:
         assert "Invalid user status response" in str(exc_info.value)
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_begin_login_mobile_success(self, mock_post: Mock) -> None:
         """Test successful mobile login initiation."""
         mock_response = Mock()
@@ -780,13 +785,14 @@ class TestDysonClientMobileAuth:
         assert "Mobile number is required" in str(exc_info.value)
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_begin_login_mobile_401_error(self, mock_post: Mock) -> None:
         """Test mobile login initiation handles 401 unauthorized."""
         mock_response = Mock()
         mock_response.status_code = 401
-        http_error = requests.HTTPError()
-        http_error.response = mock_response
+        http_error = httpx.HTTPStatusError(
+            "401", request=Mock(), response=mock_response
+        )
         mock_post.side_effect = http_error
 
         client = DysonClient(email="+8613800000000", password="password", country="CN")
@@ -797,15 +803,16 @@ class TestDysonClientMobileAuth:
         assert "Invalid mobile number or not authorized" in str(exc_info.value)
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_begin_login_mobile_400_error(self, mock_post: Mock) -> None:
         """Test mobile login initiation handles 400 bad request."""
         mock_response = Mock()
         mock_response.status_code = 400
         mock_response.text = "Invalid mobile format"
         mock_response.url = "https://appapi.cp.dyson.cn/v3/userregistration/mobile/auth"
-        http_error = requests.HTTPError()
-        http_error.response = mock_response
+        http_error = httpx.HTTPStatusError(
+            "400", request=Mock(), response=mock_response
+        )
         mock_post.side_effect = http_error
 
         client = DysonClient(email="+8613800000000", password="password", country="CN")
@@ -817,7 +824,7 @@ class TestDysonClientMobileAuth:
         assert "Check mobile format" in str(exc_info.value)
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_complete_login_mobile_success(self, mock_post: Mock) -> None:
         """Test successful mobile login completion."""
         mock_response = Mock()
@@ -864,13 +871,14 @@ class TestDysonClientMobileAuth:
         assert "Mobile number is required" in str(exc_info.value)
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_complete_login_mobile_401_error(self, mock_post: Mock) -> None:
         """Test mobile login completion handles 401 invalid credentials."""
         mock_response = Mock()
         mock_response.status_code = 401
-        http_error = requests.HTTPError()
-        http_error.response = mock_response
+        http_error = httpx.HTTPStatusError(
+            "401", request=Mock(), response=mock_response
+        )
         mock_post.side_effect = http_error
 
         client = DysonClient(email="+8613800000000", password="password", country="CN")
@@ -885,7 +893,7 @@ class TestDysonClientMobileAuth:
         assert "Invalid credentials or OTP code" in str(exc_info.value)
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_complete_login_mobile_400_error(self, mock_post: Mock) -> None:
         """Test mobile login completion handles 400 bad request."""
         mock_response = Mock()
@@ -894,8 +902,9 @@ class TestDysonClientMobileAuth:
         mock_response.url = (
             "https://appapi.cp.dyson.cn/v3/userregistration/mobile/verify"
         )
-        http_error = requests.HTTPError()
-        http_error.response = mock_response
+        http_error = httpx.HTTPStatusError(
+            "400", request=Mock(), response=mock_response
+        )
         mock_post.side_effect = http_error
 
         client = DysonClient(email="+8613800000000", password="password", country="CN")
@@ -911,7 +920,7 @@ class TestDysonClientMobileAuth:
         assert "Check API parameters" in str(exc_info.value)
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_complete_login_mobile_invalid_response(self, mock_post: Mock) -> None:
         """Test mobile login completion handles invalid JSON response."""
         mock_response = Mock()
@@ -929,4 +938,70 @@ class TestDysonClientMobileAuth:
             )
 
         assert "Invalid login response" in str(exc_info.value)
+        client.close()
+
+    def test_debug_mode_initialization(self) -> None:
+        """Test client initialization with debug=True covers debug logging setup."""
+        import logging
+
+        client = DysonClient(debug=True)
+        assert logging.getLogger("httpx").level == logging.DEBUG
+        client.close()
+
+    @patch("httpx.Client.post")
+    def test_get_user_status_connection_error(self, mock_post: Mock) -> None:
+        """Test get_user_status raises DysonConnectionError on network failure."""
+        mock_post.side_effect = httpx.NetworkError("Connection failed")
+
+        client = DysonClient(email="test@example.com", password="password")
+        client._provisioned = True  # skip provision
+
+        with pytest.raises(DysonConnectionError, match="Failed to get user status"):
+            client.get_user_status()
+        client.close()
+
+    @patch("httpx.Client.post")
+    def test_begin_login_connection_error(self, mock_post: Mock) -> None:
+        """Test begin_login raises DysonConnectionError on network failure."""
+        mock_post.side_effect = httpx.NetworkError("Connection failed")
+
+        client = DysonClient(email="test@example.com", password="password")
+        client._provisioned = True  # skip provision
+
+        with pytest.raises(DysonConnectionError, match="Failed to begin login"):
+            client.begin_login()
+        client.close()
+
+    @patch("httpx.Client.post")
+    def test_begin_login_mobile_connection_error(self, mock_post: Mock) -> None:
+        """Test begin_login_mobile raises DysonConnectionError on network failure."""
+        mock_post.side_effect = httpx.NetworkError("Connection failed")
+
+        client = DysonClient(email="+8613800000000", password="password", country="CN")
+        client._provisioned = True  # skip provision
+
+        with pytest.raises(DysonConnectionError, match="Failed to begin login"):
+            client.begin_login_mobile("+8613800000000")
+        client.close()
+
+    @patch("httpx.Client.get")
+    def test_get_devices_connection_error(self, mock_get: Mock) -> None:
+        """Test get_devices raises DysonConnectionError on network failure."""
+        mock_get.side_effect = httpx.NetworkError("Connection failed")
+
+        client = DysonClient(auth_token="test_token")
+
+        with pytest.raises(DysonConnectionError, match="Failed to get devices"):
+            client.get_devices()
+        client.close()
+
+    @patch("httpx.Client.post")
+    def test_get_iot_credentials_connection_error(self, mock_post: Mock) -> None:
+        """Test get_iot_credentials raises DysonConnectionError on network failure."""
+        mock_post.side_effect = httpx.NetworkError("Connection failed")
+
+        client = DysonClient(auth_token="test_token")
+
+        with pytest.raises(DysonConnectionError, match="Failed to get IoT credentials"):
+            client.get_iot_credentials("TEST-SERIAL-123")
         client.close()
