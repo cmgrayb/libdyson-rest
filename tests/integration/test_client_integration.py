@@ -3,6 +3,7 @@
 import os
 from unittest.mock import Mock, patch
 
+import httpx
 import pytest
 
 from libdyson_rest import DysonClient
@@ -33,7 +34,7 @@ class TestDysonClientIntegration:
             assert client.email == "test@example.com"
         # Client should be closed automatically
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_authentication_success(self, mock_post: Mock) -> None:
         """Test successful user status check."""
         # Mock successful API response for get_user_status
@@ -63,12 +64,10 @@ class TestDysonClientIntegration:
 
         client.close()
 
-    @patch("requests.Session.post")
+    @patch("httpx.Client.post")
     def test_authentication_connection_error(self, mock_post: Mock) -> None:
         """Test authentication handles connection errors."""
-        import requests
-
-        mock_post.side_effect = requests.ConnectionError("Network error")
+        mock_post.side_effect = httpx.NetworkError("Network error")
 
         client = DysonClient(email="test@example.com", password="password123")
 
@@ -77,7 +76,7 @@ class TestDysonClientIntegration:
 
         client.close()
 
-    @patch("requests.Session.get")
+    @patch("httpx.Client.get")
     def test_get_devices_success(self, mock_get: Mock) -> None:
         """Test successful device retrieval."""
         # Setup authenticated client

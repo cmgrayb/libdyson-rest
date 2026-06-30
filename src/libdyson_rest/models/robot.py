@@ -5,11 +5,15 @@ These models represent cloud data structures returned by the Dyson API for
 robot vacuum devices (360 Vis Nav, 360 Heurist, 360 Eye).
 
 Endpoints covered:
-- GET /v1/{serial}/clean-maps          → list[CleanRecord]
-- GET /v1/app/{serial}/persistent-map-metadata → list[PersistentMapMeta]
-- GET /v1/app/{serial}/persistent-maps/{id}    → PersistentMap
-- GET /v1/app/{serial}/recommended-cleans      → list[RecommendedCleanMap]
+- GET /v2/{serial}/clean-maps                          → list[CleanRecord]
+- GET /v1/app/{serial}/persistent-map-metadata         → list[PersistentMapMeta]
+- GET /v1/app/{serial}/persistent-maps/{id}            → PersistentMap
+- GET /v1/app/{serial}/recommended-cleans              → list[RecommendedCleanMap]
+- GET /v1/mapvisualizer/devices/{serial}/map/{mapId}   → bytes (PNG/JPEG)
 - PUT /v1/app/{serial}/{mapId}/zones/{zoneId}/zone-behaviours
+
+Utilities:
+- decode_dust_map(raw_bytes)  → ProtobufMapData  (zlib+protobuf S3 dust map)
 """
 
 from __future__ import annotations
@@ -22,7 +26,10 @@ from enum import Enum
 from typing import Any, cast
 
 from ..types import (
+    CleanFaultDict,
     CleanRecordDict,
+    CleanZoneDict,
+    CleanZoneSettingsDict,
     PersistentMapDict,
     PersistentMapMetaDict,
     RecommendedCleanMapDict,
@@ -279,6 +286,85 @@ class CleanMapPosition:
 
 
 @dataclass
+class CleanZoneSettings:
+    """Per-zone cleaning settings from a v2 clean record."""
+
+    cleaning_strategy: str | None
+    clean_type: str | None
+    water_level: str | None
+    mop_passes: int | None
+    dry_passes: int | None
+
+    @classmethod
+    def from_dict(cls, data: CleanZoneSettingsDict) -> CleanZoneSettings:
+        """Create a CleanZoneSettings from a raw dict."""
+        raw: dict[str, Any] = dict(data)
+        return cls(
+            cleaning_strategy=raw.get("cleaningStrategy"),
+            clean_type=raw.get("cleanType"),
+            water_level=raw.get("waterLevel"),
+            mop_passes=raw.get("mopPasses"),
+            dry_passes=raw.get("dryPasses"),
+        )
+
+
+@dataclass
+class CleanZone:
+    """One zone entry from a v2 clean record."""
+
+    id: str
+    name: str | None
+    type: str | None
+    is_selected: bool
+    settings: CleanZoneSettings | None
+    name_location: CleanMapPosition | None
+
+    @classmethod
+    def from_dict(cls, data: CleanZoneDict) -> CleanZone:
+        """Create a CleanZone from a raw dict."""
+        raw: dict[str, Any] = dict(data)
+        settings_raw = raw.get("settings")
+        settings = (
+            CleanZoneSettings.from_dict(cast(CleanZoneSettingsDict, settings_raw))
+            if isinstance(settings_raw, dict)
+            else None
+        )
+        name_loc_raw = raw.get("nameLocation")
+        name_location = (
+            CleanMapPosition.from_dict(name_loc_raw)
+            if isinstance(name_loc_raw, dict)
+            else None
+        )
+        return cls(
+            id=str(raw.get("id", "")),
+            name=raw.get("name"),
+            type=raw.get("type"),
+            is_selected=bool(raw.get("isSelected", False)),
+            settings=settings,
+            name_location=name_location,
+        )
+
+
+@dataclass
+class CleanFault:
+    """A fault event reported during a v2 clean run."""
+
+    type: str
+    x: float
+    y: float
+
+    @classmethod
+    def from_dict(cls, data: CleanFaultDict) -> CleanFault:
+        """Create a CleanFault from a raw dict."""
+        raw: dict[str, Any] = dict(data)
+        return cls(
+            type=str(raw.get("type", "")),
+            x=float(raw.get("x", 0)),
+            y=float(raw.get("y", 0)),
+        )
+
+
+@dataclass
 class CleaningProgramme:
     """Zone-clean programme embedded in a clean record."""
 
@@ -307,29 +393,79 @@ class CleaningProgramme:
 
 @dataclass
 class CleanRecord:
-    """One entry from GET /v1/{serial}/clean-maps.
+    """One entry from GET /v2/{serial}/clean-maps.
 
     Represents a single historical cleaning run returned by the Dyson cloud.
-    The ``dust_map`` field is only populated when the endpoint is called with
-    ``dustMap=total``.
+    The v2 API returns a ``{"data": [...]}`` envelope and a substantially
+    different field set from the v1 schema — see field-level notes below.
+
+    v1-only fields (``timeline``, ``cleaned_footprint``, ``cleaning_programme``,
+    ``clean_map_position``, ``dust_map``) are ``None`` / empty for v2 responses.
+    v2-only fields (``start_time_epoch``, ``end_time_epoch``, ``download_url``,
+    ``zones``, ``faults``, etc.) are ``None`` / empty for v1 responses.
     """
 
+    # --- fields present in both schema versions ---
     clean_id: str | None
+    persistent_map_id: str | None
+    """ID of the persistent map associated with this run (if any)."""
+
+    # --- v1 fields (None / empty for v2 responses) ---
     sequence_number: int | None
     timeline: list[CleanTimelineEvent]
     cleaned_footprint: CleanedFootprint | None
     cleaning_programme: CleaningProgramme | None
-    persistent_map_id: str | None
-    """ID of the persistent map associated with this run (if any)."""
     clean_map_position: CleanMapPosition | None
     """World-coordinate origin of the dust-map crop within the floor plan."""
     dust_map: DustMapData | None
 
+    # --- v2 fields (None / empty for v1 responses) ---
+    start_time_epoch: int | None = None
+    """Unix epoch timestamp of the run start (v2 only)."""
+    end_time_epoch: int | None = None
+    """Unix epoch timestamp of the run end (v2 only)."""
+    clean_duration: int | None = None
+    """Duration of the run in seconds (v2 only)."""
+    area_cleaned: float | None = None
+    """Cleaned area in square metres (v2 only)."""
+    download_url: str | None = None
+    """Pre-signed S3 URL for detailed map data (v2 only, expires ~15 min).
+
+    Note:
+        This URL has a short TTL (``X-Amz-Expires=900`` seconds).  Do not
+        cache it long-term.  Re-call ``get_clean_maps()`` to obtain a fresh
+        URL before each map image fetch.
+    """
+    is_spot_clean: bool | None = None
+    """True when the run was a spot-clean, False for full/zone runs (v2 only)."""
+    orientation: int | None = None
+    """Map orientation in degrees (v2 only)."""
+    start_battery: float | None = None
+    """Battery level at run start, as a percentage (v2 only)."""
+    end_battery: float | None = None
+    """Battery level at run end, as a percentage (v2 only)."""
+    zones: list[CleanZone] = field(default_factory=list)
+    """Per-zone settings for this run (v2 only)."""
+    spot_zones: list[Any] = field(default_factory=list)
+    """Spot-clean zone entries (v2 only, empty for full/zone runs)."""
+    dock_location: Any | None = None
+    """Dock location at time of run (v2 only, often None)."""
+    faults: list[CleanFault] = field(default_factory=list)
+    """Fault events recorded during the run (v2 only)."""
+    firmware_version: str | None = None
+    """Firmware version string at time of run (v2 only, often None)."""
+
     @classmethod
     def from_dict(cls, data: CleanRecordDict) -> CleanRecord:
-        """Create a CleanRecord from an API response dict."""
+        """Create a CleanRecord from an API response dict.
+
+        Handles both v1 (bare-list) and v2 (``data``-wrapped) schemas
+        transparently.  Fields absent from the received schema are left as
+        ``None`` or an empty list.
+        """
         raw: dict[str, Any] = dict(data)
 
+        # --- v1 fields ---
         timeline = [
             CleanTimelineEvent.from_dict(e)
             for e in (raw.get("cleanTimeline") or [])
@@ -350,12 +486,15 @@ class CleanRecord:
             else None
         )
 
+        # persistent_map_id: v1 nests it inside persistentMap.id;
+        # v2 exposes it as a top-level persistentMapId.
         persistent_map_raw = raw.get("persistentMap") or {}
-        persistent_map_id = (
+        persistent_map_id: str | None = (
             persistent_map_raw.get("id")
             if isinstance(persistent_map_raw, dict)
             else None
-        )
+        ) or raw.get("persistentMapId")
+
         position_raw = (
             persistent_map_raw.get("cleanMapPosition")
             if isinstance(persistent_map_raw, dict)
@@ -375,36 +514,98 @@ class CleanRecord:
         )
 
         seq = raw.get("sequenceNumber")
+
+        # --- v2 fields ---
+        zones = [
+            CleanZone.from_dict(cast(CleanZoneDict, z))
+            for z in (raw.get("zones") or [])
+            if isinstance(z, dict)
+        ]
+        spot_zones = list(raw.get("spotZones") or [])
+        faults = [
+            CleanFault.from_dict(cast(CleanFaultDict, f))
+            for f in (raw.get("faults") or [])
+            if isinstance(f, dict)
+        ]
+
+        start_time_raw = raw.get("startTime")
+        end_time_raw = raw.get("endTime")
+        clean_duration_raw = raw.get("cleanDuration")
+        area_cleaned_raw = raw.get("areaCleaned")
+        start_battery_raw = raw.get("startBattery")
+        end_battery_raw = raw.get("endBattery")
+        orientation_raw = raw.get("orientation")
+        is_spot_clean_raw = raw.get("isSpotClean")
+
         return cls(
             clean_id=raw.get("cleanId"),
+            persistent_map_id=persistent_map_id,
             sequence_number=int(seq) if seq is not None else None,
             timeline=timeline,
             cleaned_footprint=footprint,
             cleaning_programme=programme,
-            persistent_map_id=persistent_map_id,
             clean_map_position=position,
             dust_map=dust_map,
+            start_time_epoch=(
+                int(start_time_raw) if start_time_raw is not None else None
+            ),
+            end_time_epoch=(int(end_time_raw) if end_time_raw is not None else None),
+            clean_duration=(
+                int(clean_duration_raw) if clean_duration_raw is not None else None
+            ),
+            area_cleaned=(
+                float(area_cleaned_raw) if area_cleaned_raw is not None else None
+            ),
+            download_url=raw.get("downloadUrl"),
+            is_spot_clean=(
+                bool(is_spot_clean_raw) if is_spot_clean_raw is not None else None
+            ),
+            orientation=(int(orientation_raw) if orientation_raw is not None else None),
+            start_battery=(
+                float(start_battery_raw) if start_battery_raw is not None else None
+            ),
+            end_battery=(
+                float(end_battery_raw) if end_battery_raw is not None else None
+            ),
+            zones=zones,
+            spot_zones=spot_zones,
+            dock_location=raw.get("dockLocation"),
+            faults=faults,
+            firmware_version=raw.get("firmwareVersion"),
         )
 
     @property
     def start_time(self) -> str | None:
-        """Earliest timestamp from the timeline, or None."""
+        """Earliest timestamp from the v1 timeline, or None.
+
+        For v2 responses use ``start_time_epoch`` instead.
+        """
         times = [e.time for e in self.timeline if e.time]
         return min(times) if times else None
 
     @property
     def end_time(self) -> str | None:
-        """Latest timestamp from the timeline, or None."""
+        """Latest timestamp from the v1 timeline, or None.
+
+        For v2 responses use ``end_time_epoch`` instead.
+        """
         times = [e.time for e in self.timeline if e.time]
         return max(times) if times else None
 
     @property
     def is_zone_clean(self) -> bool:
-        """Return True if this was a zone-targeted clean."""
-        return (
+        """Return True if this was a zone-targeted clean.
+
+        Checks the v1 ``cleaning_programme`` and the v2 ``zones`` list.
+        """
+        # v1: cleaning programme with one or more zones
+        if (
             self.cleaning_programme is not None
             and self.cleaning_programme.is_zone_clean
-        )
+        ):
+            return True
+        # v2: zones list is populated and the run is not a spot clean
+        return bool(self.zones and self.is_spot_clean is False)
 
     @property
     def clean_type(self) -> str:
@@ -621,3 +822,196 @@ class RecommendedCleanMap:
     def sorted_by_dust(self) -> list[ZonePrediction]:
         """Return zone predictions sorted by total dust (dirtiest first)."""
         return sorted(self.zone_predictions, key=lambda p: p.dust.total, reverse=True)
+
+
+# ---------------------------------------------------------------------------
+# Minimal protobuf wire-format parser (no external dependency)
+# ---------------------------------------------------------------------------
+
+
+def _proto_read_varint(data: bytes, pos: int) -> tuple[int, int]:
+    """Read a protobuf varint from *data* starting at *pos*.
+
+    Returns ``(value, new_pos)``.
+
+    Raises:
+        ValueError: If the varint is truncated before the stop bit.
+    """
+    result = 0
+    shift = 0
+    while pos < len(data):
+        byte = data[pos]
+        pos += 1
+        result |= (byte & 0x7F) << shift
+        if not (byte & 0x80):
+            return result, pos
+        shift += 7
+    raise ValueError("Truncated varint in protobuf data")
+
+
+def _proto_parse_fields(data: bytes) -> dict[int, list[Any]]:
+    """Parse the top-level fields of a protobuf binary message.
+
+    Handles wire types 0 (varint), 1 (64-bit), 2 (length-delimited), and
+    5 (32-bit).  An unknown wire type terminates parsing.  Length-delimited
+    values are returned as ``bytes``; varints and fixed-width integers as
+    ``int``.
+
+    Returns:
+        Mapping of ``field_number -> [value, ...]`` (list to support repeated
+        fields).
+    """
+    fields: dict[int, list[Any]] = {}
+    pos = 0
+    while pos < len(data):
+        try:
+            tag, pos = _proto_read_varint(data, pos)
+        except ValueError:
+            break
+        field_number = tag >> 3
+        wire_type = tag & 0x7
+
+        try:
+            value: Any
+            if wire_type == 0:  # varint
+                value, pos = _proto_read_varint(data, pos)
+            elif wire_type == 1:  # 64-bit little-endian
+                if pos + 8 > len(data):
+                    break
+                value = int.from_bytes(data[pos : pos + 8], "little")
+                pos += 8
+            elif wire_type == 2:  # length-delimited
+                length, pos = _proto_read_varint(data, pos)
+                if pos + length > len(data):
+                    break
+                value = data[pos : pos + length]
+                pos += length
+            elif wire_type == 5:  # 32-bit little-endian
+                if pos + 4 > len(data):
+                    break
+                value = int.from_bytes(data[pos : pos + 4], "little")
+                pos += 4
+            else:
+                break  # unknown wire type — cannot continue safely
+        except ValueError:
+            break
+
+        fields.setdefault(field_number, []).append(value)
+
+    return fields
+
+
+@dataclass
+class ProtobufMapData:
+    """Decoded zlib+protobuf dust-map binary from the S3 ``downloadUrl``.
+
+    Instances are created by :func:`decode_dust_map` after downloading the
+    binary payload from ``CleanRecord.download_url`` (v2 ``clean-maps``
+    endpoint).
+
+    Observed on the Dyson Spot+Scrub (RB05-AA, product type ``804A``,
+    firmware 34.x) where ``message_type == 21``.
+
+    Attributes:
+        message_type: Integer type discriminator from the outer protobuf
+            envelope (field 1).  Value ``21`` identifies the RB05 session
+            format.
+        start_time: Unix timestamp of the session start (field 2.1), or
+            ``None`` if not present in the binary.
+        end_time: Unix timestamp of the session end (field 2.2), or ``None``
+            if not present in the binary.
+        session_id: Session UUID hex string from the inner ``SessionUUID``
+            message (field 2.7.1), e.g. ``"fce99365-3756-5655-…"``, or
+            ``None`` if not present.
+        raw_payload: Full decompressed protobuf payload bytes, for advanced
+            client-side decoding of robot path, coverage, and obstacle data.
+    """
+
+    message_type: int
+    start_time: int | None
+    end_time: int | None
+    session_id: str | None
+    raw_payload: bytes
+
+
+def decode_dust_map(raw_bytes: bytes) -> ProtobufMapData:
+    """Decode a zlib-compressed Protocol Buffer dust-map binary from S3.
+
+    Download the binary from ``CleanRecord.download_url`` using any HTTP
+    client, then pass the response body to this function.  The format is
+    zlib default compression (magic bytes ``0x78 0x9C``) wrapping a protobuf
+    message with the following top-level structure (reverse-engineered from
+    the MyDyson APK v6.4 smali bytecode)::
+
+        message CleanSession {
+          field 1  (varint) = message_type       # 21 for RB05/804A
+          field 2  (bytes)  = SessionHeader {
+            field 1 (varint) = start_time_epoch
+            field 2 (varint) = end_time_epoch
+            field 7 (bytes)  = SessionUUID {
+              field 1 (bytes) = session_uuid_hex_string
+            }
+          }
+          // remaining bytes: robot path, coverage, obstacle data
+        }
+
+    Note:
+        The protobuf ``.proto`` definition is not published by Dyson.  Fields
+        beyond the header (robot path, coverage, obstacle data) are captured
+        in ``ProtobufMapData.raw_payload`` for callers that perform their own
+        further decoding.
+
+    Args:
+        raw_bytes: Raw bytes fetched from ``CleanRecord.download_url``.
+
+    Returns:
+        :class:`ProtobufMapData` with decoded header fields and the full
+        decompressed payload.
+
+    Raises:
+        ValueError: If *raw_bytes* cannot be decompressed or does not contain
+            a valid protobuf varint tag.
+    """
+    try:
+        payload = _zlib.decompress(raw_bytes)
+    except _zlib.error as exc:
+        raise ValueError(f"Failed to decompress dust map: {exc}") from exc
+
+    top = _proto_parse_fields(payload)
+
+    # Field 1 (varint): message_type
+    mt_vals = top.get(1, [])
+    message_type = int(mt_vals[0]) if mt_vals else 0
+
+    start_time: int | None = None
+    end_time: int | None = None
+    session_id: str | None = None
+
+    # Field 2 (bytes): SessionHeader
+    header_vals = top.get(2, [])
+    if header_vals and isinstance(header_vals[0], bytes):
+        header = _proto_parse_fields(header_vals[0])
+
+        st_vals = header.get(1, [])
+        if st_vals:
+            start_time = int(st_vals[0])
+
+        et_vals = header.get(2, [])
+        if et_vals:
+            end_time = int(et_vals[0])
+
+        # Field 7 (bytes): SessionUUID → field 1 (bytes): uuid string
+        uuid_vals = header.get(7, [])
+        if uuid_vals and isinstance(uuid_vals[0], bytes):
+            inner = _proto_parse_fields(uuid_vals[0])
+            str_vals = inner.get(1, [])
+            if str_vals and isinstance(str_vals[0], bytes):
+                session_id = str_vals[0].decode("utf-8", errors="replace")
+
+    return ProtobufMapData(
+        message_type=message_type,
+        start_time=start_time,
+        end_time=end_time,
+        session_id=session_id,
+        raw_payload=payload,
+    )

@@ -1,0 +1,166 @@
+# Release Workflow
+#
+# Helper workflow to bump the version in pyproject.toml and create a GitHub Release.
+# Publishing to PyPI is handled automatically by publish-to-pypi.yml when the
+# release is published.
+#
+# Release process:
+#   1. Run this workflow with the desired version (e.g., "0.15.0b1")
+#   2. The workflow bumps pyproject.toml, commits, tags, and creates a GitHub Release
+#   3. publish-to-pypi.yml triggers on release.published and routes to the right index:
+#        alpha/dev  →  TestPyPI
+#        beta/rc/stable  →  PyPI
+#
+# PEP 440 version formats:
+#   Alpha (TestPyPI):  0.15.0a1, 0.15.0.dev1
+#   Beta (PyPI):       0.15.0b1, 0.15.0rc1
+#   Stable (PyPI):     0.15.0
+
+name: "Release"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (PEP 440, e.g. 0.15.0b1 or 0.15.0)"
+        required: true
+        type: string
+      draft:
+        description: "Create as draft release (publish manually to trigger PyPI upload)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["true", "false"]
+
+permissions:
+  contents: write
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  release:
+    name: "Create Release"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate version format
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          # Strip leading 'v' if accidentally included
+          VERSION="${VERSION#v}"
+
+          # Validate PEP 440 format
+          if ! echo "$VERSION" | grep -qE '^[0-9]+(\.[0-9]+)*((a|b|rc)[0-9]+|\.dev[0-9]+|\.post[0-9]+)?$'; then
+            echo "ERROR: '$VERSION' is not a valid PEP 440 version."
+            echo "Examples: 0.15.0a1, 0.15.0b1, 0.15.0rc1, 0.15.0, 0.15.0.post1"
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Determine release type for summary
+          if [[ "$VERSION" =~ (a[0-9]+|\.dev[0-9]*) ]]; then
+            echo "release_type=alpha" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "target=TestPyPI" >> $GITHUB_OUTPUT
+          elif [[ "$VERSION" =~ (b[0-9]+|rc[0-9]+) ]]; then
+            echo "release_type=beta/rc" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            echo "target=PyPI" >> $GITHUB_OUTPUT
+          else
+            echo "release_type=stable" >> $GITHUB_OUTPUT
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+            echo "target=PyPI" >> $GITHUB_OUTPUT
+          fi
+          echo "Validated version: $VERSION"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+          pip install -e .
+
+      - name: Run quality checks
+        run: |
+          python -m ruff check .
+          python -m ruff format --check .
+          python -m mypy src/
+          python -m pytest --tb=short -q
+
+      - name: Bump version in pyproject.toml
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Use sed to update the version line
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+          # Update __version__ in __init__.py if present
+          if grep -q '__version__' src/libdyson_rest/__init__.py; then
+            sed -i "s/__version__ = \".*\"/__version__ = \"$VERSION\"/" src/libdyson_rest/__init__.py
+          fi
+          echo "Bumped version to $VERSION"
+          grep '^version = ' pyproject.toml
+
+      - name: Commit version bump
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add pyproject.toml src/libdyson_rest/__init__.py
+          git commit -m "Release v${{ steps.version.outputs.version }}" || echo "Nothing to commit"
+          git push
+
+      - name: Create and push tag
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const version = "${{ steps.version.outputs.version }}";
+            const releaseType = "${{ steps.version.outputs.release_type }}";
+            const target = "${{ steps.version.outputs.target }}";
+            const isDraft = "${{ github.event.inputs.draft }}" === "true";
+            const isPrerelease = "${{ steps.version.outputs.prerelease }}" === "true";
+
+            let installSnippet;
+            if (target === "TestPyPI") {
+              installSnippet = `pip install -i https://test.pypi.org/simple/ libdyson-rest==${version}`;
+            } else {
+              installSnippet = `pip install libdyson-rest==${version}`;
+            }
+
+            const body = [
+              `**Version:** \`${version}\``,
+              `**Type:** ${releaseType}`,
+              `**Published to:** ${target}`,
+              ``,
+              `## Installation`,
+              `\`\`\`bash`,
+              installSnippet,
+              `\`\`\``,
+            ].join("\n");
+
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${version}`,
+              name: `libdyson-rest v${version}`,
+              body,
+              draft: isDraft,
+              prerelease: isPrerelease,
+            });

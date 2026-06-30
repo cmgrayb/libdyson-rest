@@ -152,16 +152,69 @@ class CleaningProgrammeDict(TypedDict):
     zonesDefinitionLastUpdatedDate: NotRequired[str]
 
 
-class CleanRecordDict(TypedDict):
-    """One entry from GET /v1/{serial}/clean-maps."""
+class CleanZoneSettingsDict(TypedDict):
+    """Per-zone cleaning settings embedded in a v2 clean zone entry."""
 
+    cleaningStrategy: NotRequired[str | None]
+    cleanType: NotRequired[str | None]
+    waterLevel: NotRequired[str | None]
+    mopPasses: NotRequired[int | None]
+    dryPasses: NotRequired[int | None]
+
+
+class CleanZoneDict(TypedDict):
+    """One zone entry in a v2 clean record."""
+
+    id: NotRequired[str]
+    name: NotRequired[str | None]
+    type: NotRequired[str | None]
+    isSelected: NotRequired[bool]
+    settings: NotRequired[CleanZoneSettingsDict | None]
+    nameLocation: NotRequired[CleanMapPositionDict | None]
+
+
+class CleanFaultDict(TypedDict):
+    """A fault event reported during a v2 clean run."""
+
+    type: NotRequired[str]
+    x: NotRequired[float]
+    y: NotRequired[float]
+
+
+class CleanRecordDict(TypedDict):
+    """One entry from GET /v2/{serial}/clean-maps.
+
+    v1 fields (``cleanTimeline``, ``dustMap``, ``cleanedFootprint``,
+    ``cleaningProgramme``, ``persistentMap``) are kept as ``NotRequired`` for
+    backwards compatibility.  v2 fields (``startTime``, ``endTime``, etc.) are
+    also ``NotRequired`` because they are absent from v1 responses.
+    """
+
+    # --- common ---
     cleanId: NotRequired[str]
+    persistentMapId: NotRequired[str]
+    # --- v1 only ---
     sequenceNumber: NotRequired[int]
     cleanTimeline: NotRequired[list[CleanTimelineEventDict]]
     cleanedFootprint: NotRequired[CleanedFootprintDict | None]
     cleaningProgramme: NotRequired[CleaningProgrammeDict | None]
     persistentMap: NotRequired[PersistentMapRefDict | None]
     dustMap: NotRequired[DustMapDict | None]
+    # --- v2 only ---
+    isSpotClean: NotRequired[bool]
+    orientation: NotRequired[int]
+    startTime: NotRequired[int]
+    endTime: NotRequired[int]
+    cleanDuration: NotRequired[int]
+    areaCleaned: NotRequired[float]
+    downloadUrl: NotRequired[str]
+    zones: NotRequired[list[CleanZoneDict]]
+    spotZones: NotRequired[list[CleanZoneDict]]
+    dockLocation: NotRequired[Any | None]
+    startBattery: NotRequired[float]
+    endBattery: NotRequired[float]
+    faults: NotRequired[list[CleanFaultDict]]
+    firmwareVersion: NotRequired[str | None]
 
 
 class ZoneMetaDict(TypedDict):

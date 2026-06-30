@@ -8,11 +8,14 @@ import pytest
 
 from libdyson_rest.models import (
     CleanedFootprint,
+    CleanFault,
     CleaningProgramme,
     CleaningStrategy,
     CleanMapPosition,
     CleanRecord,
     CleanTimelineEvent,
+    CleanZone,
+    CleanZoneSettings,
     DustMapData,
     PersistentMap,
     PersistentMapMeta,
@@ -462,6 +465,233 @@ class TestCleanRecord:
         }
         record = CleanRecord.from_dict(data)
         assert record.clean_type == "global"
+
+
+# v2 fixture — matches the real RB05-AA (product type 804A) response shape
+CLEAN_RECORD_V2: dict = {
+    "persistentMapId": "1780280259",
+    "cleanId": "fce99365-3756-5655-5356-444130343735",
+    "isSpotClean": False,
+    "orientation": 0,
+    "startTime": 1780779744,
+    "endTime": 1780784253,
+    "cleanDuration": 76,
+    "areaCleaned": 37.76,
+    "downloadUrl": "https://example.s3.eu-west-1.amazonaws.com/map.bin?X-Amz-Expires=900",
+    "zones": [
+        {
+            "id": "10",
+            "name": "Living room",
+            "type": "livingRoom",
+            "isSelected": True,
+            "settings": {
+                "cleaningStrategy": "auto",
+                "cleanType": "vacuum",
+                "waterLevel": "low",
+                "mopPasses": 1,
+                "dryPasses": 1,
+            },
+            "nameLocation": {"x": 1.825, "y": -1.725},
+        }
+    ],
+    "spotZones": [],
+    "dockLocation": None,
+    "startBattery": 100.0,
+    "endBattery": 56.0,
+    "faults": [{"type": "2108", "x": -0.449, "y": 0.003}],
+    "firmwareVersion": None,
+}
+
+
+# ---------------------------------------------------------------------------
+# CleanZoneSettings
+# ---------------------------------------------------------------------------
+
+
+class TestCleanZoneSettings:
+    def test_from_dict_full(self) -> None:
+        settings = CleanZoneSettings.from_dict(
+            {
+                "cleaningStrategy": "auto",
+                "cleanType": "vacuum",
+                "waterLevel": "low",
+                "mopPasses": 1,
+                "dryPasses": 2,
+            }
+        )
+        assert settings.cleaning_strategy == "auto"
+        assert settings.clean_type == "vacuum"
+        assert settings.water_level == "low"
+        assert settings.mop_passes == 1
+        assert settings.dry_passes == 2
+
+    def test_from_dict_empty(self) -> None:
+        settings = CleanZoneSettings.from_dict({})
+        assert settings.cleaning_strategy is None
+        assert settings.clean_type is None
+        assert settings.water_level is None
+        assert settings.mop_passes is None
+        assert settings.dry_passes is None
+
+
+# ---------------------------------------------------------------------------
+# CleanZone
+# ---------------------------------------------------------------------------
+
+
+class TestCleanZone:
+    def test_from_dict_full(self) -> None:
+        zone = CleanZone.from_dict(CLEAN_RECORD_V2["zones"][0])
+        assert zone.id == "10"
+        assert zone.name == "Living room"
+        assert zone.type == "livingRoom"
+        assert zone.is_selected is True
+        assert zone.settings is not None
+        assert zone.settings.cleaning_strategy == "auto"
+        assert zone.name_location is not None
+        assert zone.name_location.x == pytest.approx(1.825)
+        assert zone.name_location.y == pytest.approx(-1.725)
+
+    def test_from_dict_no_settings(self) -> None:
+        zone = CleanZone.from_dict({"id": "z1"})
+        assert zone.id == "z1"
+        assert zone.name is None
+        assert zone.type is None
+        assert zone.is_selected is False
+        assert zone.settings is None
+        assert zone.name_location is None
+
+    def test_from_dict_settings_none_when_not_dict(self) -> None:
+        zone = CleanZone.from_dict({"id": "z1", "settings": None})
+        assert zone.settings is None
+
+
+# ---------------------------------------------------------------------------
+# CleanFault
+# ---------------------------------------------------------------------------
+
+
+class TestCleanFault:
+    def test_from_dict_full(self) -> None:
+        fault = CleanFault.from_dict({"type": "2108", "x": -0.449, "y": 0.003})
+        assert fault.type == "2108"
+        assert fault.x == pytest.approx(-0.449)
+        assert fault.y == pytest.approx(0.003)
+
+    def test_from_dict_defaults(self) -> None:
+        fault = CleanFault.from_dict({})
+        assert fault.type == ""
+        assert fault.x == pytest.approx(0.0)
+        assert fault.y == pytest.approx(0.0)
+
+    def test_type_coerced_to_str(self) -> None:
+        fault = CleanFault.from_dict({"type": 2108})
+        assert fault.type == "2108"
+
+
+# ---------------------------------------------------------------------------
+# CleanRecord — v2 schema tests
+# ---------------------------------------------------------------------------
+
+
+class TestCleanRecordV2:
+    def test_from_dict_v2_full(self) -> None:
+        record = CleanRecord.from_dict(CLEAN_RECORD_V2)
+        assert record.clean_id == "fce99365-3756-5655-5356-444130343735"
+        assert record.persistent_map_id == "1780280259"
+        assert record.start_time_epoch == 1780779744
+        assert record.end_time_epoch == 1780784253
+        assert record.clean_duration == 76
+        assert record.area_cleaned == pytest.approx(37.76)
+        assert (
+            record.download_url
+            == "https://example.s3.eu-west-1.amazonaws.com/map.bin?X-Amz-Expires=900"
+        )
+        assert record.is_spot_clean is False
+        assert record.orientation == 0
+        assert record.start_battery == pytest.approx(100.0)
+        assert record.end_battery == pytest.approx(56.0)
+        assert record.dock_location is None
+        assert record.firmware_version is None
+
+    def test_from_dict_v2_zones(self) -> None:
+        record = CleanRecord.from_dict(CLEAN_RECORD_V2)
+        assert len(record.zones) == 1
+        zone = record.zones[0]
+        assert zone.id == "10"
+        assert zone.name == "Living room"
+        assert zone.is_selected is True
+        assert zone.settings is not None
+        assert zone.settings.clean_type == "vacuum"
+        assert zone.settings.water_level == "low"
+        assert zone.settings.mop_passes == 1
+
+    def test_from_dict_v2_faults(self) -> None:
+        record = CleanRecord.from_dict(CLEAN_RECORD_V2)
+        assert len(record.faults) == 1
+        fault = record.faults[0]
+        assert fault.type == "2108"
+        assert fault.x == pytest.approx(-0.449)
+        assert fault.y == pytest.approx(0.003)
+
+    def test_from_dict_v2_spot_zones_empty(self) -> None:
+        record = CleanRecord.from_dict(CLEAN_RECORD_V2)
+        assert record.spot_zones == []
+
+    def test_v2_v1_fields_are_empty(self) -> None:
+        """v1-only fields should be None/empty when parsing a v2 record."""
+        record = CleanRecord.from_dict(CLEAN_RECORD_V2)
+        assert record.sequence_number is None
+        assert record.timeline == []
+        assert record.cleaned_footprint is None
+        assert record.cleaning_programme is None
+        assert record.clean_map_position is None
+        assert record.dust_map is None
+
+    def test_v2_start_time_end_time_properties_return_none(self) -> None:
+        """The v1 timeline-based properties return None for v2-only records."""
+        record = CleanRecord.from_dict(CLEAN_RECORD_V2)
+        assert record.start_time is None
+        assert record.end_time is None
+
+    def test_v2_is_zone_clean_true_when_zones_non_empty(self) -> None:
+        record = CleanRecord.from_dict(CLEAN_RECORD_V2)
+        assert record.is_zone_clean is True
+        assert record.clean_type == "zoneConfigured"
+
+    def test_v2_is_zone_clean_false_for_spot_clean(self) -> None:
+        data = dict(CLEAN_RECORD_V2)
+        data["isSpotClean"] = True
+        record = CleanRecord.from_dict(data)
+        assert record.is_zone_clean is False
+
+    def test_v2_is_zone_clean_false_when_no_zones(self) -> None:
+        data = dict(CLEAN_RECORD_V2)
+        data["zones"] = []
+        record = CleanRecord.from_dict(data)
+        assert record.is_zone_clean is False
+
+    def test_v2_persistent_map_id_from_top_level(self) -> None:
+        """v2 exposes persistentMapId at the top level (not nested)."""
+        record = CleanRecord.from_dict({"persistentMapId": "pm-42"})
+        assert record.persistent_map_id == "pm-42"
+
+    def test_v2_minimal_record_defaults(self) -> None:
+        """All v2 optional fields default to None / empty list."""
+        record = CleanRecord.from_dict({})
+        assert record.start_time_epoch is None
+        assert record.end_time_epoch is None
+        assert record.clean_duration is None
+        assert record.area_cleaned is None
+        assert record.download_url is None
+        assert record.is_spot_clean is None
+        assert record.orientation is None
+        assert record.start_battery is None
+        assert record.end_battery is None
+        assert record.zones == []
+        assert record.spot_zones == []
+        assert record.faults == []
+        assert record.firmware_version is None
 
 
 # ---------------------------------------------------------------------------

@@ -6,7 +6,9 @@ Custom exceptions for libdyson-rest.
 class DysonAPIError(Exception):
     """Base exception for all Dyson API related errors."""
 
-    pass
+    def __init__(self, message: str, raw: str | None = None) -> None:
+        super().__init__(message)
+        self.raw = raw
 
 
 class DysonConnectionError(DysonAPIError):

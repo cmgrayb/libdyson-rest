@@ -626,14 +626,11 @@ with DysonClient(email="email@example.com", password="password") as client:
 
 ## Development
 
-This project uses several tools to maintain code quality:
+This project uses the following tools to maintain code quality:
 
-- **Black**: Code formatting (120 character line length)
-- **Flake8**: Linting and style checking
-- **isort**: Import sorting
-- **MyPy**: Type checking
+- **Ruff**: Fast linter and formatter (replaces Black, Flake8, isort)
+- **MyPy**: Static type checking
 - **Pytest**: Testing framework
-- **Pre-commit**: Git hooks
 
 ### Setting up Development Environment
 
@@ -644,9 +641,9 @@ This project uses several tools to maintain code quality:
    pip install -r requirements-dev.txt
    ```
 
-2. **Install pre-commit hooks:**
+2. **Install package in development mode:**
    ```bash
-   pre-commit install
+   pip install -e .
    ```
 
 ### VSCode Tasks
@@ -654,9 +651,10 @@ This project uses several tools to maintain code quality:
 This project includes VSCode tasks for common development operations:
 
 - **Setup Dev Environment**: Create venv and install dependencies
-- **Format Code**: Run Black formatter
-- **Lint Code**: Run Flake8 linter
-- **Sort Imports**: Run isort
+- **Format Code**: Run Ruff formatter
+- **Lint Code**: Run Ruff linter
+- **Sort Imports**: Run Ruff import sorting
+- **Ruff Check**: Run Ruff check with auto-fix
 - **Type Check**: Run MyPy type checker
 - **Run Tests**: Execute pytest with coverage
 - **Check All**: Run all quality checks in sequence
@@ -666,14 +664,9 @@ Access these via `Ctrl+Shift+P` → "Tasks: Run Task"
 ### Code Quality Commands
 
 ```bash
-# Format code
-black .
-
-# Sort imports
-isort .
-
-# Lint code
-flake8 .
+# Format and lint code
+python -m ruff format .
+python -m ruff check . --fix
 
 # Type check
 mypy src/libdyson_rest
@@ -682,7 +675,7 @@ mypy src/libdyson_rest
 pytest
 
 # Run all checks
-black . && isort . && flake8 . && mypy src/libdyson_rest && pytest
+ruff format . && ruff check . && mypy src/libdyson_rest && pytest
 ```
 
 ### Testing
@@ -722,30 +715,31 @@ libdyson-rest/
 ├── requirements.txt           # Production dependencies
 ├── requirements-dev.txt       # Development dependencies
 ├── pyproject.toml            # Project configuration
-├── .flake8                   # Flake8 configuration
-├── .pre-commit-config.yaml   # Pre-commit hooks
 └── README.md
 ```
 
 ## Configuration Files
 
-- **pyproject.toml**: Main project configuration (Black, isort, pytest, mypy)
-- **.flake8**: Flake8 linting configuration
-- **.pre-commit-config.yaml**: Git pre-commit hooks
+- **pyproject.toml**: Main project configuration (Ruff, pytest, mypy)
 - **requirements.txt**: Production dependencies
 - **requirements-dev.txt**: Development dependencies
 
 ## Publishing to PyPI
 
-This package is automatically published to PyPI using GitHub Actions. For detailed publishing instructions, see [PUBLISHING.md](PUBLISHING.md).
+Publishing is driven entirely by GitHub Releases. The workflow is:
 
-### Quick Publishing
+1. Bump the version in `pyproject.toml`
+2. Commit and push to the appropriate branch
+3. Create a GitHub Release with a version tag (e.g., `v0.14.1b2`)
 
-- **Test Release**: GitHub Actions → Run workflow → TestPyPI
-- **Production Release**: Create a GitHub release with version tag (e.g., `v0.2.0`)
-- **Local Build**: `python .github/scripts/publish_to_pypi.py --check`
+The tag pattern determines the publish target:
 
-The package is available on PyPI as `libdyson-rest`.
+| Tag pattern | Example | Target |
+|---|---|---|
+| `vX.Y.Za1`, `vX.Y.Z.dev1` | `v0.14.0a1` | TestPyPI |
+| `vX.Y.Zb1`, `vX.Y.Zrc1`, `vX.Y.Z` | `v0.14.1b2` | PyPI |
+
+The publish workflow validates that the release tag version matches the version declared in `pyproject.toml` before building and publishing.
 
 ## Contributing
 

@@ -12,7 +12,13 @@ This document provides comprehensive documentation for both the synchronous and 
   - [Authentication Methods](#authentication-methods)
   - [Device Management Methods](#device-management-methods)
   - [Vis Nav Robot Vacuum Methods](#vis-nav-robot-vacuum-methods)
+  - [Vis Nav Robot Vacuum Additional Methods](#vis-nav-robot-vacuum-additional-methods)
   - [EC Air Purifier Methods](#ec-air-purifier-methods)
+  - [EC Air Purifier Additional Methods](#ec-air-purifier-additional-methods)
+  - [Device Management Additional Methods](#device-management-additional-methods)
+  - [Product Support Methods](#product-support-methods)
+  - [Push Notification Methods](#push-notification-methods)
+  - [Smart Home (NCP/NSP) Methods](#smart-home-ncpnsp-methods)
 - [Asynchronous Client (AsyncDysonClient)](#asynchronous-client-asyncdysonclient)
 - [Method Comparison Table](#method-comparison-table)
 - [Authentication Flow](#authentication-flow)
@@ -351,7 +357,266 @@ with DysonClient("user@example.com", "password") as client:
 # Client is automatically cleaned up
 ```
 
-## Asynchronous Client (AsyncDysonClient)
+### Vis Nav Robot Vacuum Additional Methods
+
+#### `get_clean_map_data(serial_number: str, clean_id: str)`
+```python
+def get_clean_map_data(self, serial_number: str, clean_id: str) -> dict[str, Any]
+```
+Retrieves detailed data for a single cleaning session (path, duration, area coverage, etc.).
+
+**Parameters:**
+- `serial_number` (str): Device serial number
+- `clean_id` (str): Cleaning session ID (from `get_clean_maps`)
+
+**Returns:** Raw `dict` with detailed session data
+
+#### `update_persistent_map(serial_number: str, map_id: str, name: str | None = None)`
+```python
+def update_persistent_map(self, serial_number: str, map_id: str, name: str | None = None) -> None
+```
+Updates an existing persistent map (e.g. rename it).
+
+#### `delete_persistent_map(serial_number: str, map_id: str)`
+```python
+def delete_persistent_map(self, serial_number: str, map_id: str) -> None
+```
+Permanently deletes a persistent map from the device.
+
+#### `update_map_metadata(serial_number: str, map_id: str, name: str | None = None)`
+```python
+def update_map_metadata(self, serial_number: str, map_id: str, name: str | None = None) -> None
+```
+Updates the persistent map metadata stored by the API (e.g. the display name).
+
+#### `get_clean_estimation(serial_number: str, map_id: str, zone_ids: list[str] | None = None)`
+```python
+def get_clean_estimation(
+    self,
+    serial_number: str,
+    map_id: str,
+    zone_ids: list[str] | None = None,
+) -> dict[str, Any]
+```
+Requests a server-side estimation of cleaning time and area for a set of zones.
+
+**Parameters:**
+- `serial_number` (str): Device serial number
+- `map_id` (str): Persistent map ID
+- `zone_ids` (list[str] | None): Zone IDs to estimate; None estimates all zones
+
+**Returns:** Raw `dict` with estimated duration and coverage
+
+#### `get_restrictions(serial_number: str, map_id: str)`
+```python
+def get_restrictions(self, serial_number: str, map_id: str) -> dict[str, Any]
+```
+Retrieves the no-go and restricted-area definitions for a persistent map.
+
+#### `update_restrictions(serial_number: str, map_id: str, body: dict[str, Any])`
+```python
+def update_restrictions(self, serial_number: str, map_id: str, body: dict[str, Any]) -> None
+```
+Replaces the restriction definitions (no-go zones, keep-out areas) for a persistent map.
+
+#### `divide_zone(serial_number: str, map_id: str, body: dict[str, Any])`
+```python
+def divide_zone(self, serial_number: str, map_id: str, body: dict[str, Any]) -> None
+```
+Splits a single zone into two sub-zones along a specified boundary.
+
+#### `merge_zones(serial_number: str, map_id: str, body: dict[str, Any])`
+```python
+def merge_zones(self, serial_number: str, map_id: str, body: dict[str, Any]) -> None
+```
+Merges two or more zones into a single zone on a persistent map.
+
+#### `get_live_map_cleaning(serial_number: str)`
+```python
+def get_live_map_cleaning(self, serial_number: str) -> dict[str, Any]
+```
+Returns the robot's real-time position and cleaned footprint during an active cleaning session. Poll this endpoint while a clean is in progress to display a live map.
+
+#### `get_live_map_mapping(serial_number: str)`
+```python
+def get_live_map_mapping(self, serial_number: str) -> dict[str, Any]
+```
+Returns the robot's real-time position and discovered floor plan during an active mapping session.
+
+#### `set_scheduled_events(serial_number, enabled, events, product_type=None)`
+```python
+def set_scheduled_events(
+    self,
+    serial_number: str,
+    enabled: bool,
+    events: list[dict[str, Any]],
+    product_type: str | None = None,
+) -> None
+```
+Replaces the scheduled automation event list for a device. Each event dict should contain `enabled`, `days` (list of int, 0=Mon), `startTime` (HH:MM), and `settings`.
+
+**Parameters:**
+- `serial_number` (str): Device serial number
+- `enabled` (bool): Whether the overall schedule is active
+- `events` (list[dict]): Replacement list of scheduled events
+- `product_type` (str | None): Product-type code, e.g. `"438K"`
+
+#### `get_schedule_binary(serial_number: str)`
+```python
+def get_schedule_binary(self, serial_number: str) -> bytes
+```
+Downloads the device schedule as a raw binary blob for BLE programming.
+
+**Returns:** `bytes` — raw schedule binary
+
+### EC Air Purifier Additional Methods
+
+#### `get_environment_history(serial_number: str)`
+```python
+def get_environment_history(self, serial_number: str) -> dict[str, Any]
+```
+Retrieves the multi-day indoor air-quality history for a device. Unlike `get_daily_environment_data` which returns today's data at 15-minute resolution, this endpoint provides a longer historical dataset across multiple days.
+
+**Returns:** Raw `dict` with historical air-quality data
+
+#### `get_energy_insights(serial_number: str, year: int | None = None, month: int | None = None)`
+```python
+def get_energy_insights(
+    self,
+    serial_number: str,
+    year: int | None = None,
+    month: int | None = None,
+) -> dict[str, Any]
+```
+Retrieves monthly energy consumption insights for an EC air purifier.
+
+**Parameters:**
+- `serial_number` (str): Device serial number
+- `year` (int | None): Year (defaults to current year on the server)
+- `month` (int | None): Month 1–12 (defaults to current month on the server)
+
+**Returns:** Raw `dict` with monthly energy/EC usage data
+
+### Device Management Additional Methods
+
+#### `get_timezone(serial_number: str)`
+```python
+def get_timezone(self, serial_number: str) -> str | None
+```
+Retrieves the IANA timezone configured for a device (e.g. `"Europe/London"`).
+
+#### `set_timezone(serial_number: str, timezone: str)`
+```python
+def set_timezone(self, serial_number: str, timezone: str) -> None
+```
+Sets the IANA timezone for a device.
+
+#### `get_ota_info(serial_number: str)`
+```python
+def get_ota_info(self, serial_number: str) -> dict[str, Any]
+```
+Returns over-the-air firmware update information for a device, including available firmware versions and update status.
+
+#### `is_banned_machine(serial_number: str)`
+```python
+def is_banned_machine(self, serial_number: str) -> bool
+```
+Checks whether a device serial number appears on Dyson's banned-machine list. Banned devices cannot connect to cloud services.
+
+**Returns:** `True` if the device is banned, `False` otherwise
+
+#### `get_feature_support()`
+```python
+def get_feature_support(self) -> dict[str, Any]
+```
+Returns Dyson's global server-controlled feature-flag object. The MyDyson app uses this to enable or disable app features at runtime without an app update.
+
+#### `get_voice_languages(serial_number: str)`
+```python
+def get_voice_languages(self, serial_number: str) -> list[str]
+```
+Returns the list of supported voice-command language codes for a device.
+
+**Returns:** `list[str]` of IETF language tags, e.g. `["en-GB", "fr-FR"]`
+
+### Product Support Methods
+
+#### `get_product_faults(serial_number: str)`
+```python
+def get_product_faults(self, serial_number: str) -> dict[str, Any]
+```
+Returns known product fault codes and their recommended remedies for a device. Useful for building in-app troubleshooting flows.
+
+#### `get_product_guide(serial_number: str)`
+```python
+def get_product_guide(self, serial_number: str) -> dict[str, Any]
+```
+Returns the product user guide content for a device as served by the Dyson API.
+
+#### `get_product_voice_commands(serial_number: str)`
+```python
+def get_product_voice_commands(self, serial_number: str) -> dict[str, Any]
+```
+Returns the voice command reference content for a device.
+
+### Push Notification Methods
+
+#### `register_push_token(application_id, token, platform, serial_numbers=None)`
+```python
+def register_push_token(
+    self,
+    application_id: str,
+    token: str,
+    platform: str,
+    serial_numbers: list[str] | None = None,
+) -> dict[str, Any]
+```
+Registers an APNs or FCM push notification token with the Dyson API.
+
+**Parameters:**
+- `application_id` (str): Application/token identifier
+- `token` (str): Platform push notification token
+- `platform` (str): `"ios"` or `"android"`
+- `serial_numbers` (list[str] | None): Device serial numbers to associate
+
+**Returns:** Raw `dict` with registration confirmation
+
+#### `get_notification_permissions(application_id: str, serial_number: str)`
+```python
+def get_notification_permissions(self, application_id: str, serial_number: str) -> dict[str, Any]
+```
+Retrieves the per-device push notification permission settings for an application.
+
+#### `update_notification_permissions(application_id, serial_number, permissions)`
+```python
+def update_notification_permissions(
+    self,
+    application_id: str,
+    serial_number: str,
+    permissions: dict[str, Any],
+) -> None
+```
+Updates the push notification permission settings for a device and application.
+
+### Smart Home (NCP/NSP) Methods
+
+#### `get_registered_products()`
+```python
+def get_registered_products(self) -> dict[str, Any]
+```
+Returns smart-home products registered with Dyson's NCP (Notification/Control Platform).
+
+#### `register_ncp(body: dict[str, Any])`
+```python
+def register_ncp(self, body: dict[str, Any]) -> None
+```
+Registers a device with Dyson's NCP smart-home platform.
+
+#### `register_nsp(body: dict[str, Any])`
+```python
+def register_nsp(self, body: dict[str, Any]) -> None
+```
+Registers a device with Dyson's NSP (another smart-home integration platform).
 
 ### Constructor
 
@@ -513,13 +778,44 @@ async with AsyncDysonClient("user@example.com", "password") as client:
 | Get Devices | `get_devices()` | `await get_devices()` | Returns device list |
 | Get Device | `get_device_by_serial()` | `await get_device_by_serial()` | Find by serial |
 | Get Credentials | `get_device_credentials()` | `await get_device_credentials()` | MQTT credentials |
-| **Clean Maps** | `get_clean_maps()` | `await get_clean_maps()` | Vis Nav history |
-| **Map Metadata** | `get_persistent_map_metadata()` | `await get_persistent_map_metadata()` | Zone names/IDs |
-| **Full Map** | `get_persistent_map()` | `await get_persistent_map()` | Floor-plan PNG |
+| **Clean Maps** | `get_clean_maps()` | `await get_clean_maps()` | Vis Nav history (v2) |
+| **Clean Map Data** | `get_clean_map_data()` | `await get_clean_map_data()` | Detailed session data |
+| **Map Metadata** | `get_persistent_map_metadata()` | `await get_persistent_map_metadata()` | Zone names/IDs (v2) |
+| **Full Map** | `get_persistent_map()` | `await get_persistent_map()` | Floor-plan PNG (v2) |
+| **Update Map** | `update_persistent_map()` | `await update_persistent_map()` | Rename persistent map |
+| **Delete Map** | `delete_persistent_map()` | `await delete_persistent_map()` | Remove persistent map |
+| **Update Metadata** | `update_map_metadata()` | `await update_map_metadata()` | Update map metadata |
+| **Clean Estimate** | `get_clean_estimation()` | `await get_clean_estimation()` | Zone cleaning estimate |
+| **Restrictions** | `get_restrictions()` | `await get_restrictions()` | No-go zones |
+| **Update Restrictions** | `update_restrictions()` | `await update_restrictions()` | Set no-go zones |
+| **Divide Zone** | `divide_zone()` | `await divide_zone()` | Split a zone |
+| **Merge Zones** | `merge_zones()` | `await merge_zones()` | Combine zones |
+| **Live Map (Clean)** | `get_live_map_cleaning()` | `await get_live_map_cleaning()` | Real-time clean map |
+| **Live Map (Map)** | `get_live_map_mapping()` | `await get_live_map_mapping()` | Real-time mapping |
 | **Recommended** | `get_recommended_cleans()` | `await get_recommended_cleans()` | Dust predictions |
 | **Zone Strategy** | `set_zone_behaviour()` | `await set_zone_behaviour()` | Vis Nav zone config |
-| **AQI History** | `get_daily_environment_data()` | `await get_daily_environment_data()` | EC purifier |
-| **Schedule** | `get_scheduled_events()` | `await get_scheduled_events()` | Automation schedule |
+| **Set Schedule** | `set_scheduled_events()` | `await set_scheduled_events()` | Replace schedule |
+| **Schedule Binary** | `get_schedule_binary()` | `await get_schedule_binary()` | BLE schedule blob |
+| **AQI History** | `get_daily_environment_data()` | `await get_daily_environment_data()` | EC purifier (today) |
+| **AQI Multi-Day** | `get_environment_history()` | `await get_environment_history()` | EC purifier history |
+| **Energy Insights** | `get_energy_insights()` | `await get_energy_insights()` | Monthly usage |
+| **Get Schedule** | `get_scheduled_events()` | `await get_scheduled_events()` | Automation schedule |
+| **Outdoor Env** | `get_outdoor_environment_data()` | `await get_outdoor_environment_data()` | Outdoor air quality |
+| **Timezone Get** | `get_timezone()` | `await get_timezone()` | IANA timezone |
+| **Timezone Set** | `set_timezone()` | `await set_timezone()` | IANA timezone |
+| **OTA Info** | `get_ota_info()` | `await get_ota_info()` | Firmware update info |
+| **Banned Check** | `is_banned_machine()` | `await is_banned_machine()` | Cloud ban check |
+| **Feature Flags** | `get_feature_support()` | `await get_feature_support()` | App feature flags |
+| **Voice Languages** | `get_voice_languages()` | `await get_voice_languages()` | Voice command langs |
+| **Product Faults** | `get_product_faults()` | `await get_product_faults()` | Fault codes |
+| **Product Guide** | `get_product_guide()` | `await get_product_guide()` | User guide content |
+| **Voice Commands** | `get_product_voice_commands()` | `await get_product_voice_commands()` | Voice cmd reference |
+| **Register Token** | `register_push_token()` | `await register_push_token()` | APNs/FCM token |
+| **Notif Perms** | `get_notification_permissions()` | `await get_notification_permissions()` | Per-device perms |
+| **Update Notif** | `update_notification_permissions()` | `await update_notification_permissions()` | Update perms |
+| **NCP Products** | `get_registered_products()` | `await get_registered_products()` | Smart home devices |
+| **Register NCP** | `register_ncp()` | `await register_ncp()` | NCP registration |
+| **Register NSP** | `register_nsp()` | `await register_nsp()` | NSP registration |
 | Context Manager | `with client:` | `async with client:` | Auto cleanup |
 | Resource Cleanup | Automatic | `await client.close()` | Manual or context manager |
 
