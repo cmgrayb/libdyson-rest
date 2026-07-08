@@ -1089,12 +1089,14 @@ class AsyncDysonClient:
     # ------------------------------------------------------------------
 
     async def get_clean_maps(
-        self, serial_number: str, include_dust_map: bool = True
+        self, serial_number: str, *, api_version: int, include_dust_map: bool = True
     ) -> list[CleanRecord]:
         """Get recent cleaning runs for a Vis Nav robot vacuum.
 
         Args:
             serial_number: Device serial number.
+            api_version: API version to use (1 for Vis Nav / H8T devices,
+                2 for Spot+Clean / VS6/RB05 devices).
             include_dust_map: When True (default), requests the aggregated
                 dust-density map blob for each run (``dustMap=total``).
 
@@ -1109,7 +1111,10 @@ class AsyncDysonClient:
         if not self._auth_token:
             raise DysonAuthError("Must authenticate before calling get_clean_maps")
 
-        url = urljoin(get_api_hostname(self.country), f"/v2/{serial_number}/clean-maps")
+        url = urljoin(
+            get_api_hostname(self.country),
+            f"/v{api_version}/{serial_number}/clean-maps",
+        )
         params: dict[str, str] = {}
         if include_dust_map:
             params["dustMap"] = "total"
@@ -1146,12 +1151,14 @@ class AsyncDysonClient:
             ) from e
 
     async def get_persistent_map_metadata(
-        self, serial_number: str
+        self, serial_number: str, *, api_version: int
     ) -> list[PersistentMapMeta]:
         """Get persistent map metadata (zone names, IDs, areas) for a Vis Nav.
 
         Args:
             serial_number: Device serial number.
+            api_version: API version to use (1 for Vis Nav / H8T devices,
+                2 for Spot+Clean / VS6/RB05 devices).
 
         Returns:
             List of PersistentMapMeta objects (one per stored map).
@@ -1168,7 +1175,7 @@ class AsyncDysonClient:
 
         url = urljoin(
             get_api_hostname(self.country),
-            f"/v2/app/{serial_number}/persistent-map-metadata",
+            f"/v{api_version}/app/{serial_number}/persistent-map-metadata",
         )
 
         try:
@@ -1203,13 +1210,15 @@ class AsyncDysonClient:
             ) from e
 
     async def get_persistent_map(
-        self, serial_number: str, map_id: str
+        self, serial_number: str, map_id: str, *, api_version: int
     ) -> PersistentMap:
         """Get the full persistent map record including the floor-plan PNG.
 
         Args:
             serial_number: Device serial number.
             map_id: Persistent map ID (from get_persistent_map_metadata).
+            api_version: API version to use (1 for Vis Nav / H8T devices,
+                2 for Spot+Clean / VS6/RB05 devices).
 
         Returns:
             PersistentMap with presentation image, orientation, offset, and zones.
@@ -1224,7 +1233,7 @@ class AsyncDysonClient:
 
         url = urljoin(
             get_api_hostname(self.country),
-            f"/v2/app/{serial_number}/persistent-maps/{map_id}",
+            f"/v{api_version}/app/{serial_number}/persistent-maps/{map_id}",
         )
 
         try:

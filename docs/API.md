@@ -213,16 +213,17 @@ Retrieves MQTT credentials for a specific device.
 
 ### Vis Nav Robot Vacuum Methods
 
-#### `get_clean_maps(serial_number: str, include_dust_map: bool = True)`
+#### `get_clean_maps(serial_number: str, *, api_version: int, include_dust_map: bool = True)`
 ```python
 def get_clean_maps(
-    self, serial_number: str, include_dust_map: bool = True
+    self, serial_number: str, *, api_version: int, include_dust_map: bool = True
 ) -> list[CleanRecord]
 ```
 Retrieves recent cleaning run history for a Vis Nav robot vacuum.
 
 **Parameters:**
 - `serial_number` (str): Device serial number
+- `api_version` (int): API version to use — `1` for Dyson 360 Vis Nav (H8T / product type `276B`), `2` for Dyson 360 Spot+Clean and newer (VS6 / RB05 / product type `804A`)
 - `include_dust_map` (bool): When True (default), fetches the aggregated dust-density map blob for each run
 
 **Returns:** List of `CleanRecord` objects, newest first
@@ -232,14 +233,15 @@ Retrieves recent cleaning run history for a Vis Nav robot vacuum.
 - `DysonAPIError`: API request failed
 - `DysonConnectionError`: Network/connection issues
 
-#### `get_persistent_map_metadata(serial_number: str)`
+#### `get_persistent_map_metadata(serial_number: str, *, api_version: int)`
 ```python
-def get_persistent_map_metadata(self, serial_number: str) -> list[PersistentMapMeta]
+def get_persistent_map_metadata(self, serial_number: str, *, api_version: int) -> list[PersistentMapMeta]
 ```
 Retrieves the list of saved maps (zone names, IDs, and areas) for a Vis Nav.
 
 **Parameters:**
 - `serial_number` (str): Device serial number
+- `api_version` (int): API version to use — `1` for Vis Nav (H8T), `2` for Spot+Clean and newer
 
 **Returns:** List of `PersistentMapMeta` objects — one per stored map
 
@@ -248,15 +250,16 @@ Retrieves the list of saved maps (zone names, IDs, and areas) for a Vis Nav.
 - `DysonAPIError`: API request failed
 - `DysonConnectionError`: Network/connection issues
 
-#### `get_persistent_map(serial_number: str, map_id: str)`
+#### `get_persistent_map(serial_number: str, map_id: str, *, api_version: int)`
 ```python
-def get_persistent_map(self, serial_number: str, map_id: str) -> PersistentMap
+def get_persistent_map(self, serial_number: str, map_id: str, *, api_version: int) -> PersistentMap
 ```
 Retrieves the full map record for a single persistent map, including the floor-plan PNG.
 
 **Parameters:**
 - `serial_number` (str): Device serial number
 - `map_id` (str): Persistent map ID (from `get_persistent_map_metadata`)
+- `api_version` (int): API version to use — `1` for Vis Nav (H8T), `2` for Spot+Clean and newer
 
 **Returns:** `PersistentMap` with presentation image, display orientation, world offset, and zone definitions
 
@@ -693,23 +696,23 @@ Async version of get_device_credentials method.
 
 ### Vis Nav Robot Vacuum Methods
 
-#### `get_clean_maps(serial_number: str, include_dust_map: bool = True)`
+#### `get_clean_maps(serial_number: str, *, api_version: int, include_dust_map: bool = True)`
 ```python
 async def get_clean_maps(
-    self, serial_number: str, include_dust_map: bool = True
+    self, serial_number: str, *, api_version: int, include_dust_map: bool = True
 ) -> list[CleanRecord]
 ```
 Async version of `get_clean_maps`. See sync client for full parameter/return documentation.
 
-#### `get_persistent_map_metadata(serial_number: str)`
+#### `get_persistent_map_metadata(serial_number: str, *, api_version: int)`
 ```python
-async def get_persistent_map_metadata(self, serial_number: str) -> list[PersistentMapMeta]
+async def get_persistent_map_metadata(self, serial_number: str, *, api_version: int) -> list[PersistentMapMeta]
 ```
 Async version of `get_persistent_map_metadata`.
 
-#### `get_persistent_map(serial_number: str, map_id: str)`
+#### `get_persistent_map(serial_number: str, map_id: str, *, api_version: int)`
 ```python
-async def get_persistent_map(self, serial_number: str, map_id: str) -> PersistentMap
+async def get_persistent_map(self, serial_number: str, map_id: str, *, api_version: int) -> PersistentMap
 ```
 Async version of `get_persistent_map`.
 
@@ -778,10 +781,10 @@ async with AsyncDysonClient("user@example.com", "password") as client:
 | Get Devices | `get_devices()` | `await get_devices()` | Returns device list |
 | Get Device | `get_device_by_serial()` | `await get_device_by_serial()` | Find by serial |
 | Get Credentials | `get_device_credentials()` | `await get_device_credentials()` | MQTT credentials |
-| **Clean Maps** | `get_clean_maps()` | `await get_clean_maps()` | Vis Nav history (v2) |
-| **Clean Map Data** | `get_clean_map_data()` | `await get_clean_map_data()` | Detailed session data |
-| **Map Metadata** | `get_persistent_map_metadata()` | `await get_persistent_map_metadata()` | Zone names/IDs (v2) |
-| **Full Map** | `get_persistent_map()` | `await get_persistent_map()` | Floor-plan PNG (v2) |
+| **Clean Maps** | `get_clean_maps()` | `await get_clean_maps()` | Requires `api_version=1` (Vis Nav) or `api_version=2` (Spot+Clean) |
+| **Clean Map Data** | `get_clean_map_data()` | `await get_clean_map_data()` | Detailed session data (v2 only) |
+| **Map Metadata** | `get_persistent_map_metadata()` | `await get_persistent_map_metadata()` | Requires `api_version=1` or `api_version=2` |
+| **Full Map** | `get_persistent_map()` | `await get_persistent_map()` | Requires `api_version=1` or `api_version=2` |
 | **Update Map** | `update_persistent_map()` | `await update_persistent_map()` | Rename persistent map |
 | **Delete Map** | `delete_persistent_map()` | `await delete_persistent_map()` | Remove persistent map |
 | **Update Metadata** | `update_map_metadata()` | `await update_map_metadata()` | Update map metadata |
