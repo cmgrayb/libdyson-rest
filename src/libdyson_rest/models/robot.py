@@ -654,6 +654,7 @@ class PersistentMapMeta:
     name: str | None
     zones_definition_last_updated_date: str | None
     zones: list[ZoneMeta]
+    is_current_map: bool = False
 
     @classmethod
     def from_dict(cls, data: PersistentMapMetaDict) -> PersistentMapMeta:
@@ -671,6 +672,7 @@ class PersistentMapMeta:
                 "zonesDefinitionLastUpdatedDate"
             ),
             zones=zones,
+            is_current_map=bool(raw.get("isCurrentMap", False)),
         )
 
     def zone_by_id(self, zone_id: str) -> ZoneMeta | None:

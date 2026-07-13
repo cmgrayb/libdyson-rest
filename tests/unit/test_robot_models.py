@@ -766,6 +766,22 @@ class TestPersistentMapMeta:
         assert meta.zones == []
         assert meta.zones_definition_last_updated_date is None
 
+    def test_from_dict_is_current_map_true(self) -> None:
+        data = dict(MAP_META_RAW)
+        data["isCurrentMap"] = True
+        meta = PersistentMapMeta.from_dict(data)
+        assert meta.is_current_map is True
+
+    def test_from_dict_is_current_map_missing_defaults_false(self) -> None:
+        meta = PersistentMapMeta.from_dict(MAP_META_RAW)  # key absent
+        assert meta.is_current_map is False
+
+    def test_from_dict_is_current_map_explicit_false(self) -> None:
+        data = dict(MAP_META_RAW)
+        data["isCurrentMap"] = False
+        meta = PersistentMapMeta.from_dict(data)
+        assert meta.is_current_map is False
+
 
 # ---------------------------------------------------------------------------
 # PersistentMap

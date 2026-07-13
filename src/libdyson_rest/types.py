@@ -233,6 +233,7 @@ class PersistentMapMetaDict(TypedDict):
     name: NotRequired[str]
     zonesDefinitionLastUpdatedDate: NotRequired[str]
     zones: NotRequired[list[ZoneMetaDict]]
+    isCurrentMap: NotRequired[bool]
 
 
 class PresentationMapDict(TypedDict):
