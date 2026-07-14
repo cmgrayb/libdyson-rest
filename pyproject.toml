@@ -46,11 +46,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "ruff==0.15.20",
+    "ruff==0.15.21",
     "pytest==9.1.1",
     "pytest-cov==7.1.0",
     "pytest-asyncio==1.4.0",
-    "mypy==2.1.0",
+    "mypy==2.2.0",
     "types-cryptography==3.3.23.2",
     "bandit[toml]==1.9.4",
 ]
