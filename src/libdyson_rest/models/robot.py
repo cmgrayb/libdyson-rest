@@ -647,9 +647,10 @@ class ZoneMeta:
 class PersistentMapMeta:
     """One entry from GET /v1/app/{serial}/persistent-map-metadata.
 
-    Contains map identification, zone list with human-readable names, and the
+    Contains map identification, zone list with human-readable names, the
     ``zones_definition_last_updated_date`` timestamp that must be included in
-    zone-clean MQTT payloads so the device honours the request.
+    zone-clean MQTT payloads so the device honours the request, and the
+    ``last_visited`` timestamp of the map's most recent robot activity.
     """
 
     id: str
