@@ -782,6 +782,16 @@ class TestPersistentMapMeta:
         meta = PersistentMapMeta.from_dict(data)
         assert meta.is_current_map is False
 
+    def test_from_dict_last_visited(self) -> None:
+        data = dict(MAP_META_RAW)
+        data["lastVisited"] = "2026-07-11T16:39:57.525Z"
+        meta = PersistentMapMeta.from_dict(data)
+        assert meta.last_visited == "2026-07-11T16:39:57.525Z"
+
+    def test_from_dict_last_visited_missing_defaults_none(self) -> None:
+        meta = PersistentMapMeta.from_dict(MAP_META_RAW)  # key absent
+        assert meta.last_visited is None
+
 
 # ---------------------------------------------------------------------------
 # PersistentMap

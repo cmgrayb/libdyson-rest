@@ -645,9 +645,10 @@ class ZoneMeta:
 class PersistentMapMeta:
     """One entry from GET /v1/app/{serial}/persistent-map-metadata.
 
-    Contains map identification, zone list with human-readable names, and the
+    Contains map identification, zone list with human-readable names, the
     ``zones_definition_last_updated_date`` timestamp that must be included in
-    zone-clean MQTT payloads so the device honours the request.
+    zone-clean MQTT payloads so the device honours the request, and the
+    ``last_visited`` timestamp of the map's most recent robot activity.
     """
 
     id: str
@@ -655,6 +656,7 @@ class PersistentMapMeta:
     zones_definition_last_updated_date: str | None
     zones: list[ZoneMeta]
     is_current_map: bool = False
+    last_visited: str | None = None
 
     @classmethod
     def from_dict(cls, data: PersistentMapMetaDict) -> PersistentMapMeta:
@@ -673,6 +675,7 @@ class PersistentMapMeta:
             ),
             zones=zones,
             is_current_map=bool(raw.get("isCurrentMap", False)),
+            last_visited=raw.get("lastVisited"),
         )
 
     def zone_by_id(self, zone_id: str) -> ZoneMeta | None:
