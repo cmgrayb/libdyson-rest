@@ -6,6 +6,7 @@ import zlib
 
 import pytest
 
+from libdyson_rest.exceptions import DysonMapError
 from libdyson_rest.models import (
     CleanedFootprint,
     CleanFault,
@@ -23,6 +24,7 @@ from libdyson_rest.models import (
     ZoneDustBreakdown,
     ZoneMeta,
     ZonePrediction,
+    find_current_map,
 )
 
 # ---------------------------------------------------------------------------
@@ -782,15 +784,81 @@ class TestPersistentMapMeta:
         meta = PersistentMapMeta.from_dict(data)
         assert meta.is_current_map is False
 
-    def test_from_dict_last_visited(self) -> None:
+    def test_from_dict_last_visited_parsed(self) -> None:
         data = dict(MAP_META_RAW)
-        data["lastVisited"] = "2026-07-11T16:39:57.525Z"
+        data["lastVisited"] = "2026-07-11T14:32:00Z"
         meta = PersistentMapMeta.from_dict(data)
-        assert meta.last_visited == "2026-07-11T16:39:57.525Z"
+        assert meta.last_visited == "2026-07-11T14:32:00Z"
 
-    def test_from_dict_last_visited_missing_defaults_none(self) -> None:
+    def test_from_dict_last_visited_missing_is_none(self) -> None:
         meta = PersistentMapMeta.from_dict(MAP_META_RAW)  # key absent
         assert meta.last_visited is None
+
+
+# ---------------------------------------------------------------------------
+# find_current_map
+# ---------------------------------------------------------------------------
+
+
+def _make_map(
+    id: str, is_current: bool = False, last_visited: str | None = None
+) -> PersistentMapMeta:
+    return PersistentMapMeta(
+        id=id,
+        name=None,
+        zones_definition_last_updated_date=None,
+        zones=[],
+        is_current_map=is_current,
+        last_visited=last_visited,
+    )
+
+
+class TestFindCurrentMap:
+    def test_v2_single_current(self) -> None:
+        maps = [_make_map("a", is_current=True)]
+        assert find_current_map(maps).id == "a"
+
+    def test_v2_picks_current_among_multiple(self) -> None:
+        maps = [
+            _make_map("a", is_current=False),
+            _make_map("b", is_current=True),
+            _make_map("c", is_current=False),
+        ]
+        assert find_current_map(maps).id == "b"
+
+    def test_v1_picks_most_recent_last_visited(self) -> None:
+        maps = [
+            _make_map("older", last_visited="2026-06-01T00:00:00Z"),
+            _make_map("newer", last_visited="2026-07-11T14:32:00Z"),
+        ]
+        assert find_current_map(maps).id == "newer"
+
+    def test_v1_ignores_map_without_last_visited(self) -> None:
+        maps = [
+            _make_map("visited", last_visited="2026-07-01T00:00:00Z"),
+            _make_map("unvisited"),
+        ]
+        assert find_current_map(maps).id == "visited"
+
+    def test_single_map_no_signal(self) -> None:
+        maps = [_make_map("solo")]
+        assert find_current_map(maps).id == "solo"
+
+    def test_raises_when_multiple_maps_no_signal(self) -> None:
+        maps = [_make_map("a"), _make_map("b")]
+        with pytest.raises(DysonMapError):
+            find_current_map(maps)
+
+    def test_raises_on_empty_list(self) -> None:
+        with pytest.raises(DysonMapError):
+            find_current_map([])
+
+    def test_v2_takes_priority_over_last_visited(self) -> None:
+        maps = [
+            _make_map("v1map", last_visited="2026-07-11T14:32:00Z"),
+            _make_map("v2map", is_current=True),
+        ]
+        assert find_current_map(maps).id == "v2map"
 
 
 # ---------------------------------------------------------------------------
