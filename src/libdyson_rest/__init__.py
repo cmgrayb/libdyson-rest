@@ -48,7 +48,7 @@ Basic Usage (Asynchronous):
                 print(f"Device: {device.name} ({device.serial_number})")
 """
 
-__version__ = "0.15.0"
+__version__ = "0.16.0b3"
 __author__ = "Christopher Gray"
 __email__ = "79777799+cmgrayb@users.noreply.github.com"
 
@@ -64,6 +64,7 @@ from .exceptions import (
     DysonAuthError,
     DysonConnectionError,
     DysonDeviceError,
+    DysonMapError,
     DysonValidationError,
 )
 from .models import (
@@ -97,6 +98,7 @@ from .models import (
     ZoneMeta,
     ZonePrediction,
     decode_dust_map,
+    find_current_map,
 )
 
 __all__ = [
@@ -108,6 +110,7 @@ __all__ = [
     "DysonAuthError",
     "DysonConnectionError",
     "DysonDeviceError",
+    "DysonMapError",
     "DysonValidationError",
     # Core device models
     "Device",
@@ -137,6 +140,7 @@ __all__ = [
     "ZoneMeta",
     "ZonePrediction",
     "decode_dust_map",
+    "find_current_map",
     # EC air purifier models
     "DailyAirQualityData",
     "OutdoorAirQualityData",

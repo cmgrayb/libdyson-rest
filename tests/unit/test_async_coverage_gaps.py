@@ -468,7 +468,7 @@ class TestGetCleanMapsErrorPaths:
         mock_get.side_effect = _server_error()
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError):
-            await client.get_clean_maps(SERIAL)
+            await client.get_clean_maps(SERIAL, api_version=2)
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
@@ -477,7 +477,7 @@ class TestGetCleanMapsErrorPaths:
         mock_get.return_value = _json_error(Mock())
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError):
-            await client.get_clean_maps(SERIAL)
+            await client.get_clean_maps(SERIAL, api_version=2)
         await client.close()
 
 
@@ -488,7 +488,7 @@ class TestGetPersistentMapMetadataErrorPaths:
         mock_get.side_effect = _server_error()
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError):
-            await client.get_persistent_map_metadata(SERIAL)
+            await client.get_persistent_map_metadata(SERIAL, api_version=2)
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
@@ -497,7 +497,7 @@ class TestGetPersistentMapMetadataErrorPaths:
         mock_get.return_value = _json_error(Mock())
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError):
-            await client.get_persistent_map_metadata(SERIAL)
+            await client.get_persistent_map_metadata(SERIAL, api_version=2)
         await client.close()
 
 
@@ -508,7 +508,7 @@ class TestGetPersistentMapErrorPaths:
         mock_get.side_effect = _server_error()
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError):
-            await client.get_persistent_map(SERIAL, MAP_ID)
+            await client.get_persistent_map(SERIAL, MAP_ID, api_version=2)
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
@@ -517,7 +517,7 @@ class TestGetPersistentMapErrorPaths:
         mock_get.return_value = _json_error(Mock())
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError):
-            await client.get_persistent_map(SERIAL, MAP_ID)
+            await client.get_persistent_map(SERIAL, MAP_ID, api_version=2)
         await client.close()
 
 

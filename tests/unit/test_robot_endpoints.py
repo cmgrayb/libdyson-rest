@@ -120,7 +120,7 @@ class TestSyncGetCleanMaps:
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="tok")
-        records = client.get_clean_maps(SERIAL)
+        records = client.get_clean_maps(SERIAL, api_version=2)
 
         assert len(records) == 1
         assert isinstance(records[0], CleanRecord)
@@ -135,7 +135,7 @@ class TestSyncGetCleanMaps:
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="tok")
-        client.get_clean_maps(SERIAL)
+        client.get_clean_maps(SERIAL, api_version=2)
 
         call_kwargs = mock_get.call_args.kwargs
         assert call_kwargs.get("params") == {"dustMap": "total"}
@@ -148,7 +148,7 @@ class TestSyncGetCleanMaps:
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="tok")
-        client.get_clean_maps(SERIAL, include_dust_map=False)
+        client.get_clean_maps(SERIAL, api_version=2, include_dust_map=False)
 
         call_kwargs = mock_get.call_args.kwargs
         assert call_kwargs.get("params") == {}
@@ -156,7 +156,7 @@ class TestSyncGetCleanMaps:
     def test_raises_auth_error_when_not_authenticated(self) -> None:
         client = DysonClient()
         with pytest.raises(DysonAuthError, match="Must authenticate"):
-            client.get_clean_maps(SERIAL)
+            client.get_clean_maps(SERIAL, api_version=2)
 
     @patch("httpx.Client.get")
     def test_raises_auth_error_on_401(self, mock_get: Mock) -> None:
@@ -168,7 +168,7 @@ class TestSyncGetCleanMaps:
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonAuthError, match="expired"):
-            client.get_clean_maps(SERIAL)
+            client.get_clean_maps(SERIAL, api_version=2)
 
     @patch("httpx.Client.get")
     def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
@@ -176,7 +176,7 @@ class TestSyncGetCleanMaps:
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonConnectionError):
-            client.get_clean_maps(SERIAL)
+            client.get_clean_maps(SERIAL, api_version=2)
 
     @patch("httpx.Client.get")
     def test_raises_api_error_on_non_list_response(self, mock_get: Mock) -> None:
@@ -188,7 +188,7 @@ class TestSyncGetCleanMaps:
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
-            client.get_clean_maps(SERIAL)
+            client.get_clean_maps(SERIAL, api_version=2)
         assert exc_info.value.raw == '{"error": "unexpected"}'
 
     @patch("httpx.Client.get")
@@ -200,7 +200,7 @@ class TestSyncGetCleanMaps:
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="tok")
-        records = client.get_clean_maps(SERIAL)
+        records = client.get_clean_maps(SERIAL, api_version=2)
 
         assert len(records) == 1
         record = records[0]
@@ -234,7 +234,33 @@ class TestSyncGetCleanMaps:
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError, match="Expected list"):
-            client.get_clean_maps(SERIAL)
+            client.get_clean_maps(SERIAL, api_version=2)
+
+    @patch("httpx.Client.get")
+    def test_v2_url_used(self, mock_get: Mock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+
+        client = DysonClient(auth_token="tok")
+        client.get_clean_maps(SERIAL, api_version=2)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v2/{SERIAL}/clean-maps" in url
+
+    @patch("httpx.Client.get")
+    def test_v1_url_used_for_vis_nav(self, mock_get: Mock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+
+        client = DysonClient(auth_token="tok")
+        client.get_clean_maps(SERIAL, api_version=1)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v1/{SERIAL}/clean-maps" in url
 
 
 class TestSyncGetPersistentMapMetadata:
@@ -246,7 +272,7 @@ class TestSyncGetPersistentMapMetadata:
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="tok")
-        metas = client.get_persistent_map_metadata(SERIAL)
+        metas = client.get_persistent_map_metadata(SERIAL, api_version=2)
 
         assert len(metas) == 1
         assert isinstance(metas[0], PersistentMapMeta)
@@ -256,7 +282,7 @@ class TestSyncGetPersistentMapMetadata:
     def test_raises_auth_error_when_not_authenticated(self) -> None:
         client = DysonClient()
         with pytest.raises(DysonAuthError):
-            client.get_persistent_map_metadata(SERIAL)
+            client.get_persistent_map_metadata(SERIAL, api_version=2)
 
     @patch("httpx.Client.get")
     def test_raises_api_error_on_non_list_response(self, mock_get: Mock) -> None:
@@ -268,7 +294,7 @@ class TestSyncGetPersistentMapMetadata:
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
-            client.get_persistent_map_metadata(SERIAL)
+            client.get_persistent_map_metadata(SERIAL, api_version=2)
         assert exc_info.value.raw == f'{{"id": "{MAP_ID}"}}'
 
     @patch("httpx.Client.get")
@@ -279,10 +305,23 @@ class TestSyncGetPersistentMapMetadata:
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="tok")
-        client.get_persistent_map_metadata(SERIAL)
+        client.get_persistent_map_metadata(SERIAL, api_version=2)
 
         url = mock_get.call_args.args[0]
         assert f"/v2/app/{SERIAL}/persistent-map-metadata" in url
+
+    @patch("httpx.Client.get")
+    def test_v1_url_used_for_vis_nav(self, mock_get: Mock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+
+        client = DysonClient(auth_token="tok")
+        client.get_persistent_map_metadata(SERIAL, api_version=1)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v1/app/{SERIAL}/persistent-map-metadata" in url
 
     @patch("httpx.Client.get")
     def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
@@ -290,7 +329,7 @@ class TestSyncGetPersistentMapMetadata:
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonConnectionError):
-            client.get_persistent_map_metadata(SERIAL)
+            client.get_persistent_map_metadata(SERIAL, api_version=2)
 
 
 class TestSyncGetPersistentMap:
@@ -302,7 +341,7 @@ class TestSyncGetPersistentMap:
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="tok")
-        pm = client.get_persistent_map(SERIAL, MAP_ID)
+        pm = client.get_persistent_map(SERIAL, MAP_ID, api_version=2)
 
         assert isinstance(pm, PersistentMap)
         assert pm.id == MAP_ID
@@ -313,7 +352,7 @@ class TestSyncGetPersistentMap:
     def test_raises_auth_error_when_not_authenticated(self) -> None:
         client = DysonClient()
         with pytest.raises(DysonAuthError):
-            client.get_persistent_map(SERIAL, MAP_ID)
+            client.get_persistent_map(SERIAL, MAP_ID, api_version=2)
 
     @patch("httpx.Client.get")
     def test_raises_api_error_on_non_dict_response(self, mock_get: Mock) -> None:
@@ -324,7 +363,7 @@ class TestSyncGetPersistentMap:
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError, match="Expected object"):
-            client.get_persistent_map(SERIAL, MAP_ID)
+            client.get_persistent_map(SERIAL, MAP_ID, api_version=2)
 
     @patch("httpx.Client.get")
     def test_correct_url_includes_map_id(self, mock_get: Mock) -> None:
@@ -334,10 +373,23 @@ class TestSyncGetPersistentMap:
         mock_get.return_value = mock_response
 
         client = DysonClient(auth_token="tok")
-        client.get_persistent_map(SERIAL, MAP_ID)
+        client.get_persistent_map(SERIAL, MAP_ID, api_version=2)
 
         url = mock_get.call_args.args[0]
         assert f"/v2/app/{SERIAL}/persistent-maps/{MAP_ID}" in url
+
+    @patch("httpx.Client.get")
+    def test_v1_url_includes_map_id(self, mock_get: Mock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = PERSISTENT_MAP_ITEM
+        mock_get.return_value = mock_response
+
+        client = DysonClient(auth_token="tok")
+        client.get_persistent_map(SERIAL, MAP_ID, api_version=1)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v1/app/{SERIAL}/persistent-maps/{MAP_ID}" in url
 
     @patch("httpx.Client.get")
     def test_raises_connection_error_on_network_failure(self, mock_get: Mock) -> None:
@@ -345,7 +397,7 @@ class TestSyncGetPersistentMap:
 
         client = DysonClient(auth_token="tok")
         with pytest.raises(DysonConnectionError):
-            client.get_persistent_map(SERIAL, MAP_ID)
+            client.get_persistent_map(SERIAL, MAP_ID, api_version=2)
 
 
 class TestSyncGetRecommendedCleans:
@@ -472,7 +524,7 @@ class TestAsyncGetCleanMaps:
         mock_get.return_value = mock_response
 
         client = AsyncDysonClient(auth_token="tok")
-        records = await client.get_clean_maps(SERIAL)
+        records = await client.get_clean_maps(SERIAL, api_version=2)
 
         assert len(records) == 1
         assert isinstance(records[0], CleanRecord)
@@ -483,7 +535,7 @@ class TestAsyncGetCleanMaps:
     async def test_raises_auth_error_when_not_authenticated(self) -> None:
         client = AsyncDysonClient()
         with pytest.raises(DysonAuthError):
-            await client.get_clean_maps(SERIAL)
+            await client.get_clean_maps(SERIAL, api_version=2)
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
@@ -497,7 +549,7 @@ class TestAsyncGetCleanMaps:
 
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonAuthError, match="expired"):
-            await client.get_clean_maps(SERIAL)
+            await client.get_clean_maps(SERIAL, api_version=2)
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
@@ -509,7 +561,7 @@ class TestAsyncGetCleanMaps:
 
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonConnectionError):
-            await client.get_clean_maps(SERIAL)
+            await client.get_clean_maps(SERIAL, api_version=2)
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
@@ -525,7 +577,7 @@ class TestAsyncGetCleanMaps:
 
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
-            await client.get_clean_maps(SERIAL)
+            await client.get_clean_maps(SERIAL, api_version=2)
         assert exc_info.value.raw == '{"error": "oops"}'
         await client.close()
 
@@ -541,7 +593,7 @@ class TestAsyncGetCleanMaps:
         mock_get.return_value = mock_response
 
         client = AsyncDysonClient(auth_token="tok")
-        records = await client.get_clean_maps(SERIAL)
+        records = await client.get_clean_maps(SERIAL, api_version=2)
 
         assert len(records) == 1
         record = records[0]
@@ -568,7 +620,37 @@ class TestAsyncGetCleanMaps:
 
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError, match="Expected list"):
-            await client.get_clean_maps(SERIAL)
+            await client.get_clean_maps(SERIAL, api_version=2)
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_v2_url_used(self, mock_get: AsyncMock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="tok")
+        await client.get_clean_maps(SERIAL, api_version=2)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v2/{SERIAL}/clean-maps" in url
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_v1_url_used_for_vis_nav(self, mock_get: AsyncMock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="tok")
+        await client.get_clean_maps(SERIAL, api_version=1)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v1/{SERIAL}/clean-maps" in url
         await client.close()
 
 
@@ -582,7 +664,7 @@ class TestAsyncGetPersistentMapMetadata:
         mock_get.return_value = mock_response
 
         client = AsyncDysonClient(auth_token="tok")
-        metas = await client.get_persistent_map_metadata(SERIAL)
+        metas = await client.get_persistent_map_metadata(SERIAL, api_version=2)
 
         assert len(metas) == 1
         assert isinstance(metas[0], PersistentMapMeta)
@@ -593,7 +675,7 @@ class TestAsyncGetPersistentMapMetadata:
     async def test_raises_auth_error_when_not_authenticated(self) -> None:
         client = AsyncDysonClient()
         with pytest.raises(DysonAuthError):
-            await client.get_persistent_map_metadata(SERIAL)
+            await client.get_persistent_map_metadata(SERIAL, api_version=2)
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
@@ -609,8 +691,38 @@ class TestAsyncGetPersistentMapMetadata:
 
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError, match="Expected list") as exc_info:
-            await client.get_persistent_map_metadata(SERIAL)
+            await client.get_persistent_map_metadata(SERIAL, api_version=2)
         assert exc_info.value.raw == f'{{"id": "{MAP_ID}"}}'
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_v2_url_used(self, mock_get: AsyncMock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="tok")
+        await client.get_persistent_map_metadata(SERIAL, api_version=2)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v2/app/{SERIAL}/persistent-map-metadata" in url
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_v1_url_used_for_vis_nav(self, mock_get: AsyncMock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = []
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="tok")
+        await client.get_persistent_map_metadata(SERIAL, api_version=1)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v1/app/{SERIAL}/persistent-map-metadata" in url
         await client.close()
 
 
@@ -624,7 +736,7 @@ class TestAsyncGetPersistentMap:
         mock_get.return_value = mock_response
 
         client = AsyncDysonClient(auth_token="tok")
-        pm = await client.get_persistent_map(SERIAL, MAP_ID)
+        pm = await client.get_persistent_map(SERIAL, MAP_ID, api_version=2)
 
         assert isinstance(pm, PersistentMap)
         assert pm.id == MAP_ID
@@ -635,7 +747,7 @@ class TestAsyncGetPersistentMap:
     async def test_raises_auth_error_when_not_authenticated(self) -> None:
         client = AsyncDysonClient()
         with pytest.raises(DysonAuthError):
-            await client.get_persistent_map(SERIAL, MAP_ID)
+            await client.get_persistent_map(SERIAL, MAP_ID, api_version=2)
         await client.close()
 
     @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
@@ -650,7 +762,37 @@ class TestAsyncGetPersistentMap:
 
         client = AsyncDysonClient(auth_token="tok")
         with pytest.raises(DysonAPIError, match="Expected object"):
-            await client.get_persistent_map(SERIAL, MAP_ID)
+            await client.get_persistent_map(SERIAL, MAP_ID, api_version=2)
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_v2_url_includes_map_id(self, mock_get: AsyncMock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = PERSISTENT_MAP_ITEM
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="tok")
+        await client.get_persistent_map(SERIAL, MAP_ID, api_version=2)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v2/app/{SERIAL}/persistent-maps/{MAP_ID}" in url
+        await client.close()
+
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_v1_url_includes_map_id(self, mock_get: AsyncMock) -> None:
+        mock_response = Mock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = PERSISTENT_MAP_ITEM
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="tok")
+        await client.get_persistent_map(SERIAL, MAP_ID, api_version=1)
+
+        url = mock_get.call_args.args[0]
+        assert f"/v1/app/{SERIAL}/persistent-maps/{MAP_ID}" in url
         await client.close()
 
 

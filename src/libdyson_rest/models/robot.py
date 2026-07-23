@@ -22,9 +22,11 @@ import base64 as _base64
 import struct as _struct
 import zlib as _zlib
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, cast
 
+from ..exceptions import DysonMapError
 from ..types import (
     CleanFaultDict,
     CleanRecordDict,
@@ -645,15 +647,18 @@ class ZoneMeta:
 class PersistentMapMeta:
     """One entry from GET /v1/app/{serial}/persistent-map-metadata.
 
-    Contains map identification, zone list with human-readable names, and the
+    Contains map identification, zone list with human-readable names, the
     ``zones_definition_last_updated_date`` timestamp that must be included in
-    zone-clean MQTT payloads so the device honours the request.
+    zone-clean MQTT payloads so the device honours the request, and the
+    ``last_visited`` timestamp of the map's most recent robot activity.
     """
 
     id: str
     name: str | None
     zones_definition_last_updated_date: str | None
     zones: list[ZoneMeta]
+    is_current_map: bool = False  # v2: explicit active-map flag
+    last_visited: str | None = None  # v1: ISO-8601 timestamp
 
     @classmethod
     def from_dict(cls, data: PersistentMapMetaDict) -> PersistentMapMeta:
@@ -671,6 +676,8 @@ class PersistentMapMeta:
                 "zonesDefinitionLastUpdatedDate"
             ),
             zones=zones,
+            is_current_map=bool(raw.get("isCurrentMap", False)),
+            last_visited=raw.get("lastVisited") or None,
         )
 
     def zone_by_id(self, zone_id: str) -> ZoneMeta | None:
@@ -683,6 +690,51 @@ class PersistentMapMeta:
         return next(
             (z for z in self.zones if (z.name or "").lower() == name_lower), None
         )
+
+
+def find_current_map(maps: list[PersistentMapMeta]) -> PersistentMapMeta:
+    """Return the active map from a list of ``PersistentMapMeta`` objects.
+
+    Selection priority:
+
+    1. **v2 devices** — any map with ``is_current_map=True``.
+    2. **v1 devices** — map with the most recent ``last_visited`` timestamp.
+    3. **Unambiguous** — exactly one map present with no active-map signal.
+    4. **Error** — raises ``DysonMapError`` when multiple maps are present
+       and no active-map signal is available.
+
+    Raises:
+        DysonMapError: When the active map cannot be determined.
+    """
+    # Step 1: v2 explicit flag
+    for m in maps:
+        if m.is_current_map:
+            return m
+
+    # Step 2: v1 last_visited timestamp — pick the most recent
+    visited = [m for m in maps if m.last_visited]
+    if visited:
+        _epoch = datetime.min.replace(tzinfo=timezone.utc)
+
+        def _parse_dt(m: PersistentMapMeta) -> datetime:
+            try:
+                ts = (m.last_visited or "").replace("Z", "+00:00")
+                dt = datetime.fromisoformat(ts)
+                return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+            except ValueError:
+                return _epoch
+
+        return max(visited, key=_parse_dt)
+
+    # Step 3: unambiguous single map
+    if len(maps) == 1:
+        return maps[0]
+
+    # Step 4: cannot determine
+    raise DysonMapError(
+        "Cannot determine current map: no is_current_map flag and no "
+        "last_visited timestamp present"
+    )
 
 
 @dataclass

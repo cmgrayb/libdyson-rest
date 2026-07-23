@@ -47,6 +47,7 @@ from .robot import (
     ZoneMeta,
     ZonePrediction,
     decode_dust_map,
+    find_current_map,
 )
 
 __all__ = [
@@ -87,6 +88,7 @@ __all__ = [
     "ZoneMeta",
     "ZonePrediction",
     "decode_dust_map",
+    "find_current_map",
     # Environment / EC purifier models
     "DailyAirQualityData",
     "OutdoorAirQualityData",
