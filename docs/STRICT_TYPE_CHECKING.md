@@ -72,6 +72,7 @@ Current issue: Dictionary access uses `Any` types from JSON parsing.
 # Current (allows Any):
 data["fieldName"]  # Returns Any
 
+
 # Improvement options:
 # Option A: Use TypedDict for API responses
 class DeviceResponseDict(TypedDict):
@@ -79,6 +80,7 @@ class DeviceResponseDict(TypedDict):
     name: str
     productType: str
     # ... other fields
+
 
 # Option B: Add runtime type validation
 def safe_get_str(data: Dict[str, Any], key: str) -> str:

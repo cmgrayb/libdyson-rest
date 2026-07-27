@@ -45,39 +45,37 @@ client = DysonClient(
     email="+8613800000000",  # Mobile number with country code
     password="your_password",
     country="CN",
-    culture="zh-CN"
+    culture="zh-CN",
 )
 
 try:
     # Step 1: Provision API access (required first call)
     client.provision()
-    
+
     # Step 2: Check user status (optional)
     user_status = client.get_user_status_mobile("+8613800000000")
     print(f"Account Status: {user_status.account_status.value}")
-    
+
     # Step 3: Begin login - triggers SMS OTP
     challenge = client.begin_login_mobile("+8613800000000")
     print(f"SMS sent! Challenge ID: {challenge.challenge_id}")
-    
+
     # Step 4: Get OTP code from user
     otp_code = input("Enter the OTP code from SMS: ")
-    
+
     # Step 5: Complete login with OTP
     login_info = client.complete_login_mobile(
-        challenge_id=challenge.challenge_id,
-        otp_code=otp_code,
-        mobile="+8613800000000"
+        challenge_id=challenge.challenge_id, otp_code=otp_code, mobile="+8613800000000"
     )
-    
+
     print(f"✓ Authenticated! Account: {login_info.account}")
     print(f"✓ Token: {login_info.token[:20]}...")
-    
+
     # Now you can use authenticated API calls
     devices = client.get_devices()
     for device in devices:
         print(f"Device: {device.name} ({device.serial})")
-        
+
 finally:
     client.close()
 ```
@@ -88,41 +86,40 @@ finally:
 import asyncio
 from libdyson_rest import AsyncDysonClient
 
+
 async def authenticate_mobile():
     """Example async mobile authentication."""
     async with AsyncDysonClient(
-        email="+8613800000000",
-        password="your_password",
-        country="CN",
-        culture="zh-CN"
+        email="+8613800000000", password="your_password", country="CN", culture="zh-CN"
     ) as client:
         # Provision
         await client.provision()
-        
+
         # Check user status
         user_status = await client.get_user_status_mobile("+8613800000000")
         print(f"Account Status: {user_status.account_status.value}")
-        
+
         # Begin login - SMS sent
         challenge = await client.begin_login_mobile("+8613800000000")
         print(f"Challenge ID: {challenge.challenge_id}")
-        
+
         # Get OTP from user (in real async app, use async input method)
         otp_code = input("Enter OTP from SMS: ")
-        
+
         # Complete login
         login_info = await client.complete_login_mobile(
             challenge_id=challenge.challenge_id,
             otp_code=otp_code,
-            mobile="+8613800000000"
+            mobile="+8613800000000",
         )
-        
+
         print(f"✓ Authenticated! Token: {login_info.token[:20]}...")
-        
+
         # Use authenticated client
         devices = await client.get_devices()
         for device in devices:
             print(f"Device: {device.name}")
+
 
 # Run the async function
 asyncio.run(authenticate_mobile())
@@ -141,12 +138,7 @@ from libdyson_rest import DysonClient
 mobile = os.getenv("DYSON_MOBILE")
 password = os.getenv("DYSON_PASSWORD")
 
-client = DysonClient(
-    email=mobile,
-    password=password,
-    country="CN",
-    culture="zh-CN"
-)
+client = DysonClient(email=mobile, password=password, country="CN", culture="zh-CN")
 ```
 
 ## API Methods
@@ -212,28 +204,18 @@ Complete the login process using the OTP code received via SMS.
 
 ```python
 from libdyson_rest import DysonClient
-from libdyson_rest.exceptions import (
-    DysonAPIError,
-    DysonAuthError,
-    DysonConnectionError
-)
+from libdyson_rest.exceptions import DysonAPIError, DysonAuthError, DysonConnectionError
 
-client = DysonClient(
-    email="+8613800000000",
-    password="password",
-    country="CN"
-)
+client = DysonClient(email="+8613800000000", password="password", country="CN")
 
 try:
     client.provision()
     challenge = client.begin_login_mobile("+8613800000000")
     otp = input("Enter OTP: ")
     login_info = client.complete_login_mobile(
-        challenge.challenge_id,
-        otp,
-        "+8613800000000"
+        challenge.challenge_id, otp, "+8613800000000"
     )
-    
+
 except DysonAuthError as e:
     # Authentication errors: invalid credentials, wrong OTP, etc.
     print(f"Authentication failed: {e}")
@@ -242,7 +224,7 @@ except DysonAuthError as e:
     print("  - Invalid or expired OTP code")
     print("  - Mobile number not registered on CN server")
     print("  - Mobile number format missing country code")
-    
+
 except DysonConnectionError as e:
     # Network/connection errors
     print(f"Connection failed: {e}")
@@ -250,7 +232,7 @@ except DysonConnectionError as e:
     print("  - Network connectivity issues")
     print("  - Dyson API server unavailable")
     print("  - Firewall blocking connections")
-    
+
 except DysonAPIError as e:
     # API-related errors
     print(f"API error: {e}")
@@ -258,7 +240,7 @@ except DysonAPIError as e:
     print("  - Invalid API response format")
     print("  - Missing required parameters")
     print("  - API endpoint changed")
-    
+
 finally:
     client.close()
 ```
@@ -316,9 +298,7 @@ client = DysonClient(email="+8613800000000", password="pwd", country="CN")
 client.provision()
 challenge = client.begin_login_mobile("+8613800000000")
 login_info = client.complete_login_mobile(
-    challenge.challenge_id, 
-    otp_code, 
-    "+8613800000000"
+    challenge.challenge_id, otp_code, "+8613800000000"
 )
 ```
 
