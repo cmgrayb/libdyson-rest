@@ -56,13 +56,14 @@ with DysonClient("user@example.com", "your_password") as client:
 import asyncio
 from libdyson_rest import AsyncDysonClient
 
+
 async def main():
     # Two-step authentication (recommended)
     client = AsyncDysonClient("user@example.com", "your_password")
     if not await client.authenticate():  # Returns False - OTP needed
         otp = input("Enter OTP from email: ")
         await client.complete_authentication(otp)
-        
+
     devices = await client.get_devices()
     for device in devices:
         print(f"Device: {device.name} ({device.serial})")
@@ -74,6 +75,7 @@ async def main():
             otp = input("Enter OTP from email: ")
             await client.complete_authentication(otp)
         devices = await client.get_devices()
+
 
 asyncio.run(main())
 ```
@@ -897,16 +899,21 @@ Raised when network issues occur:
 
 ### Error Handling Example
 ```python
-from libdyson_rest import DysonClient, DysonAuthError, DysonAPIError, DysonConnectionError
+from libdyson_rest import (
+    DysonClient,
+    DysonAuthError,
+    DysonAPIError,
+    DysonConnectionError,
+)
 
 try:
     client = DysonClient("user@example.com", "password")
     if not client.authenticate():
         otp = input("Enter OTP: ")
         client.complete_authentication(otp)
-    
+
     devices = client.get_devices()
-    
+
 except DysonAuthError as e:
     print(f"Authentication failed: {e}")
 except DysonAPIError as e:
@@ -924,18 +931,18 @@ Represents a Dyson device with the following attributes:
 ```python
 @dataclass
 class DysonDevice:
-    serial: str           # Device serial number
-    name: str            # User-assigned device name
-    product_type: str    # Product identifier (e.g., "520")
-    version: str         # Firmware version
-    auto_update: bool    # Auto-update enabled
+    serial: str  # Device serial number
+    name: str  # User-assigned device name
+    product_type: str  # Product identifier (e.g., "520")
+    version: str  # Firmware version
+    auto_update: bool  # Auto-update enabled
     new_version_available: bool  # Firmware update available
-    category: str        # Device category (e.g., "purifier")
-    
+    category: str  # Device category (e.g., "purifier")
+
     # Optional attributes (may be None)
     local_credentials: dict[str, str] | None  # Local MQTT credentials
-    connection_type: str | None               # Connection type
-    mqtt_server: str | None                   # MQTT server hostname
+    connection_type: str | None  # Connection type
+    mqtt_server: str | None  # MQTT server hostname
 ```
 
 ### LoginChallenge
@@ -945,8 +952,8 @@ Represents a login challenge response:
 ```python
 @dataclass
 class LoginChallenge:
-    challenge_id: str    # Challenge identifier for OTP completion
-    user_id: str        # User account identifier
+    challenge_id: str  # Challenge identifier for OTP completion
+    user_id: str  # User account identifier
 ```
 
 ### LoginInformation
@@ -954,11 +961,11 @@ class LoginChallenge:
 Represents completed login information:
 
 ```python
-@dataclass  
+@dataclass
 class LoginInformation:
-    token: str          # Authentication token
-    account: dict       # Account details
-    challenge_id: str   # Challenge identifier used
+    token: str  # Authentication token
+    account: dict  # Account details
+    challenge_id: str  # Challenge identifier used
 ```
 
 ### Usage Examples with Data Models
@@ -998,11 +1005,11 @@ class CleanRecord:
     start_time: datetime | None
     end_time: datetime | None
     timeline: list[CleanTimelineEvent]
-    dust_map: DustMapData | None        # Aggregated dust-density grid
+    dust_map: DustMapData | None  # Aggregated dust-density grid
     clean_map_position: CleanMapPosition | None  # World origin of dust map
-    cleaning_programme: CleaningProgramme | None # Zone-clean config used
-    footprint: CleanedFootprint | None           # Cleaned area + floor-plan crop
-    raw: dict                                    # Full raw API response
+    cleaning_programme: CleaningProgramme | None  # Zone-clean config used
+    footprint: CleanedFootprint | None  # Cleaned area + floor-plan crop
+    raw: dict  # Full raw API response
 
     @property
     def is_zone_clean(self) -> bool: ...
@@ -1039,7 +1046,7 @@ class ZoneMeta:
     id: str
     name: str | None
     icon: str | None
-    area: float | None   # Zone area in m²
+    area: float | None  # Zone area in m²
 ```
 
 #### `PersistentMap`
@@ -1049,9 +1056,9 @@ Full map record including presentation image and zone definitions.
 @dataclass
 class PersistentMap:
     id: str
-    offset_x: float | None     # World-mm X origin
-    offset_y: float | None     # World-mm Y origin
-    display_orientation: int   # Degrees rotation for display
+    offset_x: float | None  # World-mm X origin
+    offset_y: float | None  # World-mm Y origin
+    display_orientation: int  # Degrees rotation for display
     presentation_map_data: str | None  # Base64-encoded floor-plan PNG
     zones_definition: dict | None
     zones: list[ZoneMeta]
@@ -1086,8 +1093,8 @@ class ZoneDustBreakdown:
     medium: float
     large: float
     other: float
-    total: float   # Sum of all classes
-    raw: list      # Original API array
+    total: float  # Sum of all classes
+    raw: list  # Original API array
 ```
 
 #### `DustMapData`
@@ -1098,8 +1105,8 @@ Aggregated dust-density grid returned with each clean record.
 class DustMapData:
     width: int
     height: int
-    resolution: float              # mm per pixel
-    dust_data: list[list[float]]   # 2-D grid, values 0–1 (divided by scaleFactor)
+    resolution: float  # mm per pixel
+    dust_data: list[list[float]]  # 2-D grid, values 0–1 (divided by scaleFactor)
 ```
 
 ### EC Air Purifier Models
@@ -1109,8 +1116,8 @@ class DustMapData:
 @dataclass
 class DailyAirQualityData:
     start_time: datetime | None
-    resolution_minutes: int           # Typically 15
-    samples: list[float | None]       # AQI values; None = no reading
+    resolution_minutes: int  # Typically 15
+    samples: list[float | None]  # AQI values; None = no reading
 
     @property
     def latest_sample(self) -> float | None: ...
@@ -1136,7 +1143,7 @@ class ScheduledEventsData:
 @dataclass
 class ScheduledEvent:
     enabled: bool
-    days: list[int]       # 0 = Monday … 6 = Sunday
+    days: list[int]  # 0 = Monday … 6 = Sunday
     start_time: str | None  # "HH:MM" local time
     raw: dict
 ```

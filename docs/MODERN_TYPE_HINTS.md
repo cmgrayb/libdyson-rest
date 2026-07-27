@@ -10,7 +10,13 @@ The `DysonClient` class has been updated to use modern Python 3.10+ union syntax
 ```python
 from typing import Any, List, Optional
 
-def __init__(self, email: Optional[str] = None, password: Optional[str] = None, auth_token: Optional[str] = None) -> None: ...
+
+def __init__(
+    self,
+    email: Optional[str] = None,
+    password: Optional[str] = None,
+    auth_token: Optional[str] = None,
+) -> None: ...
 def begin_login(self) -> LoginChallenge: ...
 def complete_login(self, challenge_id: str, otp_code: str) -> LoginInformation: ...
 def get_devices(self) -> List[Device]: ...
@@ -21,10 +27,23 @@ def get_auth_token(self) -> Optional[str]: ...
 ```python
 from typing import Any
 
-def __init__(self, email: str | None = None, password: str | None = None, auth_token: str | None = None) -> None: ...
+
+def __init__(
+    self,
+    email: str | None = None,
+    password: str | None = None,
+    auth_token: str | None = None,
+) -> None: ...
 def begin_login(self) -> LoginChallenge: ...
-def complete_login(self, challenge_id: str, otp_code: str, email: str | None = None, password: str | None = None) -> LoginInformation: ...
+def complete_login(
+    self,
+    challenge_id: str,
+    otp_code: str,
+    email: str | None = None,
+    password: str | None = None,
+) -> LoginInformation: ...
 def get_devices(self) -> list[Device]: ...
+
 
 @property
 def auth_token(self) -> str | None: ...
@@ -60,7 +79,14 @@ def __init__(
 def begin_login(self, email: str | None = None) -> LoginChallenge:
     """Returns challenge for OTP verification"""
 
-def complete_login(self, challenge_id: str, otp_code: str, email: str | None = None, password: str | None = None) -> LoginInformation:
+
+def complete_login(
+    self,
+    challenge_id: str,
+    otp_code: str,
+    email: str | None = None,
+    password: str | None = None,
+) -> LoginInformation:
     """Completes login and returns authentication information"""
 ```
 

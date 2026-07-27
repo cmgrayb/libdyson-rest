@@ -80,12 +80,14 @@ client.close()
 import asyncio
 from libdyson_rest import AsyncDysonClient
 
+
 async def main():
     async with AsyncDysonClient(email="your@email.com") as client:
         if await client.authenticate("123456"):  # OTP code from email
             devices = await client.get_devices()
             for device in devices:
                 print(f"Device: {device.name} ({device.serial})")
+
 
 asyncio.run(main())
 ```
@@ -99,8 +101,8 @@ from libdyson_rest import DysonClient
 client = DysonClient(
     email="your@email.com",
     password="your_password",
-    country="US",        # ISO 3166-1 alpha-2 country code
-    culture="en-US"      # IETF language code
+    country="US",  # ISO 3166-1 alpha-2 country code
+    culture="en-US",  # IETF language code
 )
 
 # Two-step authentication process
@@ -145,13 +147,11 @@ finally:
 import asyncio
 from libdyson_rest import AsyncDysonClient
 
+
 async def main():
     # Use async context manager for automatic cleanup
     async with AsyncDysonClient(
-        email="your@email.com",
-        password="your_password",
-        country="US",
-        culture="en-US"
+        email="your@email.com", password="your_password", country="US", culture="en-US"
     ) as client:
         # Two-step authentication process
         challenge = await client.begin_login()
@@ -171,6 +171,7 @@ async def main():
             if device.connection_category.value != "nonConnected":
                 iot_data = await client.get_iot_credentials(device.serial_number)
                 print(f"  IoT Endpoint: {iot_data.endpoint}")
+
 
 # Run the async function
 asyncio.run(main())
@@ -201,7 +202,7 @@ challenge = client.begin_login()
 ```python
 login_info = client.complete_login(
     challenge_id=str(challenge.challenge_id),
-    otp_code="123456"  # From your email
+    otp_code="123456",  # From your email
 )
 ```
 
@@ -309,8 +310,10 @@ AsyncDysonClient(
 ```python
 @dataclass
 class Device:
-    category: DeviceCategory          # ec, flrc, hc, light, robot, wearable
-    connection_category: ConnectionCategory  # lecAndWifi, lecOnly, nonConnected, wifiOnly
+    category: DeviceCategory  # ec, flrc, hc, light, robot, wearable
+    connection_category: (
+        ConnectionCategory  # lecAndWifi, lecOnly, nonConnected, wifiOnly
+    )
     model: str
     name: str
     serial_number: str
@@ -337,8 +340,8 @@ class Device:
 ```python
 @dataclass
 class LoginInformation:
-    account: UUID      # Account ID
-    token: str         # Bearer token for API calls
+    account: UUID  # Account ID
+    token: str  # Bearer token for API calls
     token_type: TokenType  # Always "Bearer"
 ```
 
@@ -346,7 +349,7 @@ class LoginInformation:
 ```python
 @dataclass
 class IoTData:
-    endpoint: str              # AWS IoT endpoint
+    endpoint: str  # AWS IoT endpoint
     iot_credentials: IoTCredentials  # Connection credentials
 ```
 
@@ -354,8 +357,8 @@ class IoTData:
 ```python
 @dataclass
 class PendingRelease:
-    version: str     # Pending firmware version
-    pushed: bool     # Whether update has been pushed to device
+    version: str  # Pending firmware version
+    pushed: bool  # Whether update has been pushed to device
 ```
 
 ### Exception Hierarchy
@@ -457,7 +460,7 @@ client = DysonClient(
     email="+8613800000000",  # Mobile number with country code
     password="your_password",
     country="CN",
-    culture="zh-CN"
+    culture="zh-CN",
 )
 # Call provision() first, then use mobile auth methods:
 # client.provision()
@@ -601,9 +604,7 @@ from libdyson_rest import DysonClient
 
 # Initialize the client
 client = DysonClient(
-    email="your_email@example.com",
-    password="your_password",
-    country="US"
+    email="your_email@example.com", password="your_password", country="US"
 )
 
 # Authenticate with Dyson API
@@ -772,17 +773,16 @@ This library is designed to work seamlessly with Home Assistant and other async 
 import asyncio
 from libdyson_rest import AsyncDysonClient
 
+
 class DysonDeviceCoordinator:
     """Example Home Assistant coordinator pattern."""
-    
+
     def __init__(self, hass, email, password, auth_token=None):
         self.hass = hass
         self.client = AsyncDysonClient(
-            email=email,
-            password=password,
-            auth_token=auth_token
+            email=email, password=password, auth_token=auth_token
         )
-    
+
     async def async_update_data(self):
         """Update device data."""
         try:
@@ -791,11 +791,11 @@ class DysonDeviceCoordinator:
         except Exception as err:
             _LOGGER.error("Error updating Dyson devices: %s", err)
             raise UpdateFailed(f"Error communicating with API: {err}")
-    
+
     async def async_get_iot_credentials(self, serial_number):
         """Get IoT credentials for MQTT connection."""
         return await self.client.get_iot_credentials(serial_number)
-    
+
     async def async_close(self):
         """Close the client session."""
         await self.client.close()
