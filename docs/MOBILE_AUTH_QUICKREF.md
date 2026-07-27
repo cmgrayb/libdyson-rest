@@ -11,7 +11,7 @@ from libdyson_rest import DysonClient
 client = DysonClient(
     email="+8613800000000",  # Mobile with country code
     password="your_password",
-    country="CN"
+    country="CN",
 )
 
 # Authenticate

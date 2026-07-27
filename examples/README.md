@@ -235,19 +235,13 @@ Most examples follow this pattern:
 from libdyson_rest import DysonClient
 
 # Initialize client
-client = DysonClient(
-    email="your.email@example.com",
-    password="your_password"
-)
+client = DysonClient(email="your.email@example.com", password="your_password")
 
 try:
     # Authenticate
     challenge = client.begin_login()
     otp_code = input("Enter OTP from email: ")
-    login_info = client.complete_login(
-        str(challenge.challenge_id),
-        otp_code
-    )
+    login_info = client.complete_login(str(challenge.challenge_id), otp_code)
 
     # Use authenticated client
     devices = client.get_devices()
@@ -266,20 +260,18 @@ client = DysonClient(
     email="+8613800000000",  # Mobile with country code
     password="your_password",
     country="CN",
-    culture="zh-CN"
+    culture="zh-CN",
 )
 
 try:
     # Provision (required)
     client.provision()
-    
+
     # Authenticate with mobile
     challenge = client.begin_login_mobile("+8613800000000")
     otp_code = input("Enter OTP from SMS: ")
     login_info = client.complete_login_mobile(
-        challenge_id=challenge.challenge_id,
-        otp_code=otp_code,
-        mobile="+8613800000000"
+        challenge_id=challenge.challenge_id, otp_code=otp_code, mobile="+8613800000000"
     )
 
     # Use authenticated client
@@ -299,23 +291,21 @@ For async environments (like Home Assistant), use this pattern:
 import asyncio
 from libdyson_rest import AsyncDysonClient
 
+
 async def main():
     # Use async context manager
     async with AsyncDysonClient(
-        email="your.email@example.com",
-        password="your_password"
+        email="your.email@example.com", password="your_password"
     ) as client:
         # Authenticate asynchronously
         challenge = await client.begin_login()
         otp_code = input("Enter OTP from email: ")
-        login_info = await client.complete_login(
-            str(challenge.challenge_id),
-            otp_code
-        )
+        login_info = await client.complete_login(str(challenge.challenge_id), otp_code)
 
         # Use authenticated client
         devices = await client.get_devices()
         # ... do something with devices
+
 
 # Run async function
 asyncio.run(main())
@@ -326,29 +316,31 @@ asyncio.run(main())
 import asyncio
 from libdyson_rest import AsyncDysonClient
 
+
 async def main():
     # Use async context manager for CN region with mobile
     async with AsyncDysonClient(
         email="+8613800000000",  # Mobile with country code
         password="your_password",
         country="CN",
-        culture="zh-CN"
+        culture="zh-CN",
     ) as client:
         # Provision (required)
         await client.provision()
-        
+
         # Authenticate with mobile asynchronously
         challenge = await client.begin_login_mobile("+8613800000000")
         otp_code = input("Enter OTP from SMS: ")
         login_info = await client.complete_login_mobile(
             challenge_id=challenge.challenge_id,
             otp_code=otp_code,
-            mobile="+8613800000000"
+            mobile="+8613800000000",
         )
 
         # Use authenticated client
         devices = await client.get_devices()
         # ... do something with devices
+
 
 # Run async function
 asyncio.run(main())
