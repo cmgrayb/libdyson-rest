@@ -33,3 +33,9 @@ class DysonValidationError(DysonAPIError):
     """Raised when input validation fails."""
 
     pass
+
+
+class DysonMapError(DysonAPIError):
+    """Raised when the active floor map cannot be determined."""
+
+    pass
