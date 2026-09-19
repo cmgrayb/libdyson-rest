@@ -37,6 +37,14 @@ class DeviceCategory(Enum):
     WEARABLE = "wearable"
 
 
+# Categories returned by the API that are not yet modeled/supported by this
+# library. Devices in these categories are skipped during discovery rather
+# than causing the entire device list request to fail.
+# "oc" = Oral Care (Dyson CameraJet), attributes not yet documented - see
+# https://github.com/cmgrayb/hass-dyson/issues/464
+UNSUPPORTED_DEVICE_CATEGORIES: frozenset[str] = frozenset({"oc"})
+
+
 class ConnectionCategory(Enum):
     """Device connection category enumeration."""
 

@@ -995,6 +995,37 @@ class TestDysonClientMobileAuth:
             client.get_devices()
         client.close()
 
+    @patch("httpx.Client.get")
+    def test_get_devices_skips_unsupported_category(self, mock_get: Mock) -> None:
+        """Test devices with unsupported categories (e.g. 'oc') are skipped."""
+        mock_response = Mock()
+        mock_response.json.return_value = [
+            {
+                "serialNumber": "MOCK-TEST-SN12345",
+                "name": "Mock Test Device",
+                "type": "MOCK_TYPE",
+                "category": "ec",
+                "connectionCategory": "wifiOnly",
+            },
+            {
+                "serialNumber": "MOCK-CAMERAJET-SN1",
+                "name": "Mock Camerajet",
+                "type": "MOCK_TYPE",
+                "category": "oc",
+                "connectionCategory": "wifiOnly",
+            },
+        ]
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        client = DysonClient(auth_token="test_token")
+
+        devices = client.get_devices()
+
+        assert len(devices) == 1
+        assert devices[0].serial_number == "MOCK-TEST-SN12345"
+        client.close()
+
     @patch("httpx.Client.post")
     def test_get_iot_credentials_connection_error(self, mock_post: Mock) -> None:
         """Test get_iot_credentials raises DysonConnectionError on network failure."""

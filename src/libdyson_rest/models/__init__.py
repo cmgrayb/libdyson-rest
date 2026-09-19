@@ -13,6 +13,7 @@ from .auth import (
 )
 from .device import (
     MQTT,
+    UNSUPPORTED_DEVICE_CATEGORIES,
     ConnectedConfiguration,
     ConnectionCategory,
     Device,
@@ -66,6 +67,7 @@ __all__ = [
     "MQTT",
     "PendingRelease",
     "RemoteBrokerType",
+    "UNSUPPORTED_DEVICE_CATEGORIES",
     # IoT models
     "IoTCredentials",
     "IoTData",

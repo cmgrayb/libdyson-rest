@@ -308,6 +308,40 @@ class TestAsyncDysonClient:
         mock_get.assert_called_once()
         await client.close()
 
+    @patch("libdyson_rest.async_client.httpx.AsyncClient.get")
+    @pytest.mark.asyncio
+    async def test_get_devices_skips_unsupported_category(
+        self, mock_get: AsyncMock
+    ) -> None:
+        """Test devices with unsupported categories (e.g. 'oc') are skipped."""
+        mock_response = Mock()
+        mock_response.json.return_value = [
+            {
+                "serialNumber": "MOCK-TEST-SN12345",
+                "name": "Mock Test Device",
+                "type": "MOCK_TYPE",
+                "category": "ec",
+                "connectionCategory": "wifiOnly",
+            },
+            {
+                "serialNumber": "MOCK-CAMERAJET-SN1",
+                "name": "Mock Camerajet",
+                "type": "MOCK_TYPE",
+                "category": "oc",
+                "connectionCategory": "wifiOnly",
+            },
+        ]
+        mock_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_response
+
+        client = AsyncDysonClient(auth_token="test_token")
+
+        devices = await client.get_devices()
+
+        assert len(devices) == 1
+        assert devices[0].serial_number == "MOCK-TEST-SN12345"
+        await client.close()
+
     @pytest.mark.asyncio
     async def test_get_devices_not_authenticated(self) -> None:
         """Test device retrieval fails without authentication."""

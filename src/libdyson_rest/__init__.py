@@ -48,7 +48,7 @@ Basic Usage (Asynchronous):
                 print(f"Device: {device.name} ({device.serial_number})")
 """
 
-__version__ = "0.16.0"
+__version__ = "0.16.1"
 __author__ = "Christopher Gray"
 __email__ = "79777799+cmgrayb@users.noreply.github.com"
 
@@ -68,6 +68,7 @@ from .exceptions import (
     DysonValidationError,
 )
 from .models import (
+    UNSUPPORTED_DEVICE_CATEGORIES,
     CleanedFootprint,
     CleanFault,
     CleaningProgramme,
@@ -120,6 +121,7 @@ __all__ = [
     "LoginChallenge",
     "LoginInformation",
     "PendingRelease",
+    "UNSUPPORTED_DEVICE_CATEGORIES",
     "UserStatus",
     # Vis Nav robot models
     "CleanedFootprint",
