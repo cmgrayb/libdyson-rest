@@ -17,6 +17,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .exceptions import DysonAPIError, DysonAuthError, DysonConnectionError
 from .models import (
+    UNSUPPORTED_DEVICE_CATEGORIES,
     CleaningStrategy,
     CleanRecord,
     DailyAirQualityData,
@@ -737,7 +738,20 @@ class DysonClient:
             typed_devices = [
                 cast(DeviceResponseDict, device) for device in devices_data
             ]
-            return [Device.from_dict(device_data) for device_data in typed_devices]
+
+            devices = []
+            for device_data in typed_devices:
+                category = device_data.get("category")
+                if category in UNSUPPORTED_DEVICE_CATEGORIES:
+                    logger.warning(
+                        "Skipping device %s with unsupported category '%s'; "
+                        "support for this device type is not yet implemented",
+                        device_data.get("serialNumber", "unknown"),
+                        category,
+                    )
+                    continue
+                devices.append(Device.from_dict(device_data))
+            return devices
         except (json.JSONDecodeError, KeyError, ValueError) as e:
             raise DysonAPIError(f"Invalid devices response: {e}") from e
 
