@@ -101,7 +101,7 @@ class DysonClient:
         password: str | None = None,
         auth_token: str | None = None,
         request_timeout: int = 30,
-        user_agent: str = "okhttp/4.12.0"
+        user_agent: str = "DysonLink/205298 Darwin/27.0.0"
     ) -> None
 ```
 
@@ -110,7 +110,7 @@ class DysonClient:
 - `password` (str | None): User's password for authentication
 - `auth_token` (str | None): Pre-existing authentication token
 - `request_timeout` (int): Request timeout in seconds (default: 30)
-- `user_agent` (str): User agent string for requests (default: "okhttp/4.12.0")
+- `user_agent` (str): User agent string for requests (default: "DysonLink/205298 Darwin/27.0.0")
 
 ### Authentication Methods
 
@@ -633,7 +633,7 @@ class AsyncDysonClient:
         password: str | None = None,
         auth_token: str | None = None,
         request_timeout: int = 30,
-        user_agent: str = "okhttp/4.12.0"
+        user_agent: str = "DysonLink/205298 Darwin/27.0.0"
     ) -> None
 ```
 
