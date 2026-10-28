@@ -224,7 +224,7 @@ DysonClient(
     country: str = "US",
     culture: str = "en-US",
     timeout: int = 30,
-    user_agent: str = "okhttp/4.12.0"
+    user_agent: str = "DysonLink/205298 Darwin/27.0.0"
 )
 ```
 
@@ -269,7 +269,7 @@ AsyncDysonClient(
     country: str = "US",
     culture: str = "en-US",
     timeout: int = 30,
-    user_agent: str = "okhttp/4.12.0"
+    user_agent: str = "DysonLink/205298 Darwin/27.0.0"
 )
 ```
 
